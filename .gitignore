@@ -1,0 +1,26 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest & test caches
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Archives (don't commit large zip files to git)
+*.zip
+
+# OS & IDE temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini

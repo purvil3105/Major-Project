@@ -1,0 +1,101 @@
+# =============================================================================
+# NB-IoT NTN Q-Learning RACH Controller — Master Configuration
+# =============================================================================
+# Every value is tagged by provenance:
+#   [3GPP]   = from a 3GPP specification
+#   [paper]  = from a cited research paper
+#   [design] = design choice justified in 02_Methodology.md
+#   [sweep]  = deliberately varied in experiments
+# =============================================================================
+
+# --- FIXED (3GPP) ---
+carrier_hz: 2.0e9              # S-band n256 UL 1980–2010 MHz   [3GPP TR 38.811]
+scs_hz: 3750                   # NPRACH format 0/1 subcarrier    [TS 36.211]
+n_preambles: 48                # 64 total − 16 reserved          [TS 36.211]
+preamble_trans_max: 10         # max attempts per CE level        [TS 36.321]
+rar_window_ms: 8               # terrestrial RAR window           [TS 36.321]
+rar_window_ntn_ms: 40          # NTN-extended RAR window          [TR 38.821]
+processing_time_ms: 3          # gNB processing before RAR        [TS 36.321]
+
+# ACB barring factor levels from TS 36.331 ac-BarringFactor
+acb_levels: [0.1, 0.3, 0.5, 0.7, 1.0]
+
+# Backoff Indicator values (ms) from TS 36.321 Table 7.2-2
+bi_levels_ms: [256, 1024, 4096, 16384]
+
+# NPRACH repetition levels mapping to CE0/CE1/CE2
+nrep_levels: [2, 8, 32]
+
+# --- DERIVED (SGP4 / physics) ---
+altitude_km: 600               # TLE-consistent LEO orbit         [TR 38.811]
+elev_mask_deg: 10              # minimum elevation angle           [TR 38.821]
+earth_radius_km: 6371          # WGS-84 mean radius
+
+# Ground station (AMI site) — Ahmedabad, India
+ground_lat_deg: 23.0225
+ground_lon_deg: 72.5714
+ground_elev_m: 53
+
+# TLE file
+tle_file: "data/tle/sateliot.tle"
+tle_satellite_name: "SATELIOT_2"  # primary satellite for experiments
+
+# Detection model calibration anchors from Chougrani et al. [5]
+# Format: [snr_db, n_rep, target_miss_rate]
+detection_anchors:
+  - [8.0,  64, 0.01]    # miss ≤ 1e-2 at 8 dB with 64 reps
+  - [15.0, 32, 0.01]    # miss ≤ 1e-2 at 15 dB with 32 reps
+
+# UL SNR vs elevation from Dwivedi [10] Set-4
+snr_edge_db: -3.0              # SNR at 10° elevation
+snr_zenith_db: 5.0             # SNR at 90° elevation
+
+# --- SWEPT (the experiment) ---
+device_counts: [200, 1000, 3000]            # rural → congested → beyond-capacity
+residual_doppler_hz: [10, 250]              # nominal → stress [Lee 2026]
+rao_period_ms: [160, 640]                   # decision cadence sweep
+seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]  # ≥10 seeds
+
+# Traffic model
+traffic_model: "beta"          # "beta" = Beta(3,4) synchronized burst [TR 37.868]
+beta_a: 3                      # Beta distribution parameter a
+beta_b: 4                      # Beta distribution parameter b
+activation_window_s: 10        # 10-second activation window [TR 37.868]
+
+# --- LEARNING (Q-learning hyperparameters) ---
+alpha: 0.12                    # learning rate                     [design, cf. Jiang]
+gamma: 0.9                     # discount factor                   [design, cf. Jiang]
+eps0: 1.0                      # initial exploration rate
+eps_min: 0.05                  # minimum exploration rate
+eps_decay: 0.995               # exploration decay per RAO
+
+# Reward weights (cause-separated — the novelty)
+# Ordering: w_c > w_t > w_m, w_d small regulariser
+w_s: 1.0                       # success reward
+w_c: 0.8                       # collision penalty (largest — barring can fix)
+w_m: 0.2                       # miss penalty (small — barring can't fix misses)
+w_t: 0.5                       # timeout penalty (middle)
+w_d: 0.1                       # delay regulariser
+d_ref_ms: 1000                 # reference delay for normalisation
+
+# State discretisation
+load_bins: 4                   # low / moderate / high / overload
+elev_bins: 3                   # low (<20°) / mid / high (>60°)
+doppler_bins: 2                # nominal / degraded
+pass_phase_bins: 3             # early / mid / late
+
+# State bin boundaries
+load_thresholds: [0.3, 0.6, 0.85]      # fraction of preambles used
+elev_thresholds: [20, 60]               # degrees
+doppler_threshold: 50                    # Hz — above this = degraded
+pass_phase_thresholds: [0.33, 0.66]     # fraction of pass elapsed
+
+# --- EXPERIMENT DEFAULTS ---
+default_n_devices: 1000
+default_residual_doppler_hz: 10
+default_rao_period_ms: 160
+default_seed: 200
+
+# Warm-start pre-training
+warmstart_terrestrial_raos: 500          # RAOs to pre-train on terrestrial
+warmstart_file: "results/warmstart_qtable.npy"

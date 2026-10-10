@@ -1,0 +1,1021 @@
+                                                                                                                                         1
+
+                                                 Efficient Transmission Scheme for LEO
+                                          Satellite-Based NB-IoT: A Data-Driven Perspective
+
+                                                      Ayush Kumar Dwivedi , Houcine Chougrani , Sachin Chaudhari , Senior Member, IEEE,
+                                                              Neeraj Varshney , Senior Member, IEEE, Symeon Chatzinotas , Fellow, IEEE
+
+arXiv:2406.14107v1 [eess.SP] 20 Jun 2024     Abstract--This study analyses the medium access control                  Moreover, the longer propagation distance and higher path loss
+                                          (MAC) layer aspects of a low-Earth-orbit (LEO) satellite-based              also lead to lower data rates in LEO satellite-based systems
+                                          Internet of Things (IoT) network. A transmission scheme based               than terrestrial systems. Hence, traffic/overhead reduction and
+                                          on change detection is proposed to accommodate more users                   energy efficiency efforts are paramount in all NTN scenarios.
+                                          within the network and improve energy efficiency. Machine
+                                          learning (ML) algorithms are also proposed to reduce the payload               The limited visibility duration of LEO satellites neces-
+                                          size by leveraging the correlation among the sensed parameters.             sitates an optimized access scheme to accommodate more
+                                          Real-world data from an IoT testbed deployed for a smart city ap-           users within the network. Transmission reduction schemes,
+                                          plication is utilised to analyse the performance regarding collision        traditionally used as a measure to improve energy efficiency
+                                          probability, effective data received and average battery lifetime.          in IoT networks, can be used along with access protocols to
+                                          The findings reveal that the traffic pattern, post-implementation           reduce traffic in satellite-based IoT networks. A Shewhart-
+                                          of the proposed scheme, differs from the commonly assumed                   based transmission reduction scheme is a simple and efficient
+                                          Poisson traffic, thus proving the effectiveness of having IoT data          change-detection method well suited for IoT applications [5].
+                                          from actual deployment. It is demonstrated that the transmission            This paper proposes using the Shewhart-based access scheme
+                                          scheme facilitates accommodating more devices while targeting               to address the dual challenges of limited visibility and low
+                                          a specific collision probability. Considering the link budget for a         data rates in addition to energy efficiency, which is even
+                                          direct access NB-IoT scenario, more data is effectively offloaded           more important in remote areas where satellite access is
+                                          to the server within the limited visibility of LEO satellites.              required. The number of simultaneously transmitted devices
+                                          The average battery lifetimes are also demonstrated to increase             can be reduced by strategically utilising Shewhart in limited
+                                          by many folds by using the proposed access schemes and ML                   timeframes. Thus, more devices can be accommodated within
+                                          algorithms.                                                                 the network, mitigating the constraints of limited satellite visi-
+                                                                                                                      bility. Simultaneously, the scheme enhances data transmission
+                                             Index Terms--Energy efficiency, LEO satellites, machine learn-           efficiency by reducing the transmission of redundant data,
+                                          ing, NB-IoT, real-world datasets, transmission reduction                    allowing for effective communication to the server within the
+                                                                                                                      confines of limited bandwidth.
+                                                                    I. INTRODUCTION
+                                                                                                                         In the context of IoT, the Poisson traffic model is widely
+                                             Low Earth orbit (LEO) satellites have revolutionised the                 adopted, including in the standardization works at 3GPP
+                                          landscape of internet-of-things (IoT) networks, offering ubiq-              [6], and for performance analysis of random access schemes
+                                          uitous coverage that facilitates the deployment even in previ-              in general [7]. However, with the implementation of the
+                                          ously inaccessible remote areas. The recent third generation                Shewhart-based access scheme, the average time for a new
+                                          partnership project (3GPP) Release-17 work item supporting                  transmission does not remain independent of the last trans-
+                                          narrowband-IoT (NB-IoT) in non-terrestrial network (NTN)                    mission as assumed in the Poisson process. On the contrary, it
+                                          have provided great impetus to research in this direction [1].              depends on the nature of sensed data and factors affecting
+                                          NB-IoT is a recent cellular technology standardized by the                  the sensing environment in the case of IoT applications.
+                                          3GPP that aims to provide improved coverage for many low-                   Thus, traditional assumptions like Poisson traffic may not
+                                          throughput, low-cost devices with low device power consump-                 align with real-world scenarios while analysing the perfor-
+                                          tion in delay-tolerant applications. Prospective applications in-           mance of Shewhart-based access schemes. Real data from
+                                          clude utility metering, environment monitoring, asset tracking,             IoT deployment is necessary to emulate the traffic accurately.
+                                          municipal light, and waste management, to name but a few [2].               This paper utilizes data from an IoT testbed deployed for
+                                          However, many LEO constellations targeting IoT applications                 air pollution monitoring to analyse the performance of the
+                                          provide discontinuous coverage, introducing the challenge of                proposed schemes [8], [9]. It evaluates the impact of the
+                                          limited visibility duration [3], [4]. The satellites in sparse              Shewhart scheme on traffic patterns, collision probabilities,
+                                          LEO constellations make multiple passes in a day with inter-                effective data received at the server, and the battery lifetimes,
+                                          pass duration depending upon the constellation size and orbit.              providing insights specific to LEO satellite scenarios.
+
+                                             Ayush Kumar Dwivedi (Corresponding author) and Sachin Chaudhari are      A. Related Work
+                                          with the Signal Processing and Communication Research Center (SPCRC) at
+                                          International Institute of Information Technology, Hyderabad 500032, India     Survey studies in [10]­[13] have pointed out numerous ar-
+                                          (e-mail: ayush.dwivedi@research.iiit.ac.in; sachin.c@iiit.ac.in).           chitectural challenges inherent in satellite-based IoT networks.
+                                                                                                                      These studies advocate for investigating computationally sim-
+                                             Neeraj Varshney is with the Wireless Networks Division, National Insti-  ple access schemes and exploring innovative topologies to
+                                          tute of Standards and Technology, Gaithersburg, MD 20899 USA (e-mail:
+                                          neerajv@ieee.org).
+
+                                             Houcine Chougrani and Symeon Chatzinotas are with the Interdisciplinary
+                                          Centre for Security, Reliability and Trust (SnT), University of Luxem-
+                                          bourg, L-1855 Luxembourg, Luxembourg (e-mail: houcine.chougrani@uni.lu,
+                                          symeon.chatzinotas@uni.lu)
+                                                                  2
+
+facilitate extensive IoT connectivity on a massive scale. A       as shown in [27], this assumption could lead to large errors for
+novel star-of-star topology for satellite IoT has been proposed   aggregated periodic IoT data. Even for aperiodic event-driven
+in [14] and [15], which leverages the benefits of mega-LEO        IoT applications with real-world data, the Poisson model is
+constellations. The performance analysis of mega-LEO con-         not followed as shown in [28] and [29].
+stellations has been presented in [16], [17] from a stochastic
+geometry perspective. A similar approach has been utilized           Apart from random access, various transmission reduction
+in [18] to study the physical (PHY) layer aspects of satellite-   schemes have been studied in the literature for improving the
+IoT like the successive interference cancellation (SIC)-based     energy efficiency of IoT networks. [30] proposed a Shewhart
+decoding and multiple satellite combining schemes.                change detection test for a real-time smart metering system.
+                                                                  The system transmitted local power measurements to a central
+   Recently, the adaptation of low power wide area network        processing point only when deviations exceeded a predefined
+(LPWAN) protocols like NB-IoT and long range wide area            threshold from the last transmitted measurement. The average
+network (LoRaWAN) for NTN connectivity have gained much           time to a new transmission was derived analytically. The
+traction. In [19], authors proposed a novel uplink resource       authors in [5] introduced piggybacking and interpolation tech-
+allocation strategy considering the dynamic nature of LEO         niques to further reduce the error without increasing packet
+satellite channels, differential Doppler shifts, and increased    transmissions in a Shewhart-based temperature monitoring
+propagation delays. The study in [20] proposed a robust           system. The battery lifetime analysis showed a significant
+random access technique addressing the key challenges of          error reduction with a marginal battery lifespan decrease. In
+long delays, significant Doppler effects, and wide beams. It      [31], the authors introduced an innovative machine learning
+also demonstrated its adaptability to various NTN config-         (ML)-driven approach to transmission reduction in IoT. The
+urations outlined by 3GPP for the 5G new radio system.            study comprehensively compared supervised machine learning
+The adaptability of LoRa modulation technology to LEO             algorithms, considering the challenges posed by memory and
+satellite IoT scenarios and its various aspects, such as network  computation constraints on microcontrollers.
+architecture, access mechanisms, and bandwidth, were studied
+in [21]. The potential application of chirp spread spectrum       B. Contributions of the paper
+(CSS), a technology traditionally employed in radar and sonar,
+in the realm of LEO satellite communication systems for              With the motivation behind leveraging LEO satellites in IoT
+low-data-rate transmission was also studied in [22]. In [23],     networks and an aim to alleviate the limitations of visibility
+the synchronization challenges were addressed through the         duration and data rates, the specific contributions of this paper
+innovative Scheduling Algorithm for LoRa to LEO Satel-            are as follows:
+lites (SALSA). Using time division multiple access (TDMA)
+instead of traditional ALOHA-based LoRa, SALSA ensures              1) A Shewhart-based transmission reduction scheme for
+reliable communication, mitigating issues like packet drops             efficient access in LEO satellite-based IoT networks is
+and collisions.                                                         proposed, which addresses the limited visibility duration
+                                                                        challenge specific to LEO satellites with a sparse constel-
+   Apart from scheduling algorithms, various random access              lation.
+algorithms and medium access control (MAC) protocols have
+also been studied for satellite IoT networks. A comprehensive       2) Data from a real-world IoT testbed focused on monitoring
+review of MAC protocols for nanosatellite IoT was presented             air pollution is utilized to analyze the performance of
+in [24]. The assessment considered channel load, throughput,            the access scheme. It also provides tangible insights into
+energy efficiency, and complexity factors. ALOHA-based pro-             observed traffic patterns, differing from the commonly
+tocols and interference cancellation-based protocols emerged            assumed Poisson traffic in theoretical analysis. These
+with notable performance metrics, yet the study emphasized              insights can be helpful to emulate and optimise a real-
+the need for improved designs that balance communication                time IoT traffic generator, closely matching the inter-
+performance, energy consumption, and complexity. In [25],               arrival times of new transmissions.
+an innovative collision detection scheme for satellite-based
+IoT was proposed, emphasizing enhanced access efficiency            3) Collision probability for an NB-IoT scenario is analyzed
+and resource utilization. The scheme enabled rapid collision            for various modes of transmission utilizing Shewhart.
+detection, and the paper provided optimal preamble selection            A significant increase in the network's capacity to han-
+probabilities to maximize load monitoring accuracy. The con-            dle a larger user base for a target collision probability
+strained application protocol (CoAP) was studied in [26] for            is demonstrated. This is crucial in satellite-IoT as the
+reliable delivery of IoT traffic. It established an analytical          reduced collisions allow faster connections within the
+model to assess system performance under non-saturated con-             limited visibility.
+ditions, considering MAC parameters over a random access
+satellite channel with a closed-loop congestion control mech-       4) Effective data at the server is evaluated for the link budget
+anism. Various traffic models for analysing the performance of          of the LEO satellites, highlighting how the Shewhart-
+MAC schemes in IoT networks are also studied in [27]­[29].              based access scheme contributes to securing higher data
+The Poisson model is adopted in [6] considering the Palm-               as the satellite's visibility duration increases.
+Khintchine Theorem, which states that the superposition of
+asymptotically large independent renewal processes with iid         5) Machine learning algorithms have been proposed to re-
+inter-arrival times would lead to a Poisson process. However,           duce payload by eliminating the need to transmit pa-
+                                                                        rameters with strong correlation. It also reduces the
+                                                                        dependency on variations in multiple parameters while
+                                                                        implementing Shewhart, thus leading to higher gains
+                                                                        in terms of transmission reduction and the number of
+                                                                                                                                          3
+
+                                                                        TABLE I
+                       COMPARISON OF WORK DONE IN THIS PAPER WITH OTHER PAPERS IN THE LITERATURE
+
+Scope/Reference                                  [5] [20] [23] [25] [26] [27]­[29] [30] [31] This paper
+
+LEO satellite scenario                                                                                             
+
+Transmission/scheduling scheme                                                                                     
+
+ML for transmission/payload reduction                                                                              
+
+Traffic-pattern/load analysis                                                                                      
+
+Collision probability analysis                                                                                     
+
+Battery lifetime analysis                                                                                          
+
+Real-world dataset                                                                                                 
+
+                                                                                                                   TABLE II
+                                                                              SATELLITE PARAMETERS FOR SET-1 AND SET-4 CONFIGURATION [1]
+
+                                                                                            Parameters             LEO - 600 km
+
+                                                                              Central beam center elevation angle  Set-1   Set-4
+                                                                              Central beam edge elevation angle
+                                         X                                                                           30     90
+                                                                                         3 dB beam width             27     30
+                                                                                          Frequency band           4.4127  104.7
+                                                                              Satellite EIRP density (dBW/MHz)
+                                                                                       Satellite G/T (dB/K)        S-band (i.e. 2 GHz)
+
+            X             X                                                                                        34      21.45
+
+X     X     X          X        X     X  X
+   X     X          X                         X
+                                   X                                                                               1.1     -18.6
+               X             X
+
+Fig. 1. System model: Direct-access NB-IoT network with LEO satellites at     the ML algorithms and the proposed transmission modes, are
+600 km and having discontinuous coverage. All the devices under the coverage  presented in Section IV. Section V then provides the outcomes
+area perform Shewhart-based transmissions during the visibility period.       and observations on various KPIs, comparing the proposed
+                                                                              schemes with the baseline. The paper is concluded in Section
+      simultaneously transmitting devices. The reduced payload                VI with a summary of the key findings.
+      size is also demonstrated to improve the energy efficiency
+      of the nodes, increasing the average battery lifetimes by                                    II. SYSTEM DESCRIPTION
+      many folds. This is significant in the context of satellite-
+      IoT, which has a constrained link budget.                                  This section presents the description of the LEO-satellite
+                                                                              scenario considered for this study, the associated link budget
+   While the previous study in [23] proposed an access scheme                 and the necessary discussion around the visibility duration of
+for LEO satellite-based IoT networks considering the limited                  LEO satellites.
+visibility aspect, it utilizes TDMA in LoRaWAN, unlike the
+Shewhart-based RACH procedure being proposed in this paper                    A. System model
+for NB-IoT. Similarly, [25] focused on collision detection
+and load estimation while [26] focused on designing a rate-                      In this work, NB-IoT is adopted as an IoT communication
+control algorithm implemented as a CoAP congestion control                    protocol, as shown in Fig. 1. In the 3GPP framework, four
+algorithm. On the contrary, this paper utilises transmission                  reference scenarios have been specified depending on the orbit
+reduction to reduce collisions, increase energy efficiency, and               nature: geostationary Earth orbit (GEO), medium Earth orbit
+improve resource utilisation. Moreover, unlike this study, none               (MEO) or LEO, and beam type--whether steerable or fixed.
+of the above papers utilized any dataset from real-world IoT                  All scenarios are studied under the assumptions of sub-6 GHz
+deployment to analyse their systems. The work in [5], [30],                   bands, transparent payload, and no inter-satellite link. In this
+[31] was related to Shewhart and ML-based schemes for                         work, we adopt an NTN architecture where the IoT devices
+transmission reduction in IoT, but none of them considered a                  are distributed in rural and suburban areas and connected via
+LEO satellite scenario. Based on the scope, Table I compares                  LEO satellites with sparse constellation. The latter is favoured
+the work done in this paper with other works in the literature.               here for link budget and cost reasons. In fact, adopting a LEO
+                                                                              satellite will enhance the link quality due to lower distances
+   The rest of the paper is organised as follows: Section II                  between the ground and the orbits (compared to GEO orbits).
+details the LEO satellite system and the NB-IoT protocol,
+including the link budget analysis and the method employed                       To analyse the proposed algorithms, the link budget, cover-
+for calculating visibility duration and collision probability.                age time, and achievable data rate under the proposed system
+Section III outlines the measurement campaign and the steps                   model are initially evaluated. 3GPP has defined four sets of
+undertaken for data preprocessing and dataset creation. The                   beam layout and radio frequency parameters for the payload:
+Shewhart-based transmission reduction scheme, along with                      Set-1, Set-2, Set-3, and Set-4. Set-1 represents the best-case
+                                                                              scenario with small spot beams. On the contrary, the Set-4
+                                                                                                                                                                                                  4
+
+                            TABLE III                                                                           25
+LINK BUDGET NB-IOT-TO-SATELLITE DIRECT ACCESS
+                                                                                                                       h = 600 km, 0 = 0°  h = 1200 km, 0 = 0°
+
+                                                                                                                       h = 600 km, 0 = 10° h = 1200 km, 0 = 10°
+
+Parameters                                LEO - 600 km                                                          20     h = 600 km, 0 = 30° h = 1200 km, 0 = 30°
+
+Transmission mode        Uplink (Set-1)                Uplink (Set-4)                Visibility duration (min)
+Elevation angle
+TX EIRP [dBW]            27               30           30               90                                      15
+RX G/T [dB/K]
+BWNB-IoT [kHz]                  -7                            -7
+Free space PL [dB]
+Atmospheric loss [dB]           1.1                           - 18.6                                            10
+Shadow margin [dB]
+Scintillation loss [dB]         3.75/180                      3.75/180
+Polarization loss [dB]
+Additional losses [dB]   159.7            159. 1       159.1            154.03                                  5
+SNR [dB]
+                                                  0.1
+
+                                                  3
+
+                                                  2.2                                                           0   0  10  20              30  40  50                   60       70     80    90
+
+                                                  3                                                                                        Maximum elevation angle (deg)
+
+                         3                0            3                0
+
+                         15.96/-0.85 19.56/2.75 -3.14/-19.95 4.93/-11.88             Fig. 2. Visibility duration tvis of a LEO satellite vs. the observed maximum
+                                                                                     elevation angle max of the pass at 81 inclination for varying altitude, h and
+                                                                                     mask angle 0. It can be observed that in a zenith pass, the satellites spend
+                                                                                     most of the visibility duration at lower elevation angles.
+
+configuration represents the general and worst cases with one                        C. Satellite visibility duration
+large beam. Table II provides the Set-1 and Set-4 configuration
+parameters for LEO satellites at 600 km altitude.                                       This study considers a LEO constellation with discontinuous
+                                                                                     coverage. The visibility time of a LEO satellite depends on the
+B. Link budget                                                                       orbit, relative user position on the ground, and the elevation
+                                                                                     angle. A minimum elevation or mask angle is usually defined
+   In this subsection, the link budget for both the downlink                         for communication with the LEO satellites. A satellite's total
+(DL) and uplink (UL) of an LEO-based NB-IoT direct access                            visibility duration is defined as the time for which the satellite
+system is evaluated. The receiver signal-to-noise ratio (SNR)                        remains visible at an elevation greater than the mask angle.
+as a function of the equivalent isotropically radiated power                         The visibility duration  (max) of the satellite at the terminal
+(EIRP), the receiver antenna gain-to-noise-temperature (G/T)                         is given in [33] by
+ratio, the Boltzmann's constant kB = -228.6 dBW/K/Hz,
+the free-space propagation loss PLFS, the atmospheric losses                          (max)
+PLA, the shadowing margin PLSF, the scintillation loss PLSL,
+and the signal bandwidth (B) can be calculated using                                                                   2       cos-1           cos(cos-1            (   re  cos  0)  -  0)        ,
+                                                                                                                                                                        r
+
+                                                                                                                s - e cos i                    cos(cos-1         (  re  cos max)     -  max)
+                                                                                                                                                                    r
+
+SNR [dB] = EIRP [dBW] + G/T [dB] - kB [dBW/K/Hz]                                                                                                                                              (2)
+
+- PLFS [dB] - PLA [dB] - PLSF [dB]                                                   where re is the radius of the earth, r is the satellite altitude,
+                                                                                     i is the inclination of the orbit, 0 is the angle of elevation
+- PLSL [dB] - 10 log10(B [Hz]).                                                 (1)  to the satellite at a time when the satellite becomes visible
+                                                                                     to the terminal and max is the maximum angle elevation to
+An additional 3 dB loss is added to the link budget at the edge                      the satellite. Fig. 2 shows the variation in visibility duration
+due to the assumption that the DL/UL EIRP is the one at the                          w.r.t maximum elevation angle at 81 inclination for different
+beam centre and not at the edge of the beam.                                         altitudes and mask angles. The visibility duration is greater
+                                                                                     for the passes with higher maximum elevation angles. It can
+   Table III shows the estimated SNR based on the Set-1                              also be observed that in a zenith pass, the satellites spend
+and Set-4 configuration and parameters considered in [1].                            most of the visibility duration at lower elevation angles. For
+The evaluation considers operation in the S-band at a carrier                        example, the visibility duration for a satellite in 600 km orbit
+frequency of 2 GHz. For the UL, the SNRs depend on the                               with a mask angle of 30 is nearly 4 minutes. In contrast, the
+signal bandwidth. In Set-1, the best case with multiple spot                         visibility duration is 13 minutes if the mask angle is considered
+beams, 15.96 dB and 19.56 dB SNR is achieved with a 3.75                             0. This demonstrates that for a zenith pass, the satellite spends
+kHz single-tone configuration at the edge and centre of the                          nearly 9 minutes to traverse from 0 to 30.
+beam, respectively. On the other hand, the SNRs are reduced
+to -0.85 dB and 2.75 dB when using full NB-IoT bandwidth                                Although this paper considers constellation with discontin-
+(multi-tone) at the edge and centre of the beam, respectively.                       uous coverage, the observations remain relevant for constel-
+Although decent for Set-1, the obtained SNRs for Set-4 are                           lations for continuous coverage also since it is assumed that
+quite low. In set-4, the SNRs achieved are -3.13 dB to 4.93 dB                       IoT terminals would connect and follow one satellite at a time
+in 3.75 kHz single-tone configuration and -19.95 dB to -11.88                        to reduce the complexity in antenna and signal processing
+dB for full bandwidth multi-tone configuration. In this study,                       aspects.
+we adopt the Set-4 configuration for further analysis to show
+the show performance in the worst-case scenario. According                           D. Communication steps in NB-IoT
+to [32], the link can still be closed with the obtained SNRs in
+Set-4 configuration such that one can achieve a data rate of                            In NB-IoT, communication unfolds in two distinct phases.
+up to 1.6 kbps for the UL.                                                           The initial phase, known as the access or contention phase,
+                                                                           5
+
+                      (a)                                        (b)  (c)
+
+Fig. 3. Deployment of air pollution monitoring devices: (a) Live data with locations on the map (b) Circuit board and sensors (c) Developed device (best
+viewed in colour)
+
+involves nodes vying for connection establishment with the
+
+eNB through the narrowband physical uplink shared channel
+
+(NPRACH). This is achieved by transmitting a preamble
+
+during random access opportunities (RAO), which can present
+
+12 to 48 connection possibilities as subcarriers. Contesting
+
+nodes randomly select an index within these possibilities for
+
+preamble transmission. Collisions resulting from two or more     Fig. 4. Preprocessing steps employed on the raw sensed data to fill missing
+                                                                 values and avoid sensor noise.
+nodes choosing the same preamble index lead to retries and
+                                                                 A. Measurement campaign
+failures. Successful preamble transmission initiates the data
+                                                                    AirIoT is a network of 49 air pollution monitoring devices
+phase, exchanging messages on allocated resources without        deployed in an area of approximately 4 km2 in the Gachibowli
+                                                                 region of Hyderabad, the capital city of Telangana state in
+contention. Despite this, failures may still occur due to con-   India. This kind of deployment could indicate many other IoT
+                                                                 networks, e.g. livestock, agriculture, and floating sensors for
+gestion or transmission errors. However, this paper focuses on   tsunami prevention, thus helping in understanding a real-life
+                                                                 scenario. In AirIoT, the devices were strategically placed to
+the collision probability during the random access phase of      cover urban, semi-urban and green areas, as shown in Fig. 3a.
+                                                                 Every device consists of the following components: a Nova
+NB-IoT.                                                          SDS011 sensor for measuring the concentration of particulate
+                                                                 matter (PM) with a diameter of 2.5 and 10 microns or less
+To compute the collision probability, consider an individual     (PM2.5 and PM10), a Sensirion SHT21 sensor for measuring
+                                                                 ambient temperature and humidity, a communication module
+subcarrier in a particular RAO with mRAO subcarriers [34]. Let   (SIM800L and eSIM), a real-time clock (RTC), and a lithium
+                                                                 polymer (LiPo) battery. These components are connected to an
+Xi be the random variable representing the number of nodes       ESP-32 microcontroller that senses the data every 30 seconds
+that select the ith subcarrier for transmitting their preamble   and offloads to ThingSpeak, a cloud-based server. The device
+                                                                 is powered through an AC-DC power adapter and a Li-Po
+in the same RAO for a network with N nodes. Then, the            battery, as shown in Fig. 3b. It is enclosed in an IP-65 box
+                                                                 with dedicated inlets to facilitate the free ambient air flow and
+probability P[Xi = k], that k nodes select the same subcarrier   safeguard against environmental wear and tear, as shown in
+can be written as                                                Fig. 3c.
+
+                   N       1     k  mRAO - 1     N -k               The entire network was deployed in a phased-wise manner
+P[Xi = k] = k                                                    starting from Dec 2019. The air quality data of the region has
+                           mRAO     mRAO               .  (3)    been collected for more than three years. A comprehensive
+                                                                 network and dataset analysis has been presented in [8], [9]. A
+A transmission is considered successful only if a preamble is    subset of the dataset collected from November 2019 to January
+                                                                 2023 obtained from 49 devices is used in this work.
+selected by one node. Therefore, the number of nodes that
+                                                                 B. Data preprocessing
+reattempt the procedure can be written as
+                                                                    Every device offloads a vector of data points for every
+         Ncoll = N - (mRAO × P[Xi = 1])                          sensing instance in the following format:
+
+         = N 1 - e-N/mRAO .                               (4)
+
+Each of the colliding devices selects another sub-carrier after
+a back-off (BO) window with probability PBO. The collision
+probability for a node in an arbitrary RAO is given in [35] by
+
+         Pcoll = 1 - exp         - Ncoll PBO  .           (5)
+                                     mRAO
+
+   III. IOT TESTBED AND DATASET FOR EXPERIMENTAL
+
+                                     VALIDATION
+
+   In this work, the performance of the proposed schemes and
+system model is experimentally validated using the data from
+an IoT testbed, AirIoT, established by IIIT Hyderabad (IIITH),
+India, for air quality monitoring in a city.
+                                                                                                                                                                                   6
+
+PM10 (ppm) PM2.5 (ppm) RH (%) Temp. (° C) 40
+                                          30
+                                          20
+                                          50
+
+                                            0
+                                         200
+                                         100
+
+                                            0
+                                         500
+
+                                            0         Jan 04  Jan 07              Jan 10     Jan 13  Jan 16  Jan 19               Jan 22  Jan 25  Jan 28  Jan 31
+                                           Jan 01                                                                                                              2022
+
+Fig. 5. An example snapshot of the pre-processed time-series data collected from every device. This study is based on sensing of four parameters, namely
+Temperature (in C), Relative Humidity (RH in %), concentration of PM2.5 (in ppm) and concentration of PM10 (in ppm). It can be observed that the
+
+temperature and RH values exhibit clear periodicity, depicting the day-night cycles; however, the PM concentration is largely aperiodic, depicting its dependency
+
+on anthropogenic activities. It is also worth noticing that the temperature and RH time series hardly encounter any abrupt change in values; however, the PM
+
+time series has many abrupt changes in concentration values.
+
+                                           1       2  3               49                     2019 2020 2021 2022 2023
+
+                                                                                          1
+
+                                               Data of 50 devices deployed in             2                                               Monthly data for 230 devices
+                                                                                                                                           representing Winter season
+                                           stages from Nov 2019 till Jan 2023
+
+                                                                                          3
+
+                                               · Segregate into monthly data              49                                              · Considering timeseries for individual
+                                               · Pick Winter months                                                                         month from different devices as
+                                               · Remove months with >70% missing                   Take Winter season data only             independent
+                                                                                               Nov, Dec, Jan months of 2019-2023
+                                                 data                                                                                     · Resample into 30 sec frequency
+
+Fig. 6. A visual representation of the process followed to create a monthly dataset virtually representing 230 devices, as utilized for this study (best viewed
+in colour).
+
+   · device id: A unique identification number specific to                                           values exhibit apparent periodicity, reflecting the predictable
+      every device.                                                                                  day-night cycles. In contrast, the PM concentration is largely
+                                                                                                     aperiodic and lacks a distinct periodic pattern, indicating its
+   · created at: Time at which the sensor values are sensed                                          reliance on anthropogenic activities. Also, the temperature
+      in "yyyy-MM-dd HH:mm:ss Z" format.                                                             and RH time series demonstrate minimal abrupt changes in
+                                                                                                     values, maintaining a relatively steady trend. On the other
+   · PM10: Concentration of PM10 in µg m-3.                                                          hand, the PM time series displays numerous abrupt changes
+   · PM2.5: Concentration of PM2.5 in µg m-3.                                                        in concentration values, highlighting its sensitivity to dynamic
+   · RH: Relative humidity values in terms of %.                                                     and rapidly changing environmental factors.
+   · Temp: Temperature value in C.
+                                                                                                     C. Dataset creation
+The collected data was preprocessed following the steps shown
+in Fig. 4. Although the devices are programmed to sense every                                           Fig. 6 shows the process of creating the final dataset
+30 seconds, the entire dataset was re-sampled at 30 seconds                                          from the preprocessed data. Data from all the devices was
+to ensure that no timestamp in the time series is missed                                             divided into monthly chunks for each device. There have been
+due to data loss. The missing values were filled utilizing a                                         instances of data loss primarily because the devices had to
+simple linear interpolation technique. As a last step, a moving                                      be returned to the lab for regular repair and maintenance.
+average filter of window size five samples (2.5 minutes) was                                         Additionally, the devices were brought for seasonal calibration
+applied to replicate the usual practice of IoT devices to avoid                                      at regular intervals and to make firmware upgrades. Hence, the
+spurious or noisy behaviour of the sensors. Fig. 5 shows an                                          data for months with more than 70% missing values was dis-
+example snapshot of the final time series data obtained for                                          carded. After that, the data was arranged monthly from 2019
+analysing the performance of the proposed access schemes
+in this paper. The temperature and relative humidity (RH)
+                                                                                                                       7
+
+to 2023. The data from November to January, representing the        energy monitoring, which may involve numerous parameters.
+winter months in India, was then collected for this study. Since    In these diverse scenarios, payload reduction holds substantial
+the PM has a high seasonal correlation, the analysis in this        advantages for enhancing the battery lifetime of devices,
+paper has been restricted to one representative season only to      as demonstrated in Section V-G of this paper. The traffic
+avoid any seasonal bias. The variations in all four parameters      generated from the dataset employed in this study serves as a
+sensed in this study heavily depend on local anthropogenic          representative example in this context.
+activities. Therefore, the time series data for individual months
+from different devices can be considered independent and               Predicting the concentration of PM2.5 based on the con-
+virtually treated as data from different devices. As a result,      centration of PM10 is a regression problem. Therefore, we
+monthly data virtually representing 230 devices was curated         propose using simple machine learning algorithms like linear
+for this study.                                                     regression [37], decision tree regression [38], and random
+                                                                    forest (RF) [39] regression-based prediction of PM2.5 values
+          IV. TRANSMISSION REDUCTION SCHEMES                        using PM10 at the server. These algorithms have been selected
+                                                                    based on their suitability for real-time deployment on cloud
+   In this work, multiple modes of operation for the IoT            servers. A successful use-case of these ML algorithms in
+devices are envisioned to reduce data transmission from the         transmission reduction was demonstrated in [31].
+devices, thus generating varied traffic patterns. Additionally,
+ML algorithms are proposed to decrease payload by excluding         C. Various modes of transmission
+the transmission of strongly correlated parameters which can
+be predicted at the server. This approach diminishes reliance          In this study, Shewhart and ML-based transmission reduc-
+on variations in multiple parameters when implementing trans-       tion schemes have been proposed in the form of various modes
+mission reduction techniques, thus leading to higher gains. The     of transmission. While PM2.5 and PM10 are monitored as
+proposed transmission reduction scheme and machine learning         primary pollutants in this study, the AQI emerges as a widely
+models are described below.                                         recognized metric for conveying air pollution levels to the
+                                                                    general public. Once PM2.5 and PM10 levels are known, AQI
+A. Transmission reduction using Shewhart                            can be easily calculated both at the node and the server using
+                                                                    the standard formula recommended by the Central Pollution
+   The Shewhart test for transmission reduction is a simple         Control Board (CPCB) in India [40] as shown below:
+change detection algorithm [36]. Its ability to detect large
+changes and simple implementation makes it an attractive            AQI = max (Ip),
+choice for IoT applications, as demonstrated in [30] and
+[5]. In Shewhart, newly sensed data is transmitted only if it       where,  Ip  =  IHI  -  ILO  (Cp  -  BLO)  +  ILO,
+differs from the previously transmitted value by more than a                       BHI  -  BLO
+threshold. In other words, if xt is the sensed data at tth time
+instance, then a transmission is triggered if                       Cp is the pollutant concentration, and p = 1, 2, 3, · · · , n is
+                                                                    the number of pollutants. Here, BHI represent the breakpoint
+| xt - xt^ | > ,  (6)                                               concentration greater or equal to the given concentration, BLO
+                                                                    is the given concentration, IHI is the AQI value corresponding
+where xt^ is the last transmitted value and  is the threshold. If   to BHI, ILO is the AQI value corresponding to BLO.
+a new value is not received at the server, the last received value
+is also considered to be the value at the current time instance.       This study uses different transmission modes based on
+Therefore, the maximum error at the server is bounded by the
+threshold. The tolerable error usually governs the selection of     specific use cases. The list of proposed modes of transmission
+threshold, transmission rate and the application at large.
+                                                                    and the corresponding schemes are as follows:
+
+                                                                    · Mode 0: Transmit all the parameters as soon they are
+                                                                      sensed. This mode is equivalent to not applying any
+                                                                      transmission reduction technique and is representative
+                                                                      of a baseline to compare the performance of all other
+
+B. Machine learning-based prediction models for non-                  proposed schemes.
+transmitted parameters                                              · Mode 1: Apply Shewhart on all the parameters and
+
+   Supervised ML algorithms can eliminate the need to trans-          transmit all of them if one or more parameters change
+mit all the sensor values or parameters among a set of                significantly.
+strongly correlated parameters. In this work, the concentration     · Mode 2: Apply Shewhart on PM10 only and transmit
+of PM2.5 is strongly correlated with the concentration of             only PM10 value to the server. When only PM10 is
+PM10 since, by definition, the concentration of PM10 also             transmitted, the concentration of PM2.5 corresponding to
+encompasses the concentration of PM2.5 pollutants. Hence,             every PM10 value is predicted using the ML algorithm
+by transmitting PM10, the transmission of PM2.5 can be
+avoided, thus reducing the payload size. While the sensor data        at the server, and the AQI is calculated subsequently.
+in our investigation comprises only four parameters, reducing       · Mode 3: Apply Shewhart on AQI only, however transmit
+a single parameter may not intuitively lead to a significant
+decrease in payload size. Nonetheless, the ML algorithms              PM10 if AQI changes significantly. The concentration of
+introduced in this paper for payload reduction are designed           PM2.5 corresponding to every PM10 value is predicted
+with the broader context of IoT applications in mind, such as         using ML algorithms at the server, and AQI is calculated
+                                                                      subsequently.
+
+                                                                    Mode 1 suits the scenarios demanding detailed data on all
+                                                                    parameters, while for situations where only AQI information is
+                                                                                                         8
+
+                         140
+
+                                                                                  Raw data
+
+                         120                                                      Shewhart output
+
+                                                                                  Transmission instance
+
+Air Quality Index (AQI)  100
+
+                         80
+
+                         60
+
+                         40
+
+                         20
+
+                         0    1  5000  10000  15000                 20000  25000  30000            35000
+
+                                              Example sensing instance
+
+Fig. 7. An example snapshot of Shewhart output at the server for AQI at a threshold of 15 index points for 100 hrs. The reduction in transmission for this
+snapshot is nearly 99%.
+
+                                       TABLE IV                     the sensed parameter in the specific environment. For instance,
+LIST OF PARAMETERS AND THEIR VALUES UTILIZED FOR PERFORMANCE        the Sensirion SHT21 sensor, employed for temperature and
+                                                                    humidity sensing, exhibits an accuracy tolerance of ±0.3C
+                                      ANALYSIS IN THIS WORK         and ±2%, respectively. Since the temperature in Hyderabad,
+                                                                    India, typically ranges between 10-20°C in winter, the thresh-
+Parameter                              Value                        olds for temperature and humidity are set at 0.5C and 5%,
+LEO satellite altitude                                              respectively. Similarly, the Nova SDS011 sensor used for PM
+Coverage type                          600 km                       monitoring has a maximum accuracy tolerance of ±15% up
+System bandwidth                       Sparse constellation         to 10 ppm. Usually, PM2.5 ranges between 80 and 120 ppm,
+Sub-carrier width                      180 kHz                      and PM10 ranges between 180 and 250 ppm during winter
+No. of sub-carriers per RAO            3.75 kHz                     in Hyderabad. However, according to CPCB, 30 ppm for
+RAO periodicity                        48                           PM2.5 and 50 ppm for PM10 is categorised as "Good" [40].
+UL data rate                           160 ms                       Hence, a threshold of 5 ppm is selected for both PM2.5 and
+                                       1.6 kbps                     PM10 values to ensure that both the trend is captured and the
+Shewhart threshold                     Temp: 0.5C, RH: 5%, AQI: 15  data is reliable, even for the "Good" category with the least
+                                       PM2.5: 5 ppm, PM10: 5 ppm    concentrations. Based on similar reasoning, given that an AQI
+Sensing rate                           30 sec                       between 50-100 is deemed satisfactory, a threshold of 15 index
+Back-off (BO)                          [0, 256 · 2i] sec, i = 10    points is selected for AQI.
+Beam visibility window                 246.9 sec (set-4)
+
+needed, particularly in public information systems, and higher      A. Performance of Shewhart in transmission reduction
+capacity is desired, either Mode 2 or Mode 3 can be employed.
+                                                                       Initially, to demonstrate the working of Shewhart, an ex-
+                V. RESULTS AND OBSERVATIONS                         ample implementation on a snapshot of a single time series
+                                                                    for AQI is shown in Fig. 7. The snapshot presented has a
+   In this section, we present the performance of the pro-          duration of 100 hours with a threshold of 15 index points.
+posed access schemes with various transmission modes and            The reduction in transmission instances for the presented
+compare them with the baseline method through different             snapshot is nearly 99%, affirming the Shewhart scheme's
+performance metrics. These metrics include the percentage           efficacy. Notably, the plot illustrates a significant decrease in
+reduction in transmission w.r.t the threshold in Shewhart, root     transmitted instances while accurately capturing the trendline
+mean squared error (RMSE) of the sensed parameters at the           and essential variations in AQI. This highlights the substantial
+server, the average number of simultaneously transmitting           benefits of integrating Shewhart for transmission reduction in
+nodes, collision probability during the access/contention phase     this study.
+of NB-IoT, the effective data received at the server within
+the visibility duration, and the expected battery lifetime.            Table V provides a comprehensive overview of the Shewhart
+The RMSE and the reduction in transmissions represent the           scheme's performance across various modes of operation
+efficiency of the proposed scheme, while the other metrics          applied to the entire dataset. The results are evaluated in terms
+represent its suitability for the LEO satellite scenario. Unless    of transmission reduction, the number of simultaneously trans-
+stated otherwise, all the system-level simulations have been        mitting nodes, and the associated RMSE in the sensor values
+performed using the parameters shown in Table IV. The               calculated at the server. It can be observed that all three modes
+threshold values for Shewhart are carefully chosen, consider-       with the proposed Shewhart-based access scheme produce a
+ing the sensor's accuracy tolerance and the nominal values of       significant reduction in transmission. In Mode 1 and Mode 2,
+                                                                                                                                                                         9
+
+                                                                                           TABLE V
+PERFORMANCE OF VARIOUS MODES OF OPERATION IN TERMS OF THE NUMBER OF SIMULTANEOUSLY TRANSMITTING NODES, % REDUCTION AND RMSE
+
+                                                    Transmission Mode                                                 Simultaneously  %                   RMSE
+
+                                                                                                                      Tx. Nodes       Reduction
+
+                                    M0          Baseline: Transmit all the parameters                                 230               0                 0
+                                                                                                                                      87.16
+                                    M1              Shewhart on all parameters                                        30              88.33      T: 0.16     RH: 0.62
+                                                                                                                                      96.54
+                                                                                                                                                 PM2.5: 1.29 PM10: 2.10
+
+                                    M2 Shewhart on PM10 only (transmit PM10 and predict PM2.5)                        26                         PM2.5: 2.34 PM10: 2.22
+
+                                    M3      Shewhart on AQI only (transmit PM10 and predict PM2.5,                    8                          PM2.5: 4.23 PM10: 7.56
+
+                                                    calculate AQI at the server)
+
+                               100                                                                                    and a decrease in simultaneously transmitting nodes from
+                                                                                                                      230 to 8 are achieved. Shewhart is applied on AQI in Mode
+Reduction in Transmission (%)  95                                                                                     3, which, being a derived quantity, exhibits stability against
+                                                                                                                      minute fluctuations in PM values. This stabilizing effect is
+                               90                                                                                     explained by the AQI calculations, as discussed in Section
+                                                                                                                      IV-C, where the AQI primarily depends on the breakpoints
+                               85                                                                                     of PM concentration values and not on the specific value.
+                                                                                                                      The breakpoint concentrations for PM10 are Good (50), Sat-
+                               80                                                                                     isfactory (100), Moderate (250), Poor (350), Very Poor (430)
+                                                                                                                      and Severe (430+). Similarly, the breakpoint concentrations
+                               75                                                                                     for PM2.5 are Good (30), Satisfactory (60), Moderate (90),
+                                                                                                                      Poor (120), Very Poor (250) and Severe (250+). Hence, any
+                               70                                                                                     fluctuations within these breakpoints do not change the AQI,
+                                                                              Mode 1: Shewhart on all parameters      making it a less fluctuating parameter. It can also be observed
+                                                                                                                      that the improved reduction in transmissions incurs only a
+                               65                   Mode 2: Shewhart on PM10 only                                     nominal cost in terms of an increased RMSE. For Mode 3,
+                                                                                                                      even though AQI is tracked for Shewhart, PM10 values are
+                                                                              Mode 3: Shewhart on AQI only            transmitted, and AQI is calculated at the server. Hence, the
+                               60                                                                                     RMSE is calculated for PM2.5 and PM10 to analyse the
+                                                                                                                      performance. In mode 3, the RMSE values of PM2.5 and
+                                    0.2 0.4 0.6 0.8 1 1.2 1.4 1.6 1.8 2                                               PM10 are 2.43 ppm and 7.56 ppm, respectively, which is
+                                                                                                                      considerably lower than the nominal values observed during
+                                                Threshold Temperature (°C)                                            the winter season.
+
+                               0.5 1.5 2.5 3.5 4.5 5.5 6.5 7.5 8.5 9.5 10                                                In Fig. 8, the percentage reduction in transmission is illus-
+                                                           Threshold Humidity (%)                                     trated for different thresholds across all proposed transmission
+                                                                                                                      modes. Notably, the reduction percentage sharply increases
+                               5 7 9 11 13 15 17 19 21 23 25                                                          with higher thresholds, a pattern that aligns with expectations.
+                                                    Threshold PM2.5 & PM10 (ppm)                                      Additionally, a comparison reveals that Mode 3 exhibits a
+                                                                                                                      relatively higher reduction percentage than Mode 1 and Mode
+                               5        10  15  20  25  30                  35    40                              45  2, consistent with the previously explained reasons. Here,
+                                                                                                                      it is worth discussing the impact of a 96% reduction in
+                                                Threshold AQI                                                         transmission ­ it means sending only 4 out of every 100
+                                                                                                                      newly sensed samples instead of sending all of them otherwise.
+Fig. 8. Average percentage reduction in transmission across the entire dataset                                        As highlighted in later KPIs, this reduction allows efficient
+as a function of varying thresholds for different transmission modes.                                                 use of resources, like bandwidth and limited access time
+                                                                                                                      during satellite visibility, for example, scheduling 96 more
+nearly 87-88% of transmissions are reduced, while in Mode                                                             devices. If the Shewhart is applied to the entire network,
+3, nearly 96% of transmissions are reduced. Notably, in Mode                                                          scheduling 96 more devices would actually mean adding the
+1, the reduction percentage is less pronounced than in Mode                                                           capability to accommodate nearly 100 times more devices in
+2 and Mode 3 due to the application of the Shewhart scheme                                                            the network with the same amount of resources. When viewed
+to all four simultaneously varying time series. Even a sudden                                                         in conjunction with the RMSE reported above, this illustrates
+change in any parameter can trigger a new transmission. It                                                            a significant boost in efficiency and capacity.
+can also be observed that Mode 2 also demonstrates a similar
+reduction percentage. This can be attributed to its tracking of                                                       B. Reduction in number of simultaneously transmitting nodes
+PM10, where spurious changes are more prominent compared
+to the relatively smooth temperature and humidity data. It is                                                            As the network size grows, Fig. 9 displays the count
+noteworthy and encouraging to observe that an outstanding                                                             of devices transmitting simultaneously using Shewhart. The
+reduction in transmission is achieved with minimal error in
+the received information at the server. The RMSE values
+of 0.16C for temperature and 0.62% for RH are negligible
+compared to both the nominal values of these parameters
+and the selected thresholds. This favourable trend extends to
+PM2.5 and PM10, with RMSE values of 2.34 and 2.22 ppm,
+respectively. These values are also negligible compared to the
+nominal values and do not significantly impact the calculation
+of the AQI, which is the ultimate marker of air pollution in
+general applications.
+
+   In Mode 3, a remarkable 96.54% reduction in transmissions
+                                                                                                                                                                                                                           10
+
+Avg. no. of simultaneously transmitting nodes  104                                                                                                                      1
+
+                                                             Baseline: Without Shewhart                                                                                      Baseline: Without Shewhart
+                                                             Mode 1: Apply Shewhart on all parameters
+                                                             Mode 2: Apply Shewhart on PM10 only                                                                             Mode 1: Shewhart on all parameters
+                                                             Mode 3: Apply Shewhart on AQI only
+                                                                                                                                                                             Mode 2: Shewhart on PM10 only
+                                               103
+                                                                                                                                                                        0.8  Mode 3: Shewhart on AQI only
+                                               102
+                                                                                                                                                 Collision Probability  0.6
+                                               101
+                                                                                                                                                                        0.4
+
+                                                                                                                                                                        0.2
+
+                                               100                                                                                                                      0    101                                 102       104
+                                                            100 200 300 400 500 600 700 800 900 1000                                                                    100                                           103
+                                                                        Total number of nodes in the network
+                                                                                                                                                                             Average traffic offered (number of devices)
+
+Fig. 9. Comparison of avg. no. of simultaneously transmitting nodes relative                                                                     Fig. 11. Collision probability versus average traffic offered in terms of
+                                                                                                                                                 simultaneously transmitting nodes in the access phase of NB-IoT for RAO
+to the total network size for different Shewhart transmission modes. A                                                                           with 160 ms periodicity and BO index of 10. The figure illustrates a substantial
+significant reduction of the order of 103 is achieved in Mode 3, while Modes                                                                     increase in the achieved load by implementing the proposed access scheme
+                                                                                                                                                 for a target collision probability.
+1 and 2 display a reduction of about ten times.
+                                                                                                                                                 with Shewhart), deviates significantly from Poisson traffic
+Probability density function (PDF)             0.12                                                    Shewhart traffic                          generated to match the average arrival rate. This emphasizes
+                                                0.1                                                    Poisson traffic (same avg. arrival rate)  the utility of having a real dataset to generate traffic from a
+                                                                                                                                                 Shewhart-based access scheme rather than assuming Poisson
+                                               0.08                                                                                              arrival for system-level analysis.
+
+                                               0.06                                                                                                 The Poisson arrival process assumes that the inter-arrival
+                                                                                                                                                 time is independent of the last arrival. However, the traffic
+                                               0.04                                                                                              generated by Shewhart is contingent on factors such as the
+                                                                                                                                                 selection of thresholds and other parameters influencing the
+                                               0.02                                                                                              time series (environmental in this case). Thus, the arrival event
+                                                                                                                                                 and the inter-arrival times depend on the last arrival. Moreover,
+                                               0     0  20  40                                         60  80           100                      the Poisson model assumes that the number of sources is
+                                                                                                                                                 infinite, whereas in the Shewhart-based access scheme, the
+                                                        Avg. time to new transmission (in number of 30 secs intervals)                           number of simultaneously transmitting sources is reduced
+                                                                                                                                                 drastically.
+Fig. 10. Comparison of probability density function between Shewhart-
+generated traffic and Poisson arrival assumption for the average time dif-                                                                       D. Collision probability w.r.t offered traffic load
+ference between successive transmissions. It can be observed that the Poisson
+assumption is incompatible with the Shewhart scheme, emphasizing the value                                                                          In Fig. 11, the collision probability is plotted against the av-
+of utilizing a real dataset.                                                                                                                     erage offered traffic, measured as simultaneously transmitting
+                                                                                                                                                 nodes during the access phase of NB-IoT for RAO with 160
+results are extrapolated from the dataset using curve fitting                                                                                    ms periodicity and BO index of 10. The figure underscores
+to understand trends for larger networks. Notably, the number                                                                                    the potential for increased load capacity by implementing
+of simultaneously transmitting devices increases linearly with                                                                                   the proposed access scheme to achieve a target collision
+network size but significantly fewer in number with Shewhart                                                                                     probability. Notably, for a target collision probability of 0.4,
+when compared to the baseline scheme. For Mode 1 and Mode                                                                                        while the baseline method supports only 57 devices, Mode
+2, this count is nearly ten times less than the actual devices in                                                                                1 and 2 can accommodate nearly 450 devices, and Mode 3
+the network, equating to 10 out of 100 transmitting simulta-                                                                                     can support close to 1650 devices. This is significant in the
+neously. Mode 1 and Mode 2 exhibit similar performance, as                                                                                       context of LEO satellite constellation, which allows handling
+explained earlier. Additionally, the reduction in simultaneously                                                                                 a large number of users owing to large beam sizes. Moreover,
+transmitting nodes follows an order of 102, i.e., 10 out of 1000                                                                                 the reduced collisions allow faster connections, which are
+transmitting simultaneously for Mode 3. The result from this                                                                                     crucial in the context of limited visibility. This also comes
+plot is crucial for examining other KPIs in larger networks.                                                                                     with advantages like reduced power consumption (due to fewer
+It serves as a tool to simulate the effects of the proposed                                                                                      connection re-attempts) and lower congestion in the network.
+transmission modes.
+                                                                                                                                                 E. Effective data at the server w.r.t visibility duration
+C. Traffic pattern generated by Shewhart
+                                                                                                                                                    In Fig. 12, the effective data received at the server is plotted
+   In the context of random access systems, traditional as-                                                                                      against the increasing visibility duration of the LEO satellite
+sumptions consider the arrival rate of new packets to follow a                                                                                   in the data phase of NB-IoT communication. The plots are
+Poisson distribution, where the difference between subsequent                                                                                    generated considering the link budget analysis presented in
+arrivals is exponentially distributed. However, as evidenced
+in Fig. 10, the actual distribution of the average time to
+the new transmission, based on the real dataset used (i.e.
+                                                                                                                                                                                              11
+
+40                                                                                                                                            16
+
+                            Baseline: Without Shewhart                                                                                            Baseline: Without Shewhart
+
+35                          Mode 1: Shewhart on all parameters                                                                                14  Mode 1: Shewhart on all parameters
+                            Mode 2: Shewhart on PM10 only                                                                                         Mode 2: Shewhart on PM10 only
+Effective data at the server (MB)
+                                                                                                            Average battery lifetime (years)Mode 3: Shewhart on AQI onlyMode 3: Shewhart on AQI only
+
+30                                                                                                                                            12
+
+25                                                                                                                                            10
+
+20                                                                                                                                            8
+
+15                                                                                                                                            6
+
+10                                                                                                                                            4
+
+5                                                                                                                                             2
+
+0   0  1                 2  3                        4          5                                                                             0
+
+                                                                                                                                                  2                           6       12  24
+
+                         Visibility duration (mins)                                                                                                  Inter-pass duration (hrs)
+
+Fig. 12. Effective data received at the server vs. the visibility duration of LEO  Fig. 13. Estimated lifetime of a 5000 mWh battery for 164 dB MCL and
+satellite (in the data phase) for 180 kHz bandwidth, 3.75 kHz subcarrier, and      5-minute visibility duration per pass for various modes of operation. The inter-
+1.6 kbps data rate. Effective data encompasses information predicted at the        pass duration represents the period between two consecutive instances when
+server, including data not transmitted by the nodes due to Shewhart.               the satellite becomes visible and the IoT devices wake up for sensing and
+                                                                                   transmission. The devices remain in sleep mode when the satellite is not in
+                                    TABLE VI                                       the visible range.
+PERFORMANCE OF VARIOUS REGRESSION MODELS FOR PREDICTING
+                                                                                   on the dataset to assess their effectiveness in predicting PM2.5
+                    PM2.5 USING PM10 AT THE SERVER                                 using PM10. Table VI presents the average performance of
+                                                                                   these three schemes across the entire dataset, measured in
+Model                    Configuration               RMSE    R-Squared             terms of RMSE and R-squared validation, with the selected
+Linear Regression                                    (ppm)   Validation            configuration of the algorithms. The training was performed
+Decision Tree Regressor  Ordinary least squares      2.1297  0.9808                using the standard Sci-kit learn implementation of these algo-
+                         Max. depth = 10             2.3587  0.9806                rithms in Python. Given the heavy correlation in PM values,
+Random Forest Regressor  Min samples split = 5                                     the performance of all three schemes is comparable. However,
+                         No. of estimators = 100     2.0563  0.9835                the RF outperforms the others with an RMSE of nearly 2 ppm,
+                         Max. depth = 10                                           a negligible value when considering the nominal PM values
+                         Min. samples split = 5                                    in the winter season and the threshold set for Shewart-access
+                                                                                   schemes. While all three algorithms can be implemented on
+Section II-B for a bandwidth of 180 kHz, a subcarrier of                           cloud servers in real-time, as validated in [31], considering
+3.75 kHz, and a data rate of 1.6 kbps (representing the worst-                     computational complexity becomes pivotal in making the final
+case as per Set-4 configuration). The effective data is defined                    implementation choice. Regarding computational complexity,
+to encompass the data not transmitted by the nodes due to                          linear regression is the simplest among the three, involving
+Shewhart but predicted at the server (i.e. considering the last                    only two weight parameters to learn.
+received value to be the sensed value at the current instance).
+The results showcase that the Shewhart-based access schemes                           Additionally, the ML schemes have a pivotal role in reduc-
+optimise the limited visibility duration of LEO satellites by                      ing the size of the payload (volume of data) to be transmitted
+effectively communicating more information using the same                          since the transmission of correlated parameters can be avoided
+number of transmissions as the baseline scheme. For example,                       without losing any significant information. The impact of
+in one minute, while the baseline scheme can communicate                           reduced payload due to these ML algorithms on the battery
+only 576 kB of data, Mode 1 and 2 can effectively offload                          lifetime is analyzed in the subsequent subsection.
+5 MB, and Mode 3 can offload 16 MB data to the server.
+Alternatively, the gain can also be viewed in terms of the                         G. Expected battery life
+reduced time required for offloading a target amount of data.
+For example, what Shewhart-based access modes can transmit                            Fig. 13 shows the expected average battery lifetime of a
+in less than a minute would otherwise take 5 minutes in the                        5000 mWh battery under specific conditions, such as a max-
+baseline transmission method. This significant gain is valuable,                   imum coupling loss (MCL) of 164 dB (worst-case scenario
+particularly in LEO satellite-based scenarios with discontinu-                     as per [1]), 5-minute satellite visibility per pass, and varying
+ous coverage, where visibility duration is a crucial and limited                   inter-pass durations within a sparse satellite constellation.
+resource. Even in scenarios with continuous coverage, such                         The inter-pass duration represents the period between two
+as mega-LEO constellations, Shewhart-based access schemes                          consecutive instances when the satellite becomes visible in
+prove advantageous by reducing the required bandwidth to                           a constellation with discontinuous coverage. The IoT devices
+transmit target effective data.                                                    wake up for sensing and transmission only when the satellite
+                                                                                   is visible and remain in sleep mode otherwise. Following the
+F. Performance of ML algorithms for parameter prediction                           recommendations made by 3GPP in [1], assumptions made for
+                                                                                   calculations in this subsection include nodes possessing GNSS
+   Three machine learning-based algorithms--linear regres-                         capabilities for accurate timing and frequency offset compen-
+sion, decision tree regression, and RF regression were trained
+                                                                                    12
+
+                                TABLE VII                                           stellation with intermittent coverage and analysing data from a
+POWER CONSUMPTION ASSUMPTIONS FOR NTN-IOT ENERGY                                    real-world IoT testbed. The analysis reveals distinctive traffic
+                                                                                    characteristics in the proposed Shewhart-based access scheme,
+                     CONSUMPTION ANALYSIS [1]                                       deviating from the commonly assumed Poisson arrivals in
+                                                                                    random access scenarios. Notably, the Shewhart traffic sig-
+   State                 Operation                            Duration       Power  nificantly reduces the number of simultaneously transmitting
+                                                                 (ms)        (mW)   nodes and associated collision probability compared to the
+                                                                                    baseline without transmission reduction. This translates to a
+                   Sync, MIB, RAR Msg2, Msg4,                                       significant increase in network capacity, accommodating more
+                                                                                    nodes while meeting collision probability targets. Despite the
+Reception (DL)     UL grant, HARQ ACK,                        371             90    reduced transmissions, the Shewhart-based scheme delivers
+                                                                                    a significantly larger effective data volume at the server.
+                   IP ACK, PDCCH monitoring,                                  543   Additionally, integrating machine learning algorithms for pay-
+                                                                              2.4   load reduction substantially extends the battery lifetimes of
+Transmission (UL)  PRACH, RA Msg3 RAR,                         50B UL: 335   0.015  the IoT devices. Consequently, the proposed Shewhart-based
+                    IP Report, HARQ ACK                       200B UL: 1006   37    access scheme, combined with ML algorithms, emerges as a
+                                                                                    compelling solution for addressing the challenges of limited
+                         MIB acquisition, waiting IP ACK,     22423                 visibility, low data rates, and energy constraints in satellite-
+Idle (not in sleep)                                                                 based IoT networks. In the future, the authors would like to
+                                                                                    develop an analytical model for the traffic pattern that best fits
+                          PRACH, ready timer, scheduling                            the empirical distribution and express it as a function of the
+                                                                                    sensed parameters. This would help make the change detection
+                           Sleeping state when the satellite  based-on              adaptable to the physical environment and further improve the
+Power save (sleep)                                            visibility            performance.
+
+                                       is not visible                                                            REFERENCES
+
+GNSS               GNSS reception                             2000
+
+                                     TABLE VIII
+AVERAGE BATTERY LIFETIME (IN YEARS) PER DEVICE FOR MCL = 164
+ DB, 5 MIN VISIBILITY DURATION PER PASS AND 5000 MWH BATTERY
+
+Inter-pass               Mode 2                               Mode 3
+
+duration Baseline Mode 1
+                                        200B UL 50B UL 200B UL 50B UL
+
+  (hrs)
+
+2           0.13 0.69    0.87           1.54                  1.60           2.46
+
+6           0.38 1.87    2.23           3.90                  3.67           5.73
+
+12          0.76 3.46    4.04           6.86                  6.23           9.46
+
+24          1.49   6.30  7.18           11.41 10.62 15.06
+
+sation, absence of simultaneous GNSS and NB-IoT operations,                          [1] 3rd Generation Partnership Project (3GPP); Technical Specification
+no re-transmissions, and negligible power consumption in                                  Group Radio Access Network, "Study on NB-IoT/eMTC support for
+reading satellite ephemeris information. Table VII shows the                              Non-Terrestrial Networks (NTN) (Rel 17)," TR 36.763V17.0.0, 2021.
+time and power required for various operations in NB-IoT
+communication used for calculations in this section, as referred                     [2] X. Lin, A. Adhikary, and Y.-P. Wang, "Random access preamble
+from [1]. Fig. 13 highlights that modes incorporating Shewhart                            design and detection for 3GPP narrowband IoT systems," IEEE Wireless
+exhibit significantly prolonged battery lifetimes compared to                             Commun. Lett., vol. 5, no. 6, pp. 640­643, 2016.
+the baseline mode without Shewhart. In this figure, Mode 1
+has a payload of 200 bytes while Mode 2 and Mode 3 have a                            [3] N. Pachler, I. del Portillo, E. F. Crawley, and B. G. Cameron, "An
+payload of 50 bytes, considering that only a few parameters                               updated comparison of four low earth orbit satellite constellation systems
+are transmitted, and the others can be predicted using ML                                 to provide global broadband," in 2021 IEEE Int. Conf. on Commun.
+algorithms on the server. The estimated enhancement in battery                            Workshops (ICC Workshops), 2021, pp. 1­7.
+lifetime, coupled with the capacity to accommodate more
+devices, underscores the viability of the proposed Shewhart-                         [4] G. M. Capez, S. Henn, J. A. Fraire, and R. Garello, "Sparse satellite
+based access scheme. Additionally, extending the inter-pass                               constellation design for global and regional direct-to-satellite IoT ser-
+duration is observed to increase battery lifetime further, with                           vices," IEEE Trans. on Aerospace and Electronic Systems, vol. 58, no. 5,
+improvements ranging from nearly two times to three times                                 pp. 3786­3801, 2022.
+across different modes as the duration increases from 2 to 6
+hours.                                                                               [5] A. Shastri, V. Jain, S. Chaudhari, S. S. Chouhan, and S. Werner,
+                                                                                          "Improving accuracy of the Shewhart-based data-reduction in IoT nodes
+   Table VIII shows the battery lifetime of all transmission                              using piggybacking," in 2019 IEEE 5th World Forum on Internet of
+modes, distinguishing between a full 200-byte payload and a                               Things (WF-IoT), 2019, pp. 943­948.
+reduced 50-byte payload. Notably, in Mode 2, reducing the
+payload leads to a 1.7-fold increase in battery life across                          [6] 3rd Generation Partnership Project (3GPP); Technical Specification
+all inter-pass durations, emphasizing the effectiveness of the                            Group GSM/EDGE radio access network, "GERAN improvements for
+proposed ML algorithms in payload reduction. Similarly, in                                machine-type communications (MTC) (Rel 12)," TR 43.868V12.1.0,
+Mode 3, a 1.5-fold improvement in battery lifetime is observed                            2014.
+with a reduced payload.
+                                                                                     [7] N. Jiang, Y. Deng, A. Nallanathan, X. Kang, and T. Q. S. Quek,
+                          VI. CONCLUSION                                                  "Analyzing random access collisions in massive IoT networks," IEEE
+                                                                                          Trans. on Wireless Commun., vol. 17, no. 10, pp. 6853­6870, 2018.
+   This paper introduced an efficient access scheme tailored
+for LEO satellite-based NB-IoT networks, employing a con-                            [8] C. R. Reddy et al., "Improving spatio-temporal understanding of par-
+                                                                                          ticulate matter using low-cost IoT sensors," in 2020 IEEE 31st Annual
+                                                                                          Int. Symposium on Personal, Indoor and Mobile Radio Commun., 2020,
+                                                                                          pp. 1­7.
+
+                                                                                     [9] A. Parmar et al., "Development of end-to-end low-cost IoT system
+                                                                                          for densely deployed PM monitoring network: An Indian case study,"
+                                                                                          Frontiers in The Internet of Things, vol. 3, p. 1332322, 2024.
+
+                                                                                    [10] M. Centenaro, C. E. Costa, F. Granelli, C. Sacchi, and L. Vangelista, "A
+                                                                                          survey on technologies, standards and open challenges in satellite IoT,"
+                                                                                          IEEE Commun. Surv. Tutor., vol. 23, no. 3, pp. 1693­1720, 2021.
+
+                                                                                    [11] M. Vaezi et al., "Cellular, wide-area, and non-terrestrial IoT: A survey
+                                                                                          on 5G advances and the road toward 6G," IEEE Commun. Surv. Tutor.,
+                                                                                          vol. 24, no. 2, pp. 1117­1174, 2022.
+
+                                                                                    [12] S. Kota et al., "INGR roadmap satellite chapter," in 2022 IEEE Future
+                                                                                          Networks World Forum (FNWF), 2022, pp. 1­182.
+
+                                                                                    [13] ----, "Satellite," in 2023 IEEE Future Networks World Forum (FNWF),
+                                                                                          2023, pp. 1­195.
+                                                                                    13
+
+[14] A. K. Dwivedi, S. Praneeth Chokkarapu, S. Chaudhari, and N. Varshney,          [37] C. M. Bishop, Pattern Recognition and Machine Learning. Springer,
+      "Performance analysis of novel direct access schemes for LEO satellites             2006, ch. 3.
+      based IoT network," in 2020 IEEE 31st Annual Int. Symposium on
+      Personal, Indoor and Mobile Radio Commun., 2020, pp. 1­6.                     [38] T. M. Mitchell, Machine Learning. McGraw-Hill Science, 1997, ch. 3.
+                                                                                    [39] G. James et al., An introduction to statistical learning. Springer, 2013,
+[15] N. Lamba, A. K. Dwivedi, and S. Chaudhari, "Performance analysis of
+      selective decode-and-forward relaying for satellite-IoT," in 2022 IEEE              vol. 112, ch. 8.
+      Globecom Workshops (GC Wkshps), 2022, pp. 1127­1132.                          [40] National air quality index, Central Pollution Control Board India,
+
+[16] N. Okati, T. Riihonen, D. Korpi, I. Angervuori, and R. Wichman,                      (Accessed 11 Apr. 2022). [Online]. Available: https://cpcb.nic.in/
+      "Downlink coverage and rate analysis of low earth orbit satellite                   National-Air-Quality-Index/
+      constellations using stochastic geometry," IEEE Trans. on Commun.,
+      vol. 68, no. 8, pp. 5120­5134, 2020.
+
+[17] N. Okati and T. Riihonen, "Nonhomogeneous stochastic geometry
+      analysis of massive LEO communication constellations," IEEE Trans.
+      on Commun., vol. 70, no. 3, pp. 1848­1860, 2022.
+
+[18] A. K. Dwivedi, S. Chaudhari, N. Varshney, and P. K. Varshney, "Per-
+      formance analysis of LEO satellite-based IoT networks in the presence
+      of interference," IEEE Internet of Things Journal, pp. 1­1, 2023.
+
+[19] O. Kodheli, N. Maturo, S. Chatzinotas, S. Andrenacci, and F. Zimmer,
+      "NB-IoT via LEO satellites: An efficient resource allocation strategy
+      for uplink data transmission," IEEE Internet of Things Journal, vol. 9,
+      no. 7, pp. 5094­5107, 2022.
+
+[20] H. Chougrani, S. Kisseleff, W. A. Martins, and S. Chatzinotas, "NB-
+      IoT random access for nonterrestrial networks: Preamble detection and
+      uplink synchronization," IEEE Internet of Things Journal, vol. 9, no. 16,
+      pp. 14 913­14 927, 2022.
+
+[21] T. Wu, D. Qu, and G. Zhang, "Research on LoRa adaptability in the
+      LEO satellites internet of things," in 2019 15th Int. Wireless Commun.
+      & Mobile Computing Conf. (IWCMC), 2019, pp. 131­135.
+
+[22] Y. Qian, L. Ma, and X. Liang, "The performance of chirp signal used
+      in LEO satellite internet of things," IEEE Commun. Lett., vol. 23, no. 8,
+      pp. 1319­1322, 2019.
+
+[23] M. Afhamisis and M. R. Palattella, "SALSA: A Scheduling Algorithm
+      for LoRa to LEO Satellites," IEEE Access, vol. 10, pp. 11 608­11 615,
+      2022.
+
+[24] T. Ferrer, S. Ce´spedes, and A. Becerra, "Review and evaluation of MAC
+      protocols for satellite IoT systems using nanosatellites," Sensors, vol. 19,
+      no. 8, 2019.
+
+[25] L. Zhen, Y. Zhang, K. Yu, N. Kumar, A. Barnawi, and Y. Xie, "Early
+      collision detection for massive random access in satellite-based internet
+      of things," IEEE Trans. on Vehicular Technology, vol. 70, no. 5, pp.
+      5184­5189, 2021.
+
+[26] M. Bacco, P. Cassara`, M. Colucci, and A. Gotta, "Modeling reliable
+      M2M/IoT traffic over random access satellite links in non-saturated
+      conditions," IEEE J. on Selected Areas in Commun., vol. 36, no. 5,
+      pp. 1042­1051, 2018.
+
+[27] T. Hoßfeld, F. Metzger, and P. E. Heegaard, "Traffic modeling for
+      aggregated periodic IoT data," in 2018 21st Conf. on Innovation in
+      Clouds, Internet and Netw. and Workshops (ICIN), 2018, pp. 1­8.
+
+[28] M. Lo´pez-Ben´itez, C. Majumdar, and S. N. Merchant, "Aggregated
+      traffic models for real-world data in the internet of things," IEEE
+      Wireless Commun. Lett., vol. 9, no. 7, pp. 1046­1050, 2020.
+
+[29] C. Majumdar, M. Lo¨pez-Ben´itez, and S. N. Merchant, "Experimental
+      evaluation of the poissoness of real sensor data traffic in the internet of
+      things," in 2019 16th IEEE Annual Consumer Commun. & Netw. Conf.
+      (CCNC), 2019, pp. 1­7.
+
+[30] J. Lunde´n and S. Werner, "Real-time smart metering with reduced
+      communication and bounded error," in 2014 IEEE Int. Conf. on Smart
+      Grid Commun. (SmartGridComm), 2014, pp. 326­331.
+
+[31] A. P. Singh and S. Chaudhari, "Embedded machine learning-based
+      data reduction in application-specific constrained IoT networks," in
+      Proceedings of the 35th Annual ACM Symposium on Applied Computing,
+      2020, pp. 747­753.
+
+[32] R. Brandborg Sørensen et al., "System level performance analysis for
+      3GPP NB-IoT NTN solutions with small satellites and sparse LEO con-
+      stellations," in IAC 2022 Congress proceedings: 73rd Int. Astronautical
+      Congress (IAC): Paris, France. Int. Astronautical Federation, 2022, pp.
+      1­13.
+
+[33] I. Ali, N. Al-Dhahir, and J. E. Hershey, "Doppler characterization for
+      LEO satellites," IEEE Trans. on Commun., vol. 46, no. 3, pp. 309­313,
+      1998.
+
+[34] R. Barbau, V. Deslandes, G. Jakllari, J. Tronc, and A.-L. Beylot, "An
+      analytical model for assessing the performance of NB-IoT," in ICC 2021
+      - IEEE Int. Conf. on Commun., 2021, pp. 1­6.
+
+[35] C. Amatetti, M. Conti, A. Guidotti, and A. Vanelli-Coralli, "NB-IoT
+      random access procedure via NTN: system level performances," in ICC
+      2022 - IEEE Int. Conf. on Commun., 2022, pp. 2381­2386.
+
+[36] W. A. Shewhart, "Economic quality control of manufactured product,"
+      New York: American Society for Quality Control, 1980.
+

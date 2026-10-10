@@ -1,0 +1,269 @@
+COMPREHENSIVE LITERATURE MATRIX
+
+Random Access & Control Optimization in Terrestrial and
+Satellite NTN IoT
+
+Comparative evaluation of state space, control actions, rewards, network channels, and unresolved research
+gaps.
+
+PAPERS ANALYZED            TERRESTRIAL VS. NTN                      RL / ML DRIVEN  CORE OPEN GAP
+
+13 Works                   6 TN / 7 NTN                             6 Algorithms    Joint LEO
+                                                                                    ACB+BI+NPRACH
+
+Part I: Terrestrial & Early Reinforcement Learning Frameworks                                      PAPERS [1] ­ [4]
+
+PAPER        STATE /       ACTION       REWARD /     TRAFFIC &      METRICS &       MAIN RESULT WHAT REMAINS
+             INPUT                      OBJECTIVE    CHANNEL        BASELINE                              OPEN
+
+[1] Tello- Traffic/load    ACB          Optimize     TRAFFIC        METRICS         Proper ACB     No LEO/NTN
+                           parameter    access                                      configuration  conditions; lacks
+Oquendo conditions         configurati  performanc   Massive        Access          significantly  Doppler,
+                           on           e; balance   M2M traffic    delay,          improves       elevation,
+et al.       and                        congestion                  collision/co    massive-       satellite delay,
+                                        and delay    CHANNEL        ngestion,       M2M random     pass duration, or
+(2018)       random-                                                ACB config      access         learning-based
+                                                     Terrestrial                    performance.   adaptation.
+TERRESTRIAL access                                   LTE-A,         BASELINE
+               system                                relatively
+                                                     static         Convention
+             parameters                                             al non-
+                                                                    optimized
+                                                                    ACB
+
+[2] Bui & Network/tra      Dynamic      Balance      TRAFFIC        METRICS         Reinforceme    Does not adapt
+                           ACB          access                                      nt learning    to time-varying
+Pham         ffic state,   configurati  delay and    mMTC           Access          dynamically    satellite channel
+                           on using     device                      delay,          adapts ACB,    conditions; no
+(2020)       access        Dueling      energy       CHANNEL        energy          improving      NPRACH/NTN
+                           DQN          consumptio                  consumptio      the delay-     parameters; no
+TERRESTRIAL conditions                  n            Terrestrial    n, access       energy trade-  LEO orbital
+                                                     LTE            rate            off.           geometry.
+DUELING
+DQN                                                                 BASELINE
+
+                                                                    Convention
+                                                                    al static ACB
+
+[3] Abera    Traffic/load  Dynamic      Maximize     TRAFFIC        METRICS         Reports very   Omits NTN
+et al.       and cellular  ACB          access                                      high           propagation
+(2025)       access state  through      success /    mMTC           Access          simulated      delay, high
+                           Dueling      improve                     success         access         Doppler
+TERRESTRIAL                Double-      access       CHANNEL        probability,    success rates  dynamics,
+D3QN                       DQN          control                     access          under          elevation shifts,
+                                                     Terrestrial    control         evaluated      delay variations,
+                                                     cellular       efficiency      traffic        or bounded
+                                                                                    conditions.    satellite-pass
+                                                                    BASELINE                       learning.
+
+                                                                    Existing
+                                                                    static access
+                                                                    barring
+
+[4]          Received      Reactive     Maintain/im  TRAFFIC        METRICS         ML-based       Does not
+                           ACB /        prove                                       reactive       distinguish NTN
+Daraseliy SNR/collisio     barring      preamble     NB-IoT         Preamble        barring        detection failures
+                           decision     success &    overload       success,        improves       from contention
+a et al.     n info and                 reduce       traffic        collision/ov    random-        failures; lacks
+                                        overload                    erload          access         satellite-aware
+(2026)       inferred                                CHANNEL        performanc      throughput     state (Doppler,
+                                                                    e               under severe   elevation, delay).
+TERRESTRIAL  offered                                 Terrestrial                    overload in
+             traffic                                 NB-IoT         BASELINE                                 Page 1 of 4
+REACTIVE
+                                                                    Convention
+ML
+
+Comparative Literature Matrix -- Terrestrial vs. Satellite NTN IoT
+Part II: Physical Layer Adaptation & Standardized NTN Procedures                                       PAPERS [5] ­ [8]
+
+PAPER        STATE /        ACTION         REWARD /      TRAFFIC &      METRICS &      MAIN RESULT WHAT REMAINS
+             INPUT                         OBJECTIVE     CHANNEL        BASELINE                             OPEN
+
+[5]          Propagation    Physical-      Improve       TRAFFIC        METRICS        Quantifies      Static physical-
+Chougrani    /satellite     layer          NPRACH                                      that            layer focus; does
+et al.       conditions;    synchroniz     preamble      NB-IoT         Preamble       propagation     not incorporate
+             delay &        ation &        detection &   random         detection,     delay and       an RL controller
+ NTN / LEO   Doppler        detection      uplink sync   access         sync,          extreme         to adapt upper-
+             parameters     configurati                                 false/miss     Doppler         layer parameters
+ PHY                        on                           CHANNEL        detection      severely        (ACB/BI/NPRACH
+ LAYER                                                                                 degrade         ).
+                                                         NTN /          BASELINE       standard NB-
+                                                         satellite                     IoT random
+                                                         propagation    Terrestrial-   access.
+                                                         with high      oriented
+                                                         delay &        PHY
+                                                         Doppler        assumption
+                                                                        s
+
+[6] Unified  NTN/TN         Protocol       Reliable      TRAFFIC        METRICS        Establishes a   Lacks intelligent
+NB-IoT RA    propagatio     adaptation     unified                                     unified         adaptive control;
+Procedure    n and          s (e.g., Pre-  random        NB-IoT         Detection/s    procedural      no Q-learning
+(2025)       synchroniza    TA and         access        access         ync rate,      baseline        agent for
+             tion           RAO            across TN     attempts       overall        addressing      dynamic ACB +
+ NTN + TN    conditions     postpone       and NTN                      access         NTN-specific    BI + NPRACH
+                            ment)                        CHANNEL        performanc     delay and       policy under
+ PROTOCOL                                                               e              Doppler         satellite mobility.
+                                                         Unified                       offsets.
+                                                         Terrestrial +  BASELINE
+                                                         NTN
+                                                                        Existing
+                                                                        unified
+                                                                        procedural
+                                                                        options
+
+[7] RA       NTN            Random-        Practical     TRAFFIC        METRICS        Demonstrate     Lacks automated
+Procedure    propagatio     access         reliable                                    s practical     learning-based
+over NTN:    n and          procedure      random        Generic IoT /  Access         impact of       access-control
+Theory to    channel        /              access        NTN access     throughput,    satellite       optimization; no
+Practice     conditions     configurati    under large                  delay,         propagation     satellite-aware
+                            on             NTN delays    CHANNEL        failure        delays on       state transitions
+ NTN                                                                    distribution   access          or Q-tables.
+ TESTBED                                                 NTN testbed                   success in
+                                                         / empirical    BASELINE       real testbeds.
+                                                         channel
+                                                                        Theoretical
+                                                                        terrestrial
+                                                                        RA
+                                                                        procedures
+
+[8] LEO      Various        Protocol-      Access        TRAFFIC        METRICS        Identifies      Survey paper
+Satellite    satellite/IoT  dependent      reliability,                                core            highlighting
+IoT RA       system &       (varies        efficiency,   Direct-access  Collision      challenges:     broader
+Survey       channel        across         collision     LEO IoT        rate,          extreme         challenges; does
+(2024)       state          reviewed       reduction                    throughput,    Doppler         not propose a
+             variables      schemes)                     CHANNEL        delay profile  rates, timing   specific NB-IoT
+ LEO                                                                                   offsets,        joint Q-learning
+ SURVEY                                                  LEO satellite  BASELINE       collisions,     ACB/BI/NPRACH
+                                                         channel                       and limited     controller.
+                                                                        Multiple       visibility
+                                                                        legacy RA      windows.
+                                                                        protocols
+
+Key Architectural Insight (Part II): Physical-layer enhancements and protocol adaptations (Pre-TA, RAO postponement)
+mitigate raw Doppler and delay offsets, but fail to mitigate dynamic burst congestion during short LEO pass windows without
+MAC-layer access barring and backoff adaptation.
+
+Comparative Literature Matrix -- Terrestrial vs. Satellite NTN IoT                                     Page 2 of 4
+Part III: Advanced Reinforcement Learning & LEO Satellite Systems                                   PAPERS [9] ­ [13]
+
+PAPER       STATE /       ACTION       REWARD /      TRAFFIC &       METRICS &     MAIN RESULT WHAT REMAINS
+            INPUT                      OBJECTIVE     CHANNEL         BASELINE                            OPEN
+
+[9] SCMA-   Load/overlo   Q-           Improve       TRAFFIC         METRICS       Demonstrate      Focuses on
+Q-          ad and        learning-    random                                      s feasibility    SCMA rather
+Learning    random-       based        access &      LEO satellite   Access rate,  of Q-learning    than standard
+Overload    access        resource &   resource      mMTC            spectral      for overload     NB-IoT; does not
+(2025)      resource      overload     utilization                   efficiency,   control in       address NPRACH
+            state         control in   under         CHANNEL         overload      LEO satellite    + ACB + BI co-
+ LEO                      SCMA         overload                      capacity      non-             optimization or
+ SATELLITE                                           LEO satellite                 orthogonal       explicit satellite
+                                                     channel         BASELINE      multiple         elevation state.
+ Q-                                                                                access.
+ LEARNING                                                            Existing
+                                                                     SCMA / RA
+                                                                     approaches
+
+[10] Data-  Transmissio   Data-        Maximize      TRAFFIC         METRICS       Proves LEO       Focuses on data
+Driven      n/network     driven       transmissio                                 NB-IoT           transmission
+LEO NB-     and           transmissi   n efficiency  LEO NB-IoT      Energy        controllers      scheduling
+IoT (2024)  visibility    on &         under         IoT traffic     efficiency,   must account     rather than initial
+            window        scheduling   visibility                    throughput,   for brief        random-access
+ LEO NB-    states        decisions    constraints   CHANNEL         completion    satellite        parameter
+ IOT                                                                 rate          visibility       optimization via
+                                                     LEO satellite                 windows and      reinforcement
+                                                     / NB-IoT        BASELINE      strict energy    learning.
+                                                                                   budgets.
+                                                                     Standard
+                                                                     scheduled
+                                                                     transmissio
+                                                                     n
+
+[11] LEO    Differential  Random-      Maintain RA   TRAFFIC         METRICS       Quantifies       Does not
+RA:         delay,        access       reliability                                 physical         perform dynamic
+Differenti  Doppler,      signal-      under         LEO satellite   Synchroniza   boundary         MAC parameter
+al          satellite     processing   extreme       random          tion          conditions of    adaptation
+Delay/Do    channel       configurati  differential  access          probability,  differential     (ACB/BI); lacks
+ppler       state         on           delay/Doppl                   residual      delay across     traffic-aware
+(2025)                                 er            CHANNEL         Doppler       large satellite  reinforcement
+                                                                     error         beam             learning.
+ LEO                                                 LEO with                      footprints.
+ SATELLITE                                           severe          BASELINE
+                                                     differential
+ PHY/DSP                                             delay/Dopple    Standard
+                                                     r               PHY
+                                                                     processing
+                                                                     methods
+
+[12] Jiang NB-IoT         Q-learning   Real-time     TRAFFIC         METRICS       Establishes      Restricted to
+                          / Linear Q   NB-IoT                                      Q-learning as    terrestrial setup;
+et al.      network       / DQN        performanc    NB-IoT traffic  Resource      a highly         lacks satellite
+                          resource     e and                         efficiency,   effective        orbit geometry,
+TERRESTRIAL and           actions      resource      CHANNEL         latency,      methodologi      Doppler shifts,
+            resource                   optimizatio                   access rate   cal base for     elevation-aware
+DQN /                                  n             Terrestrial                   real-time NB-    states, and NTN
+LINEAR Q    utilization                              NB-IoT          BASELINE      IoT              failure
+                                                                                   parameter        separation.
+            state                                                    Non-          tuning.
+                                                                     learning
+                                                                     heuristic
+                                                                     baselines
+
+[13] Deep   LEO RA        Deep-        Improve       TRAFFIC         METRICS       Demonstrate      Lacks joint tri-
+Learning    channel info  learning-    access                                      s DL             parameter action
+for LEO     & collision   based        success,      LEO satellite   Access        superiority in   space (ACB + BI +
+RA (2026)   history       random-      lower         random          success,      predicting       NPRACH) co-
+            state         access       latency &     access          delay,        traffic          optimization and
+ LEO                      selection    collision                     resource      collisions and   explicit NTN
+ SATELLITE                             rate          CHANNEL         collision     optimizing       physical
+                                                                     profile       RA channel       detection failure
+ DEEP                                                LEO satellite                 allocation in    isolation.
+ LEARNING                                            channel         BASELINE      LEO.
+
+                                                                     Static /
+                                                                     conventiona
+
+Comparative Literature Matrix -- Terrestrial vs. Satellite NTN IoT                                  Page 3 of 4
+Part IV: Research Gap Synthesis & System Architectural Needs                                                  ANALYTICAL SYNTHESIS
+
+Feature Coverage Evolution across Literature [1] ­ [13]
+
+                          Terrestrial RL [2,3,12]  Terrestrial ML [4]  NTN PHY/Proto [5-7,11]  LEO Satellite RL [9,13]  Proposed Need
+Dynamic ACB Adaptation
+Satellite Orbit Geometry State
+Joint ACB+BI+NPRACH Control
+Collision vs PHY Failure Isolation
+
+                                                   Fully Supported     Partially Considered    Not Addressed
+
+1. Satellite Geometry & Dynamics                                       2. Tri-Parameter Joint Action Space
+
+Existing RL controllers for NB-IoT [2,3,12] assume static              Current literature optimizes parameters in isolation (ACB
+terrestrial cell coverage.                                             only [1-4] or PHY parameters only [5,11]).
+
+   Unresolved: Incorporating elevation angle, residual                    Unresolved: Co-optimizing Access Class Barring (ACB),
+   Doppler drift, and satellite pass time remaining into                  Backoff Indicator (BI), and NPRACH resource
+   the agent state space.                                                 allocations simultaneously.
+   Impact: Prevents non-convergent Q-tables during                        Impact: Achieves optimal Pareto trade-off between
+   rapidly moving LEO visibility windows.                                 delay, throughput, and collision rates.
+
+3. Failure Isolation Mechanisms                                        4. Bounded Satellite-Pass RL
+
+Terrestrial models attribute all preamble losses to                    Standard DQN algorithms require thousands of
+contention collisions [4].                                             stationary episodes to converge [2,9,13].
+
+   Unresolved: Disentangling preamble collisions from                     Unresolved: Lightweight, fast-converging Q-learning
+   physical detection misses caused by high Doppler /                     tailored for 5­10 minute LEO visibility passes.
+   low SNR.                                                               Impact: Enables real-time online adaptation onboard
+   Impact: Prevents false barring penalty loops where                     or at gateway controllers without heavy compute.
+   ACB is mistakenly increased during pure channel
+   fades.
+
+SUMMARY RECOMMENDATION FOR PROPOSED RESEARCH
+
+To address the limitations identified across works [1]­[13], a satellite-aware Q-learning controller is required. This agent must take
+input from (Offered Traffic, Elevation Angle, Satellite Pass Time) to dynamically issue joint (ACB, BI, NPRACH) action decisions, explicitly
+penalizing true contention collisions while decoupling Doppler/delay physical detection misses.
+
+Comparative Literature Matrix -- Terrestrial vs. Satellite NTN IoT                                                      Page 4 of 4
+

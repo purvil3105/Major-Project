@@ -1,0 +1,790 @@
+Received June 29, 2021, accepted July 17, 2021, date of publication July 30, 2021, date of current version August 10, 2021.
+Digital Object Identifier 10.1109/ACCESS.2021.3101291
+
+Random Access Procedure Over Non-Terrestrial
+Networks: From Theory to Practice
+
+OLTJON KODHELI , ABDELRAHMAN ASTRO , JORGE QUEROL , (Member, IEEE),
+MOHAMMAD GHOLAMIAN , SUMIT KUMAR , (Member, IEEE),
+NICOLA MATURO , (Member, IEEE), AND
+SYMEON CHATZINOTAS , (Senior Member, IEEE)
+
+Interdisciplinary Centre for Security, Reliability and Trust (Snt), University of Luxembourg, L-1855 Luxembourg City, Luxembourg
+
+Corresponding author: Oltjon Kodheli (oltjon.kodheli@uni.lu)
+This work was supported in part by Luxembourg National Research Fund (FNR) through the Industrial Fellowship Project SATIOT under
+Grant 12526592, and in part by the CORE Project MegaLEO under Grant C20/IS/14767486.
+
+ABSTRACT Non-terrestrial Networks (NTNs) have become an appealing concept over the last few years
+and they are foreseen as a cornerstone for the next generations of mobile communication systems. Despite
+opening up new market opportunities and use cases for the future, the novel impairments caused by the
+signal propagation over the NTN channel, compromises several procedures of the current cellular standards.
+One of the first and most important procedures impacted is the random access (RA) procedure, which is
+mainly utilized for achieving uplink synchronization among users in several standards, such as the fourth
+and fifth generation of mobile communication (4 & 5G) and narrowband internet of things (NB-IoT). In this
+work, we analyse the challenges imposed by the considerably increased delay in the communication link on
+the RA procedure and propose new solutions to overcome those challenges. A trade-off analysis of various
+solutions is provided taking into account also the already existing ones in the literature. In order to broaden
+the scope of applicability, we keep the analysis general targeting 4G, 5G and NB-IoT systems since the RA
+procedure is quasi-identical among these technologies. Last but not least, we go one step further and validate
+our techniques in an experimental setup, consisting of a user and a base station implemented in open air
+interface (OAI), and an NTN channel implemented in hardware that emulates the signal propagation delay.
+The laboratory test-bed built in this work, not only enables us to validate various solutions, but also plays a
+crucial role in identifying novel challenges not previously treated in the literature. Finally, an important key
+performance indicator (KPI) of the RA procedure over NTN is shown, which is the time that a single user
+requires to establish a connection with the base station.
+
+INDEX TERMS Random access procedure, non-terrestrial networks, cellular networks, open air interface.
+
+I. INTRODUCTION                                                         procedure known as random access (RA) procedure. A fail-
+Orthogonal frequency division multiple access (OFDMA)                   ure in the synchronization phase, either downlink or uplink,
+is an efficient multiple-access technique utilized in modern            would deprive the users form accessing the network and being
+wireless communication systems including NB-IoT, 4G long                able to transmit or receive data.
+term evolution (LTE) and 5G new radio (NR) [1]. The most
+important precondition for these technologies is establishing              Non-terrestrial networks, as defined by the 3rd Generation
+a time-frequency synchronization between the users and the              Partnership Project (3GPP), are a popular concept nowadays
+base station. The synchronization in downlink is achieved               for current and near-future generations of mobile communi-
+by specific synchronization signals that are broadcasted by             cations, due to their unique capabilities in providing connec-
+the base station to all the users in specific time-intervals,           tivity in areas where a terrestrial infrastructure is unfeasible or
+whereas the uplink synchronization is obtained by an explicit           cost-inefficient. In fact, a work item (WI) has already started
+                                                                        in order to enable NTN-based 5G systems [2], and a study
+   The associate editor coordinating the review of this manuscript and  item (SI) is about to conclude regarding NB-IoT via NTN [3].
+                                                                        Nevertheless, despite from bringing several important advan-
+approving it for publication was Di Zhang .                             tages and opening up new market opportunities, the presence
+
+109130  This work is licensed under a Creative Commons Attribution 4.0 License. For more information, see https://creativecommons.org/licenses/by/4.0/ VOLUME 9, 2021
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+of the NTN channel, being quite different from a terrestrial                   base station and an NTN channel emulator implemented in
+one, imposes new challenges to be carefully considered [4].                    hardware (HW). The experimental setup has played a crucial
+One of these challenges is the increased delay in the commu-                   role in this work because it allowed us to identify through
+nication link [5], [6], and the first phase that will be directly              a trail-and-error approach the new challenges not previously
+impacted is the uplink synchronization enabled by the RA                       treated in the literature, and to test various solutions from a
+procedure. Notably, depending on the altitude and the type                     practical point of view. Overall, the contributions of this work
+of the NTN platform the delay will vary, reaching round trip                   can be summarized as follows:
+time (RTT) values of up to 480 ms for a Geostationary (GEO)
+satellite with transparent payload.                                               · We identify new challenges, not treated so far, regarding
+                                                                                    the RA procedure over NTN imposed by the consider-
+   There exist several works in the literature that have ana-                       able increased delay in the communication link.
+lyzed the impact of the increased propagation delay over the
+NTN channel on the RA procedure. One of the well known                            · We propose novel solutions for the challenges identified
+and widely accepted solution to cancel out this increased                           in this paper, as well as for the ones already treated in
+delay is the application of a Timing Advance (TA) from                              other works, and provide a trade-off analysis of various
+the users when transiting their uplink signal to the base sta-                      approaches.
+tion [7]­[9]. According to these works, a Global Navigation
+Satellite System (GNSS) receiver can be used in order to                          · In order to test our solutions, we design a testbed based
+estimate the location of the serving satellite and the user itself,                 on OAI implementation for the 3GPP users and base
+so as to derive the TA required. Other works put forward the                        station, and HW implementation for the NTN channel
+idea of a fixed TA employed only by taking into account                             emulating the experienced delay in the communication
+the delay experienced at the center of the satellite antenna                        link between the users and the base station.
+footprint (reported to the users by the base station), while
+leaving the other part to be handled in the same manner as                        · We measure and show an important KPI of the RA
+in a terrestrial scenario [10], [11]. The differential delay part                   procedure over NTN, such as the single user access time.
+(with reference to the center of the antenna footprint) would                       This will act as a lower bound for future works in this
+limit the supported beam size by the protocol, as derived                           area where more than one user can access the network
+in [12]. To extend the supported beam size, new preamble                            and collisions may occur during the RA procedure.
+formats for the RA procedure should be specifically designed
+targeting NTN systems, as proposed in [13]. Another widely                     It is worth emphasizing here that for the purpose of broad-
+accepted solution by all previous works is the increase of                     ening the scope of applicability, we keep the analysis of the
+the relevant timers in the RA procedure that would force its                   RA procedure general targeting LTE, NR and NB-IoT stan-
+failure. Obviously, the proposed timers greatly depend on the                  dard. As previously mentioned, this important procedure for
+altitude of the NTN terminal and the protocol considered.                      achieving uplink synchronization is quasi-identical among
+In fact, although the RA procedure is quite similar in LTE,                    these protocols, as we will see later on.
+NR and NB-IoT, the corresponding timers related to this
+process may change from one standard to another. It is worth                      The paper is organized as follows. In Section II we pro-
+highlighting here that these challenges and solutions have                     vide a brief overview of the RA procedure in cellular net-
+been also treated in 3GPP, mainly summarized in [2], [3].                      works. In Section III we analyse the challenges of the RA
+                                                                               procedure when adopted over NTN and in Section IV we
+   While all the above-mentioned proposals to counteract the                   propose techniques to counteract the challenges and provide
+impact of the increased delay on the RA procedure hold in                      a trade-off analysis among various approaches. Section V
+theory, some of them fail in practice according to the findings                describes the laboratory setup of our experiment and explains
+of this paper. This is because none of the current works have                  the implementation of the proposed algorithms. Our solutions
+done an in-depth analysis of the protocol, either LTE, NR or                   are validated and the user access time under different NTN
+NB-IoT in the context of NTN operation. In addition, valida-                   delays is shown. Finally, we conclude the paper in Section VI
+tion of the current proposals is missing and other crucial chal-               by summarizing the work and highlighting the future direc-
+lenges that would lead to a failure in the RA procedure over                   tions. To facilitate the reading, we provide a list of acronyms
+NTN have been ignored. To cover this gap in the literature,                    in Table 1.
+we do an in-depth analysis of the RA procedure over NTN and
+the corresponding challenges imposed by the increased signal                   II. A BRIEF OVERVIEW OF THE RA PROCEDURE IN
+propagation delay. We propose novel solutions to counteract                    CELLULAR NETWORKS
+the impact of the increased delay on the RA procedure and                      The downlink synchronization of a cellular network is
+do a trade-off analysis of different approaches, taking into                   achieved by specific signals broadcasted to all the user equip-
+account also the already existing ones in the literature. Last                 ments (UEs) by the base station (BS), termed as primary
+but not least, we go one step further and validate our proposed                synchronization signal (PSS) and secondary synchronization
+solutions on a realistic experimental setup utilizing the Open                 signals (SSS). If applied in the uplink, this broadcasting/
+Air Interface (OAI) implementations of the 3GPP users and                      always-on synchronization mechanism would not be efficient
+                                                                               due to the limited power at the user side and the high amount
+VOLUME 9, 2021                                                                 of interference it would be generated. Therefore, an alter-
+                                                                               native more efficient procedure is utilized, known as the
+                                                                               RA procedure. There are two types of RA, contention-based
+
+                                                                                                                                                                             109131
+                                                                  O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 1. Situations when RA procedure is triggered.
+
+and contention-free. While contention-based RA consists of        TABLE 1. List of acronyms.
+a 4-step message exchange between the UEs and the BS,
+the contention-free mechanism uses only a 2-step message          B. MESSAGE 2
+exchange. The RA procedure is triggered in different sit-         The BS will continuously check for preamble reception at
+uations as illustrated in Figure 1. Please note that com-         a RAO and in case it detects one, it will respond with a
+pared to LTE and NB-IoT, there is a stronger necessity            random access response (RAR) known as Message 2. The
+of the RA procedure in NR, and this is also an indica-            RAR contains the TA parameter that we mentioned earlier,
+tor of why this mechanism is highly important, and worth          as well as the scheduling information pointing to the radio
+analysing its feasibility over NTN. A more detailed descrip-      resources that the UEs has to utilize for subsequent uplink
+tion of each steps involved in the RA procedure is given
+below.                                                                                                                                                               VOLUME 9, 2021
+
+A. MESSAGE 1
+After achieving downlink synchronization, the UEs are able
+to decode important control channels containing useful infor-
+mation for the subsequent steps, such as the configuration
+index of physical random access channel (PRACH). The
+``channel'' terminology in LTE, NB-IoT or NR is used
+to identify the type of data that is carried over specific
+time-frequency resources. For example, the Message 1 is
+sent only over the PRACH channel and the time-frequency
+resources of the PRACH, which is also known as the RA
+opportunity (RAO), are derived by the configuration index.
+When there is a RAO, the UE will send a random access
+preamble to the serving BS, by using the PRACH. This allows
+the BS to estimate the RTT for each UE, based on the time
+of arrival (ToA) of the received preamble. The BS will utilize
+the ToA estimate for determining a timing advance (TA) to
+be applied by each UE. Doing so, the uplink transmission
+from various UEs will be time-synchronized. What is worth
+emphasizing here is that at this step the UEs will compete
+for the same PRACH channel (same RAO), hence packet
+collision may occur. To reduce the probability of collision,
+there exist a list of possible preamble sequences defined in the
+standard and the UEs randomly select one. Notably, in case
+two UEs randomly select the same preamble sequence to
+initiate the RA procedure, a collision will occur, leading to
+a failure of the RA procedure. In such a case, the UEs will
+try again to send the preamble after a back-off time and a
+power-ramping.
+
+109132
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 2. State machine representation during the RA procedure at: a) UE side and b) BS side.
+
+data transmission and the modulation and coding scheme                         not least, hybrid automatic repeat request (HARQ) protocol is
+(MCS). All the future message exchanges between the UEs                        adopted for Message 3 and 4 transmission. It mainly consists
+and the BS, either in downlink or uplink, are now orchestrated                 of an extra message indicating the reception or not (ACK
+by the BS. In contrast to Message 1 transmission, collision                    or NACK) of a certain packet. In case of NACK, the same
+avoidance is achieved by assigning distinct time-frequency                     packet has to be re-transmitted. Figure 3 illustrates the four
+resources to different UEs. Last but not least, the UEs wait for               steps involved in the RA procedure, whereas Figure 2 shows
+a limited amount of time for Message 2 reception, as defined                   the state machine representation at the UE and BS side,
+in the standard. This is also known as the RAR window                          in an example scenario where the UE is attempting the ini-
+size. If the RAR is not received inside a certain window                       tial access, transitioning from radio resource control (RRC)
+size, the RA procedure is considered as unsuccessful. Again,                   Idle mode to RRC Connected mode. This will facilitate and
+the RA procedure has to be repeated according to the rules                     assist the explanation of the challenges in the following
+defined in the standard.                                                       section.
+
+C. MESSAGE 3
+
+Until this stage, the UE does not have a unique identity (ID) in
+the network. The RA preamble sequence number cannot act
+as an ID because the same one can be selected by multiple
+UEs. Therefore, the main goal of Message 3 transmission is
+to initiate a connection request where the UE is introduced in
+the network with a unique ID (known as C-RNTI). This phase
+is also known as the contention resolution phase. Please note
+that in case of a contention-free RA Message 3 and Message 4
+transmission are skipped because in such situations the user
+is already uniquely identified (e.g. when synchronization is
+lost). Together with a randomly selected C-RNTI, the UE
+may also report its data volume status and power headroom
+to facilitate the scheduling and power allocation algorithms
+for subsequent transmissions.
+
+D. MESSAGE 4                                                                   FIGURE 3. A graphical representation of the RA procedure.
+In this final step, the BS will send back to the UE the con-
+firmation regarding the selected temporary C-RNTI, which                       III. CHALLENGES OF RA PROCEDURE OVER NTN
+will act as a permanent ID for the user for all the future                     The aim of this section is to analyse the obstacles that would
+message exchanges. Similar to Message 2 reception, also in                     make the RA procedure fail when larger delays (compared
+this case the UE will wait for Message 4 until the contention                  to terrestrial scenario) are introduced in the communication
+resolution timer is valid. If this timer expires, the UE will
+re-attempt the RA procedure again at another RAO. Last but                                                                                                                   109133
+
+VOLUME 9, 2021
+                                                                       O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 4. LTE scenario example: a) terrestrial and b) NTN - satellite at 600 km altitude.
+
+link. Before going on with the investigation, we would firstly         for NR, which can be specifically found in the standard
+like to emphasize another crucial aspect that is common                (Table 5.7.1-2 for LTE [14] and Table 6.3.3.2-2 for NR [15]).
+among LTE, NR and NB-IoT. The radio frames of all these                In NB-IoT there is no PRACH configuration index reported,
+three important technologies are 10 ms long, consisting                thus the PRACH time and periodicity are communicated sep-
+of 10 subframes (SF), each of 1 ms duration. This shared               arately in SIB (Section 10.1.6 [14]). However, the principle
+feature enables us to keep the analysis general since the              would be the same. Assuming an LTE BS, operating over a
+following challenges would hold for all these three technolo-          PRACH configuration index 3, the UEs will initiate the RA
+gies. To improve the material flow, the technical divergences          procedure at SF number 1 at any frame. Also the BS will
+among them are highlighted when needed.                                check at SF 1 for preamble detection and measure the ToA
+                                                                       of the preambles, so as to estimate the TA and correct the
+A. RAO MISMATCH BETWEEN THE UE & BS                                    time-misalignment (see Figure 4.a).
+The PSS/SSS signals that are responsible for downlink syn-
+chronization, are sent over fixed SF, known by the UEs. This              Let us now assume the same BS operating over an NTN
+allows the UEs under the coverage area of the BS to be                 platform (e.g. LEO satellite at 600 km altitude). The min-
+synchronized at a frame and SF level, as well as assign the SF         imum RTT in such a scenario would be 4 ms. Due to this
+numbering with reference to the PSS/SSS placement inside               drastic change of the delay, the PSS/SSS signals will arrive
+the frame. On the other hand, the system frame number is               at the UE at least 2 ms after they are produced. Nevertheless,
+included in the master information block (MIB), which is               despite the increased delay, the SF-level synchronization and
+directly decoded by the UEs after PSS/SSS synchronization              numbering at the downlink is not impacted, only shifted in
+process. As previously stated, the RAO time and periodicity            time (2 SF in our example as shown in Figure 4.b). This
+is determined by the PRACH configuration index, which                  time-shift in downlink, together with the time that the signal
+is encapsulated and broadcasted to all the UEs through the             required to propagate in the uplink, would cause a mismatch
+system information block (SIB). Table 2 gives only a set of            between the RAO at the UE and BS. Referring to the state
+possible RAO time/periodicity for LTE and NR. Obviously,               machines in Figure 2, the BS will be stuck forever on state
+a much larger number of configurations exist, especially               ``Wait Msg1'' if no modifications are done in the current stan-
+                                                                       dard, because it will process only SF 1 for preamble reception
+TABLE 2. PRACH configuration index mapped into RAO time & periodicity  according to this PRACH configuration index, while in fact
+[14], [15].                                                            the preambles will arrive at SF 5.
+
+109134                                                                 B. MESSAGE 2 WITHDRAWAL BY THE UE
+                                                                       Assuming that we are able to solve the above-mentioned
+                                                                       challenge, the next obstacle that would occur in the RA
+                                                                       procedure is the Message 2 withdrawal by the UEs. When
+                                                                       the UE initiate the RA procedure, it assigns to the preamble
+                                                                       a specific random access ID, known as RA-RNTI, which is
+                                                                       explicitly derived by the time-frequency resources utilized
+                                                                       for preamble transmission. The following equations are uti-
+                                                                       lized for RA-RNTI derivation, as specified in the standard
+
+                                                                                                                                                                          VOLUME 9, 2021
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+(NB-IoT/LTE [16], NR [17]).                                                    RAR window and CR timer supported in LTE are 10 ms and
+                                                                               64 ms, respectively. For NB-IoT, the calculations are done
+LTE: RA-RNTI = 1 + tid + 10 · fid              (1)                             based on PDCCH periodicity, which varies from 1 ms to
+                                                                               10.24 seconds. Notably, these range of timers are enough to
+NB-IoT: RA - RNTI = 1 +      tid  + 256 · cid  (2)                             cover even NTN delays, which in the worst case scenario
+                             4                                                 would be as high as 480 ms (GEO satellite with transparent
+                                                                               payload). Hence, this challenge does not apply to NB-IoT.
+NR: RA - RNTI = 1 + sid + 14 · tid                                             Last but not least, the calculations for the NR are a bit more
+                                                                               complex because of its flexibility in the PHY layer. While it
+                + 14 · 80 · fid + 14 · 80 · 8 · cid (3)                        is true that the frame structure is the same as NB-IoT/LTE,
+                                                                               the number of slots contained in 1 SF and the slot duration
+   Please note that tid is the index of the SF related to the RAO              have a direct dependency on the subcarrier spacing (SCS).
+when the preamble is sent, fid is the index that relates to the                The NR standard [15] defines several SCS for the OFDM
+frequency used for preamble transmission, cid is the carrier                   signal, thus in Table 3 we show the maximum RAR window
+index and sid is the symbol index. The exact same equations                    supported for every numerology. Finally, regarding the CR
+are utilized also by the BS to calculate the RA-RNTI that                      timer for NR, it is identical to LTE.
+will be encoded in the RAR message, which will then be
+sent to the UE. However, similar to the previous problem,                      TABLE 3. Slot duration and maximum RAR window sizes for various NR
+because there is a mismatch in the SF numbering of the                         numerology.
+RAO between the UE and the BS, the RA-RNTI associated
+with Message 1 transmission would be different from the one                    D. MESSAGE 3 & HARQ SCHEDULING MISMATCH
+received together with Message 2. The UE will withdraw the                     BETWEEN THE UE & BS
+RAR message received because it will assume that it belongs                    The CR phase of the RA procedure is orchestrated by the BS,
+to another user. In fact, also the parameters related to the                   and the time-frequency resources that the UE has to utilize
+frequency domain may be impacted due to the frequency shift                    for Message 3 are reported in the RAR. Apparently, this is
+caused by the high-speed movement of the NTN platform.                         done to avoid collision among different UEs. In the time-
+However, this analysis is out of the scope of this work, and                   domain, the resource allocation for Message 3 is done through
+we study only the impact of the timing difference. In such a                   informing the UEs about the amount of time they have to wait
+case, the UE will be stuck on the loop ``Wait Msg2 - Generate                  (time-offset) after RAR reception, before transmitting their
+Msg1'' according to the state machines shown in Figure 2,                      uplink signals. The minimum value for this time-offset is 4 SF
+because the RAR window size will always expire.                                (ms) in NB-IoT/LTE [20] because this corresponds also to the
+                                                                               amount of processing time at the user side before initiating an
+C. EXPIRY OF THE RAR WINDOW SIZE AND CONTENTION                                uplink transmission. Regarding NR, the minimum value of
+RESOLUTION TIMER                                                               such time-offset is dependent on the numerology [21]. Based
+Even if we are able to solve the Message 2 withdrawal prob-                    on the offset that the UE has to apply, also the BS has to
+lem, for certain values of NTN altitudes the RAR window size                   prepare for Message 3 reception. However, due the increased
+will expire. When this happens, the UEs assume that their                      delay in the communication link (which overcomes the SF
+preamble is lost and will repeat sending Message 1 after a                     length and the BS is not aware of in the current protocol),
+back-off time and a power ramping procedure, as specified                      Message 3 will arrive at the BS not according to the resource
+by the standard. The same holds for the contention resolu-                     allocation (see Figure 5). This will cause a failure in Message
+tion (CR) phase. When the UE Transmit Message 3 to the BS,                     3 reception and the BS will never enter in the ``Generate
+it will monitor the downlink channels for Message 4 reception                  Msg4'' state (Figure 2). The same reasoning can be done also
+until the expiration of the CR timer. The set of values for the                for the HARQ scheduling. The BS will monitor certain SF
+RARwindow and CRtimer for NB-IoT/LTE [18] and NR [19] are                      for receiving the ACK/NACK during the CR phase, which in
+given below:                                                                   fact will be further delayed.
+
+      LTE: RARwindow = {1, 2, 4, 6, 8, 10} SF                                  E. MESSAGE 3 DEMODULATION & DECODING PROBLEMS
+                 CRtimer = {8, 16, 24, 32, 40, 48, 56, 64} SF                  Solving the scheduling problem investigated earlier, does not
+                                                                               still guarantee a correct reception of Message 3 at the BS side.
+                                                                     (4)       This is because of the following reasons.
+
+  NB-IoT: RARwindow = {2, 3, 4, 5, 6, 7, 8, 10} PP                                                                                                                           109135
+                 CRtimer = {1, 2, 3, 4, 8, 16, 32, 64} PP
+
+                                                                     (5)
+
+       NR: RARwindow = {1, 2, 4, 8, 10, 20, 40, 80} SL
+                 CRtimer = {8, 16, 24, 32, 40, 48, 56, 64} SF
+
+                                                                     (6)
+
+   Please note that SF stands for subframe duration, SL for
+slot duration and PP for physical downlink control chan-
+nel (PDCCH) periodicity. As it can be seen, the maximum
+
+VOLUME 9, 2021
+                                                                          O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+                                                                          and low cross-correlation properties. Through the scrambling
+                                                                          code that is applied to the bits after encoding and before
+                                                                          proceeding with the modulation, the BS can separate signals
+                                                                          coming simultaneously from various UEs, as well as the UEs
+                                                                          can distinguish the signals coming from many different BS.
+                                                                          In NB-IoT/LTE [14] and NR [15], the Gold sequence c is
+                                                                          generated by combining two m-sequences x1 and x2 through
+                                                                          an XOR gate, as follows:
+
+FIGURE 5. Scheduling problem illustration (e.g. satellite at 600 km       c(n) = {x1(n + Nc) + x2(n + Nc)}mod2   (9)
+altitude).
+
+1) DEMODULATION REFERENCE SIGNALS (DMRS)                                  where Nc = 1600 is fixed. The final obtained Gold sequence
+MISMATCH                                                                  will depend on the initialization value:
+
+For the purpose of coherent demodulation and channel esti-                cinit = x1init + x2init (SF )          (10)
+mation, both at UE and BS side, reference symbols (pilots)
+are inserted in the downlink and uplink channels. Message 3                  As it can be noted, the initialization of one of the
+is sent over the physical uplink shared channel (PUSCH),                  m-sequences has a SF-dependency, resulting in distinct
+therefore hereafter we will provide more details regarding the            scrambling codes for different SF. This will cause Mes-
+DMRS signals for the PUSCH channel to better explain this                 sage 3 decoding issues because the de-scrambling sequence
+challenge. For NB-IoT/LTE standard, DMRS occupies the                     applied at the BS side will be different from the scrambling
+center symbol of every slot (contained by 7 symbols overall).             one at the UE (similar to the demodulation problem previ-
+Although understanding the positioning of DMRS sequence                   ously explained).
+is quite straightforward, its generation is a bit more complex
+and involves many parameters. Referring to the NB-IoT/LTE                    Please note that the demodulation and decoding problems
+standard [14], the generation of DMRS sequence directly                   will occur only in the uplink transmission (UE -> BS). In the
+depends on three main parameters as shown below:                          downlink (BS -> UE), the SF numbering matches, being
+                                                                          assigned with reference to PSS/SSS location in the frame,
+                                                                          as previously emphasized.
+
+        rDMRS (n)  ejn · ru,v(n)                                     (7)  IV. PROPOSED SOLUTIONS TO OVERCOME THE
+                                                                          CHALLENGES AND TRADE-OFF ANALYSIS
+where  is the cyclic shift which defines the rotation of                  The aim of this section is to describe the proposed solutions
+the sequence, ru,v is the base sequence determined by two                 which counteract the challenges treated in Section III. Fur-
+other parameters (UE-specific) u and v that define the group              thermore, a trade-off analysis will be provided for the various
+hopping and sequence hopping, respectively. The cyclic shift              approaches.
+ is given by:
+
+ = 2 · {n(D1M) RS + n(D2M) RS + nPRS (SF )}mod 12                         A. TIMING ADVANCE (TA) AT THE UE SIDE
+
+        12                                                           (8)  To compensate for the RAO mismatch between the UE and
+
+where nD(1M) RS and nD(2M) RS take integer values from 0 to               BS, a TA can be applied, so that the preambles transmitted by
+10 defined in the standard [14]. What is worth noticing here
+                                                                          the on-ground UEs arrive at the right RAO at the BS, as spec-
+
+is the last parameter that has a direct dependency on the SF              ified by the PRACH configuration parameters. To do so,
+
+number. This results in applying different cyclic shifts to the           the UEs has to estimate the RTT in the NTN channel, which
+
+base sequence, leading to distinct DMRS symbols inserted                  can be realized through the GNSS positioning capability
+
+at every SF. To correctly demodulate Message 3, the BS                    together with the knowledge of the NTN orbital parameters.
+
+will have to utilize the same symbols (pilots), allowing to               Although this solution is already proposed in the literature
+
+extract relevant parameters for the demodulation. However,                [7]­[9], it lacks a detailed description implementation-wise.
+
+due to the SF-mismatch caused by the increased delay that                 The existing TA concept, either in NB-IoT, LTE or NR, can
+
+overcomes the SF length (as shown in Figure 5), the estimated             be only applied in a sample-level, and due to this, there are
+
+parameters for the demodulation process will be erroneous,                practical limitation to be considered. To illustrate this, let us
+
+greatly distorting Message 3 reception. Please note that we               take as an example the TA application in LTE. The minimum
+
+provided further details for NB-IoT/LTE to assist the expla-              TA that can be applied in LTE is TA = 16 · Ts · TAC, where
+                                                                          Ts is the sample duration given by:
+nation of this challenge, but the same will occur also in NR
+                                                                          1  1
+because of the SF-dependency of the DMRS sequence [15].                   Ts = FFTsize · SCS = 2048 · 15000      (11)
+
+2) GOLD SEQUENCE MISMATCH                                                 and the TAC is the timing advance command reported in
+The Gold sequences are used in various wireless technologies
+as a scrambling code because of their high auto-correlation               RAR. There are 11 bits reserved for reporting TAC, ranging
+
+                                                                          from 0 to 1282, corresponding to TA values of up to 0.67 ms.
+
+109136                                                                                                           VOLUME 9, 2021
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+Although being able to estimate higher values of the TA                        FIGURE 6. Solving the scheduling problem by adding the SF Delay (SFD).
+before transmitting Message 1, it is practically impossible to
+apply a TAC greater than 2048 samples which is also the FFT                    that in order to delay the reception of Message 3, the BS
+size in LTE. The TAC needed to counteract NTN delays has                       has to be aware of the NTN altitude and the RTT experi-
+to be much larger than the SF length, thus overcoming the                      enced at the center of its beam. Such information can be
+FFT size. Alternative ways should be proposed.                                 provided/included in the deployment phase of the network
+                                                                               since it will be fixed over time.
+   In this work, we put forward the idea of applying a SF-level
+TA at the UE side, in addition to the sample-level one already                    In a similar way, the SF-level TD can be executed at the
+defined by the standard. This can be done through applying a                   BS side for the RAO mismatch. Clearly, this will require a
+time correction in the mapping of the PRACH configuration                      new mapping of the PRACH configuration index into the
+index into RAO time and periodicity at the UE side, as shown                   RAO time and periodicity at the BS, resembling Table 4,
+in Table 2, while leaving it unchanged at the BS. Table 4                      but with the difference of applying a SF delay (SFD) and
+gives an example of how the configuration index would be                       frame delay (FD) instead of SFA and FA. Furthermore,
+mapped in RAO time and periodicity for NR. Obviously,                          the same concept can be utilized for SF-timing corrections in
+the specific SF advance (SFA) and/or frame advance (FA)                        Equation (1) - (3) and (7) - (10). This solution will not require
+will have a direct dependency on the old value of the RAO                      any modification at the UE side.
+Frame and SF, and the estimated RTT. For example, if the BS
+is operating over an PRACH configuration index 3 and the                       C. ADAPTATION OF TIMERS
+estimated RTT by a specific UE is 4.3 ms, SFA will be 4 and                    To avoid the expiry of the RAR window size and contention
+FA will be 0. The remaining part of 0.3 ms can be handled by                   resolution timer, the adaptation can be done either at the
+the sample-level TA.                                                           UE or the BS. If done at the UE side, again the GNSS
+                                                                               estimates will play a role. The estimation of the RTT has to
+TABLE 4. PRACH configuration index mapped into RAO time & periodicity          be added on top of the values reported by the BS, as shown
+at UE side for NR over NTN scenario.                                           in Equation (4) - (6). If done at the BS side, the new val-
+                                                                               ues should be reported in the SIB, where all the relevant
+   In a similar way, relying on GNSS estimates at the UE                       parameters for the RA procedure are included. In the current
+side, such SF-timing correction can be also included in Equa-                  NB-IoT/LTE and NR standard, only 3-bits are reserved for
+tion (1) - (3) to solve the Message 2 withdrawal by the                        reporting the RAR window size, and other 3-bits for the
+UE, and in Equation (7) - (10) to solve the demodulation                       contention resolution timer. This is because there are only up
+and decoding issues. Doing so would make the RA-RNTI                           to 8 possible values reported. Including more values in the
+associated with the sent preamble to match the one received                    current standards with the purpose of covering also the NTN
+in RAR, and enable correct demodulation/decoding at the BS.                    delays would require extra bits in the SIB field.
+
+B. SF-LEVEL TIMING DELAY (TD) AT THE BS SIDE                                   D. TRADE-OFF ANALYSIS
+The TA concept, even at a SF-level, fails to solve the                         As it has been pointed out, some of the above-mentioned
+scheduling mismatch between the UE and the BS treated                          solutions can be implemented at the UE or the BS. This raises
+in Section III-D. As we explained, the resource allocation                     the need for a trade-off analysis to compare among these two
+in time-domain for Message 3 is performed by assigning a                       different approaches.
+time-offset to the UEs, which has to be applied after the
+reception of the RAR message (where the time-offset infor-                     1) POWER CONSUMPTION
+mation is included). If we take the NB-IoT standard as an                      The TA approach covered in Section IV-A relies on the
+example, such time-offset ranges from 4 to 64 [20]. However,                   utilization of the GNSS signals to estimate the UE position,
+the RTT over an NTN channel overcomes this range of values,                    before starting the RA procedure (see Figure 7). To have a
+making the application of the TA totally unfeasible when the                   rough estimation of the RTT in the NTN channel, the UE has
+time-offset is set to 4 (required for processing), and partially               to be provided also with the two-line element set (TLE) of the
+unfeasible for the other set of values (depending on the NTN                   NTN platform in order to predict its location over time. This
+altitude). Therefore, this raises the need of a SF-level TD to                 added procedure compared to a terrestrial network (TN) will
+be applied at the BS, as illustrated in Figure 6. Please note
+                                                                                                                                                                             109137
+VOLUME 9, 2021
+                                                                   O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 7. Chronology of UE procedures for TN and NTN.
+
+directly impact the power consumption of the UE, which is          FIGURE 8. NTN system geometry.
+a very sensitive matter, especially for the NB-IoT standard.
+In fact, the increased power consumption due to GNSS has
+been deeply analyzed in [3], by considering various commer-
+cial UEs and scenarios. The simulation results provided in [3]
+show a reduction in battery life in the range of 10 - 40 %
+for UEs placed in a medium coverage level with maximum
+coupling loss (MCL) of 154 dB. Clearly, the diversity of the
+battery life-time reduction comes from the various applica-
+tions the UEs are being used for (different packet sizes for the
+uplink data reports), and the various GNSS modules utilized
+for positioning.
+
+   In contrast to the TA, implementing the TD approach at the
+BS side, as described in Section IV-B, will eliminate the need
+for the extra GNSS processing at the UE (without an impact
+in the battery life-time), leading to coverage limitations, as we
+will see below.
+
+2) NTN COVERAGE                                                    FIGURE 9. NTN cell radius as a function of the cell center elevation angle.
+
+In a terrestrial network, the cell radius Rcell is dependant on    be calculated by:
+the cyclic prefix (CP) length Tcp of the preamble generated
+during Message 1 transmission of the RA procedure. To cor-
+rectly receive the preambles from various UEs in a RAO,
+the differential RTT of signal propagation among the UEs
+should not overcome the CP length of the preamble. This can
+be expressed by the following equation:
+
+Dmax - Dmin = Rcell  c · Tcp/2                         (12)        D() = RE2 sin()2 + hs2 + 2RE hs - RE · sin() (13)
+
+where Dmax and Dmin represent the maximum and the mini-            where  is the elevation angle, hs is the altitude of the NTN
+mum UE distance from the BS. There exist different preamble        platform and RE is the radius of Earth. Given the mini-
+formats defined in the NB-IoT/LTE [14] and NR [15] stan-           mum elevation angle min of a certain cell, we can easily
+dard, where some are captured in Table 5. As it can be seen,       derive Dmax (min) by Equation (13), and Dmin(max ) by the
+the CP length alters with the preamble format, resulting in        following:
+distinct cell sizes.
+                                                                   Dmin(max )  =      min D()
+
+                                                                                        
+
+TABLE 5. CP length for some preamble formats.                                         such that:
+
+                                                                                                  Dmax (min) - D()  c · Tcp/2
+
+                                                                                                    [min 90]  (14)
+
+                                                                      After obtaining Dmin and Dmax for a particular cell,
+                                                                   the radius x can be calculated as follows:
+
+   While in a terrestrial network Dmin = 0 and Dmax = Rcell ,          x = D2max + Dm2 in + 2Dmax Dmincos(max + min) (15)
+the same does not hold in NTN (please refer to Figure 4).                                               2
+To derive the cell sizes in NTN we exploit the system geome-
+try in Figure 8 and write the following equations, in a similar       Through numerical simulations, we obtain the NTN cell
+way to [12]. The distance D from a UE to the BS in NTN can         sizes for different preamble formats in NB-IoT, LTE and NR,
+                                                                   for a LEO satellite at 600 km altitude (see Figure 9). For
+109138
+                                                                                                              VOLUME 9, 2021
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 10. Infrastructure setup for the realization of non-terrestrial network.
+
+simplicity, we show the results with respect to the cell center                  development of current 3GPP wireless communication stan-
+elevation angle cen, derived after fixing min and obtaining x.                   dards such as LTE and 5G [23], and several 3GPP proposals
+As it can be observed, there is a limitation in the size of                      towards 5G and beyond. The experimental validation of our
+the NTN cells supported, driven by the preamble format and                       proposed techniques has been done by employing the LTE
+cen. This does not occur in the case of TA approach, because                     protocol stack since it is the most mature one currently devel-
+the TA is applied individually at Message 1 by the UEs,                          oped by OAI. Figure 11 and 12 show the block diagram of
+making sure that they arrive at the BS at the correct RAO.                       OAI implementation of the 3GPP LTE stack coupled with
+Whereas, in the TD approach, the BS can delay the RAO                            our incorporated NTN adaptations, spanning Physical (PHY)
+to accumulate the preambles from all the UEs inside a cell,                      and Medium Access Control (MAC) layers. As it can be
+but cannot have several RAO. Alternative NB-IoT/LTE or                           noted, both the TA and TD approach have been tested,
+NR carriers are needed for the other cells, having different                     as described in Section IV. More specifically, we deployed
+PRACH configurations and applying different TD at the BS,                        the OAI LTE stack on general-purpose processors coupled
+depending on the characteristics of the cell. Please note that                   with software-defined radio for signal generation and acqui-
+the TD does not need to be continuously estimated, but                           sition. This experimental setup focuses more on the radio
+rather fixed at the deployment phase of the network. For                         access network (RAN) side with abstracted connection to
+example, if the range of the RTT in a cell is 4.1 - 4.6 ms,                      the EPC so-called noS1 mode. Hence, it allows testing of
+the BS has always to apply a fixed SFD = 4 for that cell,                        OAI base-station and UEs without the support of the core
+while leaving the residual 0.1 - 0.6 ms to be handled by the                     network, which is a great advantage of OAI for accelerating
+protocol itself (clearly the preamble format selected should                     the development time.
+have Tcp  0.6). Another interesting observation here is that
+certain cells cannot provide services at all. For example, let                      The physical interconnections between the system compo-
+us assume an LTE over NTN scenario, and a cell where the                         nents is also illustrated in Figure 10. The connection between
+range of RTT is between 5.6 and 5.9 ms. While the BS can                         the processing units and the software-defined radio (SDR)
+apply SFD = 5, the residual part of 0.6 to 0.9 ms cannot                         units is established via small form-factor pluggable (SFP+)
+be estimated/corrected with the current existing preamble                        transceivers, which support 10 Gigabit Ethernet (GigE)
+formats. This will obviously cause further limitations in the                    connection. Accordingly, it gives a better realization for
+coverage. Again, such restriction does occur in the case of                      high-speed communication networks between the processing
+the TA technique, because in addition to the SF-level TA,                        units (host computers) and SDRs. Thus, the host-based OAI
+a sample-level TA can be employed at the UE side.                                software can seamlessly control the SDR hardware to receive
+                                                                                 and transmit data over the 10GigE link.
+V. EXPERIMENTAL VALIDATION
+A. EXPERIMENTAL SETUP                                                               The NTN channel emulator, a core component for verify-
+The infrastructure illustrated in Figure 10 has been developed                   ing and validating the NTN development, has been imple-
+using OpenAirInterface (OAI) [22]. OAI is open-source soft-                      mented on top of a field-programmable gate array (FPGA)
+ware that is being used for the experimentation, evaluation,                     using custom-designed hardware from VadaTech. It provides
+                                                                                 an IP-Core implementing the RTT delay using a deep first
+                                                                                 in first out (FIFO) buffer, which utilizes an external Double
+
+VOLUME 9, 2021                                                                   109139
+                                                                           O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 11. OpenAirInterface LTE stack with NTN adaptations - TD approach.
+
+FIGURE 12. OpenAirInterface LTE stack with NTN adaptations - TA approach.
+
+Data Rate (DDR) Synchronous Dynamic Random-Access                          2.68 GHz with an uplink offset of 120 MHz. In LTE the
+Memory (SDRAM) chipset. The implemented delay length is                    available bandwidths (BW) are 1.4, 5, 10, and 20 MHz. For
+based on the frequency rate at which the data writes and reads             this experiment we use the 5 MHz BW configuration.
+to/from the Deep FIFO, and the depth of the FIFO buffer.
+By fixing the depth of the FIFO buffer and manipulating the                B. EXPERIMENTAL RESULTS
+frequency of the sample generation, which then are passed                  Through the experimental setup we validate that our proposed
+through the Deep FIFO, we are able to emulate various                      solutions are able to counteract the induced challenges by the
+delays, reaching RTT values of up to 600 ms.                               extreme delays in the communication link, thus leading to a
+                                                                           successful RA procedure. Figure 13 illustrates the specific
+   We specifically used in that setup USRPn310 from                        adaptations implemented in order to have a successful signal
+National Instruments as a software-defined base station                    reception, either at UE or BS, for every single step involved
+and software-defined UE. Further, the NTN channel emu-                     in the RA procedure. Such trial-and-error approach enabled
+lator receive and transmit the signals from/to SDRs using                  us to identify the new challenges not previously treated in the
+SMA (SubMiniature version A) RF connectors. Accordingly,                   literature, such as the Message 2 withdrawal (Section III-B)
+we assume that the software-defined base station can either                and the Message 3 demodulation and decoding problems
+be placed at the NTN platform, e.g. in case of a regenerative              (Section III-E). Furthermore, we tested that the TA concept,
+payload type, or be placed on-ground in case of a transparent              as previously proposed in the literature (although lacking an
+payload type. Clearly, the payload type will impact also                   implementation-wise description), has practical limitations
+the RTT in the communication link. In this experiment we                   if applied only at a sample-level, leading us to propose a
+assume an NTN altitude ranging between 600 to 35793 km,                    SF-level TA. While this was able to solve the RAO mismatch
+which results in RTT values between 4 to 480 ms. Table 6                   between the UE and the BS (Section III-A), it failed to
+shows some of the most relevant configuration parameters.                  deal with the Message 3 and HARQ scheduling mismatch
+The system uses the LTE band 7, which is a frequency divi-                 (Section III-D). This is the reason why for the TD approach
+sion duplex band (FDD) operating on a downlink frequency
+                                                                                                                                                                              VOLUME 9, 2021
+109140
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+FIGURE 13. NTN adaptations in the experiment that led to a step-by-step success of the RA procedure.
+
+all the NTN adaptations can be applied at the BS side (see                     FIGURE 14. Single user access time (no collision).
+Figure 11), whereas for the TA approach we still need the                      TABLE 6. Experimental configuration.
+Message 3 and HARQ scheduling mismatch to be resolved at
+the BS, and not at the UE (see Figure 12).                                     not able to measure in the current experimental setup due to
+                                                                               hardware limitations. Nevertheless, the obtained results are a
+   In addition to achieving a successful RA procedure,                         big step forward towards NTN systems. Through this work,
+we measure the time required by a single user to access                        we are able to demonstrate a successful RA procedure even
+the network under different values of RTTs, illustrated                        in extreme values of delays experienced over a GEO satellite
+in Figure 14. As it can be seen, the TD approach results in                    and measure the single user access time, which will act as a
+a step-function behaviour because there are discrete values                    lower bound for future work in this direction.
+of the RAR window size and contention resolution timers
+reported by the BS to the UE (see Equation (4)). In our                                                                                                                      109141
+experiment, we add 16 more values (extra 4 bits) to the
+already existing ones, covering the NTN delays. In the TA
+approach we assume a perfect estimation of the TA by the UE,
+thus updating the RAR window size and contention resolution
+timer accordingly. Please note that we do not consider any
+extra time for the GNSS estimate since this process can be
+done in parallel with obtaining PSS/SSS synchronization. If it
+is done after, as shown in Figure 7, clearly the access time
+would be impacted. This is something we cannot measure in
+our experiment.
+
+   In a terrestrial-network case, the main delay bottleneck is
+caused by the processing time at the BS and UE. For LTE,
+such processing delay is around 4 ms, resulting in an access
+delay of around 12 ms in ideal channel conditions and without
+preamble collisions.
+
+   In an NTN case, the delay in the communication link
+becomes a driving factor in deciding the overall time the
+user needs for acquiring (re-acquiring) access to the serving
+BS. As it can be observed from Figure 14, the access time
+for a single user can be as high as 970 msec in the worst
+case scenario of a GEO satellite with transparent payload.
+Clearly, these results represent only a lower bound since a
+single user is utilized for the experiment and represents a case
+where no collisions occurs. In a scenario where many user
+will try to access the network simultaneously, the presence of
+collisions in the RA procedure will naturally lead to a further
+increase in the user access times. This is something we are
+
+VOLUME 9, 2021
+                                                                                      O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+VI. CONCLUSION                                                                         [8] O. Liberg, S. E. Lowenmark, S. Euler, B. Hofstrom, T. Khan, X. Lin, and
+In this paper, we considered the RA procedure, which is a                                    J. Sedin, ``Narrowband Internet of Things for non-terrestrial networks,''
+highly crucial mechanism in several standards, such as LTE,                                  IEEE Commun. Standards Mag., vol. 4, no. 4, pp. 49­55, Dec. 2020.
+NB-IoT and NR, mainly utilized by the users to obtain uplink
+synchronization in the network. We analyzed the challenges                             [9] O. Kodheli, A. Guidotti, and A. Vanelli-Coralli, ``Integration of satellites
+imposed by the increased delay in an NTN channel into the                                    in 5G through LEO constellations,'' in Proc. IEEE Global Commun. Conf.,
+RA procedure, and came up with novel practical solutions                                     Dec. 2017, pp. 1­6.
+for the challenges identified. To test the proposed solutions,
+we designed a testbed based on OAI implementation for the                             [10] H. Saarnisaari, A. O. Laiyemo, and C. H. M. de Lima, ``Random access
+3GPP users and base station, and HW implementation for                                       process analysis of 5G new radio based satellite links,'' in Proc. IEEE 2nd
+the NTN channel emulating the signal propagation delay.                                      5G World Forum (5GWF), Sep. 2019, pp. 654­658.
+The laboratory test-bed built in this work enabled us to
+identify novel challenges not previously treated in the litera-                       [11] A. Guidotti, A. Vanelli-Coralli, M. Conti, S. Andrenacci, S. Chatzinotas,
+ture, demonstrate a successful RA procedure over NTN, and                                    N. Maturo, B. Evans, A. Awoseyila, A. Ugolini, T. Foggi, L. Gaudio,
+measure the single-user access times for various values of                                   N. Alagha, and S. Cioni, ``Architectures and key technical challenges for
+RTTs. The work shown in this paper increases the technol-                                    5G systems incorporating satellites,'' IEEE Trans. Veh. Technol., vol. 68,
+ogy readiness level (TRL) of NTN-based cellular systems,                                     no. 3, pp. 2624­2639, Mar. 2019.
+demonstrating over a laboratory environment a successful RA
+procedure even in extreme values of delays experienced in a                           [12] A. Guidotti, ``Beam size design for new radio satellite communications
+GEO satellite.                                                                               systems,'' IEEE Trans. Veh. Technol., vol. 68, no. 11, pp. 11379­11383,
+                                                                                             Nov. 2019.
+   In the future work, we aim to improve the capabilities
+of our experimental setup in order to be able to test a sce-                          [13] L. Zhen, T. Sun, G. Lu, K. Yu, and R. Ding, ``Preamble design and
+nario where multiple user will have to access the network                                    detection for 5G enabled satellite random access,'' IEEE Access, vol. 8,
+at the same time. Doing so will increase the probability of                                  pp. 49873­49884, 2020.
+collisions, enabling us to obtain further results regarding the
+user access time as a function of the number of users in an                           [14] Technical Specification Group Radio Access Network; Evolved Universal
+NTN network. Furthermore, we will analyse additional chal-                                   Terrestrial Radio Access (E-UTRA); Physical Channels and Modulation
+lenges in the RA procedure caused by another crucial impair-                                 (Release 16), document TS 36.211, 3GPP, Mar. 2021.
+ment coming from the NTN platform movement, which is
+the Doppler shift. Last but not least, solutions where major                          [15] Technical Specification Group Radio Access Network; NR; Physical
+changes are required in the standard will be implemented and                                 Channels and Modulation (Release 16), document TS 38.211, 3GPP,
+tested as well, such as developing new preamble formats with                                 Mar. 2021.
+larger CP lengths able to counterbalance the NTN coverage
+limitations highlighted in Section IV-D.                                              [16] Technical Specification Group Radio Access Network; Evolved Uni-
+                                                                                             versal Terrestrial Radio Access (E-UTRA); Medium Access Control
+REFERENCES                                                                                   (MAC) Protocol Specification (Release 16), document TS 36.321, 3GPP,
+                                                                                             Apr. 2021.
+ [1] P. Banelli, S. Buzzi, G. Colavolpe, A. Modenini, F. Rusek, and A. Ugolini,
+       ``Modulation formats and waveforms for 5G networks: Who will be the            [17] Technical Specification Group Radio Access Network; NR; Medium Access
+       heir of OFDM?: An overview of alternative modulation schemes for                      Control (MAC) Protocol Specification (Release 16), document TS 38.321,
+       improved spectral efficiency,'' IEEE Signal Process. Mag., vol. 31, no. 6,            3GPP, Mar. 2021.
+       pp. 80­93, Nov. 2014.
+                                                                                      [18] Technical Specification Group Radio Access Network; Evolved Uni-
+ [2] Technical Specification Group Radio Access Network; Solutions for NR                    versal Terrestrial Radio Access (E-UTRA); Radio Resource Control
+       to Support Non-Terrestrial Networks (NTN) (Release 16), document TR                   (RRC); Protocol Specification (Release 16), document TS 36.331, 3GPP,
+       38.821, 3GPP, Dec. 2019.                                                              Mar. 2021.
+
+ [3] Technical Specification Group Radio Access Network; Study on Narrow-             [19] Technical Specification Group Radio Access Network; NR; Radio Resource
+       Band Internet of Things (NB-IoT)/Enhanced Machine Type Communica-                     Control (RRC) Protocol Specification (Release 16), document TS 38.331,
+       tion (eMTC) Support for Non-Terrestrial Networks (NTN) (Release 17),                  3GPP, Mar. 2021.
+       document TR 36.763, 3GPP, Apr. 2021.
+                                                                                      [20] Technical Specification Group Radio Access Network; Evolved Universal
+ [4] F. Rinaldi, H.-L. Maattanen, J. Torsner, S. Pizzi, S. Andreev, A. Iera,                 Terrestrial Radio Access (E-UTRA); Physical Layer Procedures (Release
+       Y. Koucheryavy, and G. Araniti, ``Non-terrestrial networks in 5G &                    16), document TS 36.213, 3GPP, Mar. 2021.
+       beyond: A survey,'' IEEE Access, vol. 8, pp. 165178­165200, 2020.
+                                                                                      [21] Technical Specification Group Radio Access Network; NR; Physical
+ [5] J. Deutschmann, T. Heyn, C. Rohde, K.-S. Hielscher, and R. German,                      Layer Procedures for Control (Release 16), document TS 38.213, 3GPP,
+       ``Broadband internet access via satellite: State-of-the-art and future direc-         Mar. 2021.
+       tions,'' in Proc. 15th ITG-Symp. Broadband Coverage Germany, 2021,
+       pp. 1­7.                                                                       [22] OpenAirInterface Software Alliance. Openairinterface|5G Software
+                                                                                             Alliance for Democratising Wireless Innovation. Accessed: Jun. 29, 2021.
+ [6] O. Kodheli, ``Satellite communications in the new space era: A survey                   [Online]. Available: https://openairinterface.org
+       and future challenges,'' IEEE Commun. Surveys Tuts., vol. 23, no. 1,
+       pp. 70­109, 4th Quart., 2021.                                                  [23] F. Kaltenberger, G. D. Souza, R. Knopp, and H. Wang, ``The openairinter-
+                                                                                             face 5G new radio implementation: Current status and roadmap,'' in Proc.
+ [7] X. Lin, S. Rommer, S. Euler, E. A. Yavuz, and R. S. Karlsson, ``5G                      23rd Int. ITG Workshop Smart Antennas, Apr. 2019, pp. 1­5.
+       from space: An overview of 3GPP non-terrestrial networks,'' 2021,
+       arXiv:2103.09156. [Online]. Available: http://arxiv.org/abs/2103.09156                                        OLTJON KODHELI received the master's degree
+                                                                                                                     (cum laude) in electronic engineering from the
+109142                                                                                                               University of Bologna, Italy, in 2016. From
+                                                                                                                     2017 to 2018, he was with the Department of Elec-
+                                                                                                                     trical and Information Engineering (DEI), Univer-
+                                                                                                                     sity of Bologna, for performing research related
+                                                                                                                     to 5G radio access networks. Since 2018, he has
+                                                                                                                     been a Doctoral Researcher with the Interdisci-
+                                                                                                                     plinary Centre for Security, Reliability and Trust,
+                                                                                                                     University of Luxembourg. His research activity
+                                                                                      is mainly focused on designing techniques for 5G IoT satellite-terrestrial
+                                                                                      integrated systems. He holds a grant for his Ph.D. project received from
+                                                                                      Luxembourg National Research Fund (FNR), under Industrial Fellowship
+                                                                                      Scheme, with industrial partner SES S.A.
+
+                                                                                                                                                                                         VOLUME 9, 2021
+O. Kodheli et al.: Random Access Procedure Over NTNs: From Theory to Practice
+
+                               ABDELRAHMAN ASTRO received the B.Sc.                                                 SUMIT KUMAR (Member, IEEE) received the
+                               degree in electrical engineering from the Canadian                                   Bachelor of Technology degree in electronics
+                               International College, Egypt, in 2017. He is cur-                                    and communication engineering from Gurukula
+                               rently an RnD Specialist at the Interdisciplinary                                    Kangri University, Haridwar, India, in 2008,
+                               Centre for Security, Reliability and Trust, Univer-                                  the Master of Science degree in electronics and
+                               sity of Luxembourg. His research interests include                                   communication engineering from the International
+                               software-defined radios (SDR), wireless commu-                                       Institute of Information Technology, Hyderabad,
+                               nication systems, real-time systems, and systems                                     India, in 2014, and the Ph.D. degree from
+                               architecture.                                                                        Eurecom, France, in 2019. His research inter-
+                                                                                                                    ests include wireless communication, interference
+                               JORGE QUEROL (Member, IEEE) was born in               management, and software defined radio.
+                               Forcall, Castelló, Spain, in 1987. He received the
+                               B.Sc. (+5) degree in telecommunication engi-                                         NICOLA MATURO (Member, IEEE) received the
+                               neering, the M.Sc. degree in electronics engi-                                       M.S. degree (cum laude) in electronic engineer-
+                               neering, the M.Sc. degree in photonics, and the                                      ing and the Ph.D. degree in telecommunication
+                               Ph.D. degree (cum laude) in signal processing and                                    engineering from the Polytechnic University of
+                               communications from the Universitat Politècnica                                      Marche, Ancona, Italy, in 2012 and 2015, respec-
+                               de Catalunya--BarcelonaTech (UPC), Barcelona,                                        tively. From January 2016 to July 2017, he was a
+                               Spain, in 2011, 2012, 2013, and 2018, respectively.                                  Postdoctoral Researcher with the Department of
+                               His Ph.D. thesis was devoted to the development                                      Information Engineering, Polytechnic University
+of novel anti-jamming and counter-interference systems for Global Nav-                                              of Marche, where he worked on error correct-
+igation Satellite Systems (GNSS), GNSS-Reflectometry, and microwave                                                 ing coding techniques under some ESA research
+radiometry. One of his outstanding achievements was the development of               projects. From November 2015 to May 2016, he was a Consultant at
+a real-time standalone pre-correlation mitigation system for GNSS, named             Deimos Engenharia, Lisbon, working on spectral estimation algorithms
+FENIX, in a customized Software Defined Radio (SDR) platfor, FENIX was               and anti-jamming techniques. Since August 2017, he has been a Research
+patented, licensed and commercialized by MITIC Solutions, a UPC spin-off             Scientist at the Interdisciplinary Centre for Security, Reliability and Trust,
+company. Since 2018, he has been with the SIGCOM Research Group,                     University of Luxembourg, mainly working in the satellite communication
+Interdisciplinary Centre for Security, Reliability, and Trust (SnT), University      domain. He has been a member of the CCSDS Coding and Synchronization
+of Luxembourg, Luxembourg, and the Head of the Satellite Communications              Working Group, since 2015.
+Laboratory. He is involved in several ESA and Luxembourgish national
+research projects dealing with signal processing and satellite communi-                                             SYMEON CHATZINOTAS (Senior Member,
+cations. His research interests include SDR, real-time signal processing,                                           IEEE) is currently a Full Professor/Chief Scientist
+satellite communications, 5G non-terrestrial networks, satellite navigation,                                        I and the Head of the SIGCOM Research Group,
+and remote sensing. He received the Best Academic Record Award of the                                               SnT, University of Luxembourg. He is coordi-
+year in electronics engineering at UPC, in 2012, the First Prize of the                                             nating the research activities on communications
+European Satellite Navigation Competition (ESNC) Barcelona Challenge                                                and networking, acting as a PI for more than
+from the European GNSS Agency (GSA), in 2015, the Best Innovative                                                   20 projects and main representative for 3GPP,
+Project of the Market Assessment Program (MAP) of EADA Business                                                     ETSI, and DVB. In the past, he has been a Visiting
+School, in 2016, the Award Isabel P. Trabal from Fundació Caixa d'Enginyers                                         Professor with the University of Parma, Italy, lec-
+for its quality research during his Ph.D., in 2017, and the Best Ph.D. Thesis                                       turing on 5G wireless networks. He was involved
+Award in remote sensing in Spain from the IEEE Geoscience and Remote                 in numerous research and development projects for NCSR Demokritos,
+Sensing (GRSS) Spanish Chapter, in 2019.                                             CERTH Hellas and CCSR, and the University of Surrey. He has coau-
+                                                                                     thored more than 450 technical papers in refereed international journals,
+                               MOHAMMAD GHOLAMIAN received the B.Sc.                 conferences, and scientific books. He was a co-recipient of the 2014 IEEE
+                               degree in electrical engineering from the Electrical  Distinguished Contributions to Satellite Communications Award and the
+                               Engineering Department, Hakim Sabzevari Uni-          Best Paper Awards at EURASIP JWCN, CROWNCOM, and ICSSC. He is
+                               versity, Mashhad, Iran, in 2007. He has worked for    on the Editorial Board of the IEEE TRANSACTIONS ON COMMUNICATIONS, IEEE
+                               many years at research centers and more specifi-      OPEN JOURNAL OF VEHICULAR TECHNOLOGY, and the International Journal of
+                               cally for the implementation of signal processing     Satellite Communications and Networking.
+                               and communication algorithms on different FPGA
+                               platforms and costume boards. Since 2020, he has
+                               been with the Signal Processing and Communica-
+                               tions Research Group, SIGCOM, Interdisciplinary
+Centre for Security, Reliability and Trust, University of Luxembourg. His
+research interests include digital signal processing for wireless communica-
+tion systems, DSP/FPGA implementation of signal processing algorithms,
+software defined radios (SDR), and embedded systems.
+
+VOLUME 9, 2021                                                                       109143
+

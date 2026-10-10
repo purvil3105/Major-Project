@@ -1,0 +1,1069 @@
+Intersatellite Cooperation for                                             I. INTRODUCTION
+Early Preamble Collision
+Detection in NTN IoT                                                           Satellite communications have recently attracted sig-
+Random Access                                                              nificant attention, primarily due to the reduction in satellite
+                                                                           launch costs and the emergence of low Earth orbit (LEO)
+JINKYO JEONG, Member, IEEE                                                 satellite mega-constellations [1], [2]. Although satellite-
+Samsung Electronics , Suwon, South Korea                                   based connectivity is not new, providing communication
+SANGSEOK YUN , Member, IEEE                                                services using the fifth-generation new radio (NR) in non-
+Pukyong National University , Busan, South Korea                           terrestrial networks (NTNs) remains a nascent field of
+                                                                           study [1], [3], [4], [5]. Among the various NTN applications,
+    In this article, we propose an intersatellite cooperation-based early  enabling massive Internet of Things (IoT) connectivity has
+preamble collision detector (ISC-eCD) designed for low Earth orbit         emerged as a key focus [6]. In order to support NR NTNs
+satellite-based nonterrestrial network (NTN) Internet of Things ran-       with minimal modifications to terrestrial NR protocols,
+dom access (RA). ISC-eCD leverages cooperation between the serving         the Third Generation Partnership Project (3GPP) has ini-
+and neighboring satellites to enable early preamble collision detection.   tiated efforts to standardize NTN features starting from
+By exploiting differences in round-trip times of preambles received        Release 17 [1], [3], [4], [5].
+at these satellites, the ISC-eCD enables accurate preamble collision
+detection. We also propose a zero-correlation zone design tailored             Unlike terrestrial cellular networks, LEO satellite sys-
+to NTN RA that increases the number of available preambles and             tems are characterized by significantly longer round-trip
+reduces preamble collisions without using additional root sequences.       times (RTTs) and higher Doppler shifts due to the high
+Extensive simulations demonstrate that the ISC-eCD outperforms             mobility of satellites [7]. To address these challenges, 3GPP
+existing methods, achieving reduced RA delay, enhanced collision           mandates that each IoT node includes global navigation
+detection accuracy, improved physical uplink shared channel resource       satellite system (GNSS) functionality, along with periodic
+efficiency, and an increased number of successful RA nodes.                broadcast of satellite ephemeris via system information
+                                                                           block 19 (SIB19) [1], [3], [4], [5]. By leveraging the satellite
+Received 26 May 2025; revised 25 September 2025; accepted 14 Novem-        ephemeris data and the GNSS-based position information,
+ber 2025. Date of publication 18 November 2025; date of current version    the IoT node can precompensate for the RTT uncertainty
+9 February 2026.                                                           and Doppler shift before initiating a random access (RA)
+DOI. No. 10.1109/TAES.2025.3634485                                         procedure. Such precompensation allows the reuse of ter-
+Refereeing of this contribution was handled by V. Weerackody.              restrial NR RA preamble formats for NTN [1], [3], [4], [5].
+This work was supported by a Research Grant of Pukyong National
+University (2025).                                                             Despite these enhancements, NTN RA still faces two
+Authors' addresses: Jinkyo Jeong is with Network Business, Sam-            critical challenges arising from satellite-specific charac-
+sung Electronics, Suwon 06262, South Korea, E-mail: (jjk.jeong@            teristics. First, a single LEO satellite beam often covers
+samsung.com); Sangseok Yun is with the Department of Information           an extensive service area, which can span hundreds to
+and Communications Engineering, Pukyong National University, Busan         thousands of kilometers depending on the satellite's al-
+48513, South Korea, E-mail: (ssyun@pknu.ac.kr). (Corresponding au-         titude and footprint [4], [5]. Thus, even if the IoT node
+thor: Sangseok Yun.)                                                       density in NTNs is lower than that in terrestrial networks,
+                                                                           the significantly larger coverage area can lead to severe
+0018-9251 © 2025 IEEE                                                      physical RA channel (PRACH) congestion [1], [3], [4], [5].
+                                                                           Second, the extremely long distance between the satellite
+                                                                           and the nodes notably increases communication latency.
+                                                                           As a result, once a preamble collision occurs, the satellite
+                                                                           can detect it only upon reception of message 3 (MSG3),
+                                                                           and the collided nodes become aware of the collision only
+                                                                           after their collision resolution timers expire. This leads to
+                                                                           prolonged RA delays and inefficient utilization of physical
+                                                                           uplink shared channel (PUSCH) resources for MSG3 [8].
+                                                                           Therefore, developing a new RA solution specifically de-
+                                                                           signed for NTN is essential to effectively alleviate PRACH
+                                                                           congestion and enable early preamble collision detection.
+
+                                                                           A. Related Work
+
+                                                                               Many studies have been conducted in the academic
+                                                                           literature to address PRACH congestion and enhance early
+                                                                           preamble collision detection.
+
+                                                                               1) Mitigation of PRACH Congestion: In [9], [10], and
+                                                                           [11], enhanced preamble detector designs have been pro-
+                                                                           posed to suppress interference caused by nonorthogonal
+                                                                           preambles. Although these schemes can mitigate PRACH
+
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026         2151
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+congestion through the use of multiple root sequences and           Alternative approaches that do not depend on ToA dif-
+interference cancellation, the performance improvements         ferences have also been proposed [8], [23], [24], [25], [26],
+come at the expense of the exceptionally high computational     [27], [28], [29], [30]. Zhang et al. [23] exploited a narrow
+complexity of the detector designs, which renders them im-      PRACH guard interval to transmit device IDs for collision
+practical for payload-limited satellite receivers. Moreover,    detection, yet its limited bandwidth causes performance
+usage of nonorthogonal preamble incurs interference, thus       degradation in massive access scenarios. In [24], [25],
+increasing the false alarm probability.                         [26], and [27], deep-learning-based preamble detectors have
+                                                                been proposed. However, deep-learning-based preamble
+    Pratas et al. [12] proposed a code-expanded RA scheme       detectors impose excessive computational burden on the
+that exploits codewords to mitigate PRACH congestion.           satellite, making them impractical for payload-limited satel-
+However, it requires each IoT node to transmit multiple         lite receivers. In [8], multiple-detection-threshold-based
+preambles consecutively, thereby increasing the power con-      early preamble collision detection scheme has been pro-
+sumption of the nodes and the overall RA delay.                 posed. It benefits from coarse TA estimation of IoT nodes,
+                                                                where dispersed arrival times help detect collisions. How-
+    He and Ren [13] exploited a beamforming scheme to           ever, in NTN RA, where high TA accuracy is required,
+mitigate PRACH congestion by distinguishing identical           such dispersion is minimal, leading to degraded detection
+preambles based on their angle of arrival. However, this        performance. The tagged preamble structure in [28] uses
+approach is not directly applicable to NTN RA because a         multiple-root Zadoff­Chu (ZC) sequences for collision de-
+single LEO satellite beam typically covers an extensive area,   tection but suffers from severe interference under massive
+making it unable to differentiate preamble from multiple        access conditions, reducing PUSCH resource efficiency.
+IoT nodes within the same beam.                                 To mitigate this interference, Zhen et al. [29] limit the
+                                                                number of root sequences, but interference still persists
+    In [14], [15], and [16], power domain nonorthogonal         under the massive access scenario, and the scheme cannot
+multiple access (NOMA)-based RA schemes have been               fully exploit the additional preambles enabled by multiple
+proposed. While these schemes are effective in terrestrial      root sequences. Zhen et al. [30] proposed a single-root ZC
+cellular networks, where significant differences in channel     sequence approach using prime number properties to avoid
+gain are common, they face limitations in NTN RA. In            interference. However, it relies on perfect RTT precompen-
+NTNs, the considerable distance between the satellite and       sation at the IoT node, which is not feasible in practice.
+IoT nodes results in only minor variations in received signal
+power, making it difficult to exploit channel gain differences  B. Contributions
+for power domain NOMA [17].
+                                                                    Most conventional methods for alleviating PRACH con-
+    2) Early Preamble Collision Detection: Sari et al. [18]     gestion and improving early preamble collision detection
+proposed an MSG3 barring scheme that estimates the total        face several challenges, including high receiver complexity,
+number of RA attempting nodes, including those involved in      increased interference from excessive use of nonorthogo-
+collisions, and then broadcasts an MSG3 barring factor via      nal preambles, additional time resource consumption, and
+random access response (RAR). However, since the scheme         unnecessary RA retrials. Furthermore, many terrestrial RA
+cannot identify which preambles are collided, it may trigger    schemes are not directly applicable to NTN RA systems.
+false collision detections resulting in unnecessary retrans-
+missions and increased RA delays.                                   Recently, in the rapidly evolving field of LEO-satellite
+                                                                mega-constellations, intersatellite links (ISLs) have gained
+    Vilgelm et al. [19] proposed the binary countdown con-      significant attention [31], [32]. These links facilitate effi-
+tention resolution method to enable early preamble collision    cient cooperation among satellites, reducing latency, im-
+detection at the node side. In this approach, each active       proving coverage, and enhancing network resilience [33],
+node broadcasts its presence before transmitting MSG3, and      [34], [35]. Inspired by the growing prominence of ISLs,
+if no other node using the same preamble is detected, the       we leverage their advantages to propose an intersatellite
+node assumes that no collision has occurred. This scheme,       cooperation-based early preamble collision detector (ISC-
+however, is not directly applicable to NTN RA because the       eCD), integrated with a novel zero-correlation zone (ZCZ)
+extensive coverage area of a single satellite limits the reach  design. Our key contributions are summarized as follows.
+of the broadcast signals among all active nodes.
+                                                                    1) We propose the ISC-eCD, which leverages RTT
+    The time-of-arrival (ToA) difference has been exploited             differences between the serving and neighboring
+to enable early preamble collision detection in several stud-           satellites for each IoT node, along with intersatellite
+ies [20], [21]. Liang et al. [20] leveraged the difference in           cooperation. This RTT difference enables the ISC-
+ToA among transmitted preambles to distinguish collisions               eCD to detect preamble collisions immediately after
+and resolve them using a NOMA scheme. Similarly, Jang                   preamble reception, even when collisions cannot be
+et al. [21] and Alavikia and Ghasemi [22] utilized ToA                  identified at the serving satellite. In addition, mul-
+differences to identify preamble collisions and resolve them            tiple detection thresholds are adopted to improve
+via distinct timing advance (TA) commands or collision                  preamble collision detection. As a result, the ISC-
+notifications through the RAR. However, in NTN RA, each                 eCD significantly reduces RA delay, increases the
+node performs TA when transmitting the preamble to com-
+pensate for large RTT uncertainties. As a result, all pream-
+bles arrive at the satellite in a time-aligned manner, render-
+ing ToA differences ineffective for collision detection.
+
+2152  IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+        number of RA-success nodes, and enhances PUSCH                                Fig. 1. System model of ISC-eCD.
+        resource efficiency of MSG3 compared to conven-
+        tional schemes.                                             Step 2) Preamble detection and RAR transmission: The
+    2) We propose a novel ZCZ design tailored for NTN           satellite detects the received preambles and transmits an
+        RA. In terrestrial NR, ZCZ is determined based on       RAR message containing the detected preamble index, a
+        the RTT of cell coverage. However, in NR NTNs,          TA command, a temporary cell radio network temporary
+        since IoT nodes perform TA, the conventional RTT-       identifier, and an uplink grant for MSG3.
+        based ZCZ design results in long ZCZ length. To
+        address this, we propose a new ZCZ design tailored          Step 3) MSG3 transmission: If an IoT node decodes
+        for NTN RA that considers RTT compensation error,       the RAR within RAR window, which begins after RTT
+        thereby increasing the effective number of orthogo-     following preamble transmission, it transmits MSG3 on the
+        nal preambles derivable from a single ZC sequence       assigned PUSCH. Otherwise, the node waits for a random
+        and reducing the probability of preamble collision.     back-off period and retries the RA procedure [7].
+    3) We mathematically analyze the probabilities of suc-
+        cessful preamble collision detection, false collision       Step 4) Contention resolution (CR) message: Once the
+        alarm, and preamble collision of ISC-eCD under          satellite successfully decodes MSG3, it sends a CR mes-
+        the line-of-sight (LoS) channel conditions. Also, we    sage, called MSG4. If the IoT node successfully receives
+        validate the accuracy and consistency of the analysis   the CR message before the CR timer expires, which starts
+        by extensive numerical evaluations.                     after the RTT elapsed following MSG3 transmission, the
+    4) Comprehensive simulation results are provided to         RA procedure is completed. Otherwise, the node retries the
+        evaluate the proposed ISC-eCD scheme from multi-        RA procedure by transmitting a new preamble according to
+        ple perspectives. Simulation results demonstrate that   the random back-off policy [7].
+        the proposed ISC-eCD scheme achieves reduced RA
+        delay, an increased number of RA-success nodes,         B. System Model
+        improved PUSCH resource efficiency for MSG3,
+        lower preamble collision probability, and enhanced          We consider a large-scale multisatellite network based
+        collision detection probability compared to conven-     on the 3GPP SET-1 LEO configuration [3], [4], targeting
+        tional methods.                                         mega-constellation deployments, where M satellites orbit
+                                                                at an altitude of 600 km and a speed of 7.56 km/s, providing
+    The rest of this article is organized as follows.           IoT connectivity through quasi-Earth-fixed beams that serve
+Section II describes the background and the system model.       fixed geographic regions for limited durations [4], [5]. The
+In Section III, we describe the proposed ISC-eCD procedure      system model is illustrated in Fig. 1. Adjacent satellites
+with novel ZCZ design. In Section IV, extensive simulations     exchange RA channel (RACH) configuration and control
+are performed to validate the superiority of the ISC-eCD.       information via ISL, enabling coordinated resource man-
+Finally, Section V concludes this article.                      agement. Moreover, each satellite periodically broadcasts
+                                                                SIB19 such as satellite ephemeris for both serving and
+II. BACKGROUND AND SYSTEM MODEL                                 neighboring satellites, as specified by 3GPP standards [4],
+                                                                [36]. We define the neighboring satellite as either the first
+A. RA Procedure in NR NTNs                                      forward or backward satellite in the orbit whose serving
+                                                                beam fully overlaps with that of the serving satellite. If
+    In NR NTNs, the terrestrial cellular RA procedures with     both beams overlap, the backward satellite is selected as
+some modifications are reused [4]. RA for the initial access    the neighboring satellite. In this article, we designate the
+consists of the following four steps.                           backward satellite as the neighboring satellite and assume
+                                                                that the serving beams of the two satellites fully overlap.
+    Step 1) Preamble transmission: In NR NTN RA, a ZC
+sequence is used to generate preambles. The ZC sequence         III. PROPOSED SCHEME
+is defined by zr[n] = exp[- j rn(n + 1)/NZC] for 0  n 
+NZC - 1, where r  {1, . . . , NZC - 1} and NZC denote the           In this section, we present the proposed ISC-eCD for
+root index and the sequence length, respectively. By exploit-   NTN RA. The ISC-eCD leverages intersatellite cooperation
+ing the ideal autocorrelation characteristics of ZC sequences   to detect preamble collisions by comparing detection results
+and the concept of ZCZ, where the correlation between           of serving and neighboring satellites. It also incorporates a
+cyclically shifted sequences is zero within a certain range,
+NPA orthogonal preambles are generated. These preambles
+are derived from a single ZC sequence through cyclic shifts,
+with a shift step size of NCS, where NCS represents the length
+of the ZCZ. Each IoT node then randomly selects one of
+the NPA available preambles. Subsequently, each node then
+uses its GNSS and satellite ephemeris for open-loop power
+control, TA, and Doppler precompensation, followed by
+preamble transmission.
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT  2153
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+          TABLE I
+      List of Notations
+
+                                                             ZCZ tailored to NTN RA, we can effectively increase the
+                                                             available preambles. The overall procedure for the ISC-eCD
+                                                             is illustrated in Fig. 2 and the list of notations used in this
+                                                             manuscript is summarized in Table I.
+
+                    Fig. 2. RA procedure of the ISC-eCD.     A. Preamble Design
+
+novel ZCZ design that increases the total number of pream-       In the ISC-eCD, we exploit the preamble detection
+bles, thereby alleviating PRACH congestion. The key idea     results of both serving and neighboring satellites to detect
+behind this approach is that, although collided preambles    preamble collision. In LEO satellite-based NTNs, due to
+may not be distinguishable at the serving satellite due to   large beam coverage and long distance between satellites,
+TA performed by nodes, they can still be separated at a      the range of RTT difference between an IoT node and its
+neighboring satellite since the RTT between an IoT node      serving and neighboring satellites is nonnegligible. As a
+and the two satellites differ. This RTT difference provides  result, a preamble detected at the serving satellite may be
+an additional opportunity to identify preamble collisions.   detected as a different preamble at the neighboring satellite
+Furthermore, since active IoT nodes perform TA when          due to the RTT difference. This ambiguity caused by RTT
+transmitting preambles, it becomes unnecessary to reserve    difference can lead to false detection at the neighboring
+long ZCZ length as done in terrestrial RA. By designing new  satellite.
+
+                                                                 To overcome this ambiguity, before the IoT nodes at-
+                                                             tempt RA, the ISC-eCD first confines the RTT differences
+                                                             by grouping IoT nodes with similar RTT differences and as-
+                                                             signing dedicated preamble pools accordingly. This ensures
+                                                             that the transmitted preambles of IoT nodes in the same
+                                                             group experience only limited RTT difference variation at
+                                                             the neighboring satellite. Therefore, the preambles can be
+                                                             aligned within the corresponding ZCZ at the neighboring
+                                                             satellite after compensating for common RTT differences
+                                                             of each group.
+
+2154  IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+    1) Partitioning RTT Difference Ranges: To enable                   by
+preamble detection at the neighboring satellite without RTT
+difference ambiguity, the ISC-eCD first identifies the min-                            tZpCroZp = 2tNerTrN + ^                   (4)
+imum and maximum RTT differences between the serving
+and neighboring satellites within the serving beam cover-              where tNerTrN and ^ =  · (TSEQ/NZC) represent the time du-
+age. Let i,ser and i,nei denote the RTT from the ith node to           rations of the TA error bound and  , respectively, both
+the serving and neighboring satellites in the ZC sequence              expressed in microseconds. The minimum ZCZ length in
+domain, respectively. The RTT difference between serving               the ZC sequence domain is calculated as
+and neighboring satellites for the ith node is defined as
+                                                                                  NCpSrop =  tZpCroZp  ·  NZC   .                (5)
+                                                                                                          TSEQ
+           i i,ser - i,nei, i  { min, max} (1)
+                                                                       Then, the total number of preambles, NPtoAt, is given as
+where min and max denote the minimum and maximum
+RTT differences between the serving and neighboring satel-                        NPtoAt = NZC NCpSrop .                         (6)
+lites within the beam coverage, respectively. Note that, in
+accordance with 3GPP TR 38.821 [4], each satellite has                     3) Preamble Allocation Per Section: To exploit the
+prior knowledge of the geographical information for ref-               partitioned RTT structure for early collision detection, the
+erence points within its serving beam coverage. Moreover,              ISC-eCD assigns a dedicated set of contiguous preambles
+each satellite has prior knowledge of neighboring satellite            to each section. Consequently, all IoT nodes within the
+radio resource control configurations, including satellite             same section select their preambles from a common pool,
+ephemeris according to 3GPP TS 38.331 [36].                            inherently limiting the RTT difference variation among
+                                                                       these nodes to at most  .
+    Subsequently, the serving satellite partitions the RTT
+difference range into multiple sections of interval size  .                Since all IoT nodes within the same section share the
+Specifically, for the uth section, the corresponding RTT               same preamble pool, the number of preambles allocated to
+difference interval is given as                                        each section must be proportional to the expected number
+                                                                       of nodes in that section. The number of preambles assigned
+Tu =    [ max - u ·  + 1, max - (u - 1) ·  ] .                         to the uth section, Nu,PA, is thus given by
+                                                                  (2)
+                                                                                  Nu,PA = round u · NPeAff                       (7)
+
+The number of sections is then obtained as                             where round(·) denotes the rounding operator, and u repre-
+                                                                       sents the expected fraction of IoT nodes in the uth section.
+NSEC =  max - min .                         (3)                        Note that u for u = 1, . . . , NSEC can be estimated in ad-
+                                                                       vance since the satellite trajectory is fixed and IoT devices
+                                                                       are assumed to be stationary.
+This ensures that the preambles transmitted by IoT nodes
+within the same section share a similar RTT difference to                  The primary advantage of this structured preamble allo-
+the neighboring satellite, thereby limiting the variation of           cation is the confinement of the RTT difference variations
+RTT difference within each section to at most  .                       within each section to at most  . After the neighboring
+                                                                       satellite compensates for the common RTT difference of
+    2) New ZCZ Design for Increasing the Effective Num-                each section (see Section III-B), the residual timing offset
+ber of Preambles: In terrestrial NR, the ZCZ length is                 due to RTT difference variation does not exceed  , which is
+designed to accommodate the maximum RTT from edge                      covered by our proposed ZCZ design. Hence, the preamble
+nodes within a cell. However, in NR NTNs, each IoT node                allocation per section effectively prevents false detections
+performs preamble transmission with TA allowing accurate               among preambles within each section.
+synchronization [4]. Therefore, there is no longer a need to
+reserve a long ZCZ length to account for RTT. To exploit                   However, ambiguity due to RTT difference variations at
+this characteristic, we propose a new ZCZ design tailored to           section boundaries still remains. To prevent false detections
+NTN RA, which accounts for TA error and variation of RTT               across adjacent sections, the ISC-eCD reserves a guard
+difference. By doing so, we can increase the effective num-            preamble between consecutive sections. Consequently, the
+ber of preambles without increasing the ZC root sequence               effective total number of available preambles is given by
+overhead.
+                                                                                  NPeAff = NPtoAt - (NSEC - 1).                  (8)
+    In the ISC-eCD, the variation in RTT difference for
+each section remains up to  at the neighboring satellite.              Accordingly, the valid preamble index set for the uth section
+Therefore, in the ISC-eCD, ZCZ should fully cover the                  is defined as
+variation in RTT difference within  . In addition, since the
+received preamble at the serving satellite has timing offset                      u-1                     u
+due to TA error, the proposed ZCZ also needs to cover the
+maximum TA error. According to 3GPP TS 38.133 [37],                    Su = s|s        Nk,PA + u - 1, Nk,PA + u - 2 .
+the TA error bound for NTN RA is 29 × 64 × Tc, where
+Tc = 0.508 ns is the minimum time unit in NR [38]. The                            k=1                     k=1
+minimum required time duration for each ZCZ is then given
+                                                                                                                                 (9)
+
+                                                                       In other words, any node whose RTT difference falls within
+                                                                       the range of the uth section randomly selects a preamble
+                                                                       index from Su.
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT                                      2155
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+B. RA Procedure of ISC-eCD                                                           Li,ser
+
+1) Preamble Selection and Transmission: In the NR                                 =              his,edr [m + sui NCpSrop
+
+NTN, each active node acquires the ephemeris of its serving                          iA d=1
+
+and neighboring satellites through SIB19 [36], while in the                       + NerTrN + i,err + is,edr] + w~ [m]      (12)
+
+ISC-eCD, the RTT difference range and preamble indices
+
+for each section are additionally included in the periodic              where w~ [m]  CN (0, w2 NZC) denotes the AWGN after
+                                                                        the correlation operation.
+SIB19 broadcast.
+                                                                            For each valid preamble index su  Su in the uth section,
+Let us consider an arbitrary ith active IoT node. Based
+                                                                        the corresponding proposed ZCZ region is given as
+on the received ephemeris and GNSS capability, it com-
+
+putes the estimated RTT difference in ZC sequence do-
+
+main between the serving and neighboring satellites as                  Dsu = m| m  suNCpSrop, (su + 1) NCpSrop - 1 . (13)
+  i,est = i + i,err, where i,err denotes estimation error.
+                                                                        In the ISC-eCD, three distinct detection thresholds are
+Thereafter, the IoT node identifies its section ui based on
+  i,est, where i,est  Tui . Once the section ui of the ith              adopted at the serving satellite for preamble and collision
+
+node is determined, the node randomly selects the preamble              detection [8]. The first threshold, th,1, is used to determine
+                                                                        whether a preamble has been detected. Let mssue,r1 denote
+sui among Sui as in (9).                                                the number of correlation peaks within the proposed ZCZ
+    After an active IoT node chooses preamble index, it per-
+                                                                        region Dsu at the serving satellite for which the correla-
+forms open-loop power control to keep the received signal               tion value Cser[m] exceeds th,1, i.e., Cser[m]  th,1, where
+                                                                        m  Dsu .
+power constant on the serving satellite side [39]. Thereafter,
+                                                                            To further distinguish the dominant LoS component
+it transmits the preamble after performing TA and Doppler
+
+shift compensation based on the serving satellite ephemeris             from non-line-of-sight (NLoS) reflections, a second thresh-
+
+and its own location information obtained by GNSS ca-                   old th,2 is employed. The number of peaks within Dsu ex-
+                                                                        ceeding th,2, denoted by mssue,r2, is used to identify preamble
+pability, respectively. The Doppler shift estimation error              collisions. The effective number of peaks for the suth pream-
+
+associated with GNSS is known to be below 10 Hz [40],
+
+which is significantly smaller than the subcarrier spacing              ble, excluding those caused by multipath components, is
+
+of the long preamble format, i.e., 1.25 kHz. Thus, Doppler              given by mssuer = min(max(mssue,r2, 1), mssue,r1). In addition, a
+                                                                        third threshold, th,3, is applied to detect preamble collisions
+shift precompensation is considered sufficiently accurate,
+
+and its effects are neglected unless otherwise specified. The           resulting from the superposition of multiple LoS compo-
+
+transmitted signal of the ith node is then expressed as                 nents from collided nodes. The number of peaks exceeding
+
+                  (n + sui NCpSrop + NerTrN + i,err ) mod NZC           th,3      within Dsu is denoted by mssue,r3. The values mssuer and
+si [n] = Pizr                                                           mssue,r3  , together with the detection results from neighboring
+
+                                                                  (10)  satellite, are jointly used to determine whether a preamble
+
+where Pi, r, and NerTrN denote the transmit power, selected             collision has occurred.
+root sequence index, and the TA error bound in the ZC
+sequence domain, respectively.                                          3) Preamble Detection of ISC-eCD at a Neighboring
+
+    2) Preamble Detection of ISC-eCD at Serving Satellite:              Satellite: Since active IoT nodes perform TA and Doppler
+After passing through the typical NTN LoS channel, the
+received preambles of the active IoT nodes on the serving               shift precompensation for serving satellite, the preambles
+satellite can be obtained as
+                                                                        received at a neighboring satellite still exhibit differences
+
+                                                                        in RTT and Doppler shift. To mitigate the Doppler shift
+
+                                                                        discrepancy at the neighboring satellite, we adopt a similar
+
+                                                                        approach to Doppler shift compensation used for downlink
+
+                 Li,ser                                                 signals in NR NTN [4].
+
+yser [n] =               his,edr si n + is,edr + i,err + w [n]    (11)  Fig. 3(a) shows the Doppler shift ranges experienced
+
+            iA d=1                                                      by the serving and neighboring satellites relative to the
+
+where his,edr, A, Li,ser, is,edr, and w[n] denote the dth multipath     positions of IoT nodes within a 46-km-diameter beam, at
+channel coefficient of the ith node, set of active IoT nodes
+                                                                        a center frequency of 2 GHz [4]. In this configuration, the
+attempting RA, the total number of multipaths for the ith
+                                                                        500 satellites orbit the Earth at an altitude of 600 km with
+node to serving satellite, the delay of the dth multipath               beam of serving satellite centered at a 90 elevation angle,
+
+for the ith node to serving satellite, and the additive white           corresponding to the LEO SET-1 configuration [4].
+Gaussian noise (AWGN) with zero mean and variance w2 ,
+respectively.                                                           Note that both satellites exhibit nearly identical slopes in
+
+    In order to detect the preamble, serving satellite calcu-           their Doppler shift profiles due to similar orbital velocities
+
+lates correlation between yser[n] and zr[n], which is given             and directions; however, a constant offset arises from slight
+by
+                                                                        variations in the viewing angle. Let fsceern and fnceein be the
+                                                                        Doppler shifts at the beam center of serving satellite for the
+
+                                                                        serving and neighboring satellites, respectively, and define
+
+                  1      NZC -1                                         the common Doppler offset between serving and neigh-
+                 NZC
+      Cser[m] =                yser [n]  zr[(n  +  m)  mod  NZC]        boring satellites as fcom = fnceein - fsceern. In the ISC-eCD, the
+                                                                        neighboring satellite compensates for fcom after reception
+                          n=0
+
+2156                                               IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+                                                                        RTT difference by cyclically shifting Cnei[m] by max - u ·
+                                                                         + 1, which corresponds to the minimum RTT difference
+                                                                        within Tu. The shifted correlation signal for the uth section
+                                                                        is expressed as
+
+                                                                        Cnuei[m] = Cnei [(m - max + u ·  - 1) mod NZC] . (16)
+
+                     (a)                                                By compensating for the common RTT difference of each
+
+                                            (b)                         section, the neighboring satellite can detect the preamble
+                                                                        su  Su within their corresponding ZCZ regions Dsu , as in
+Fig. 3. Doppler shift with respect to IoT node position (a) before and  the serving satellite.
+              (b) after common Doppler shift compensation.
+                                                                            Thereafter, for each valid preamble index su  Su in
+of preambles. Note that the neighboring satellite can have
+prior information of reference point and ephemeris of serv-             the uth section, the neighboring satellite identifies the cor-
+ing satellite via SIB19. The residual Doppler shift then
+almost matches that at the serving satellite within ±60Hz,              responding ZCZ region Dsu within the shifted correlation
+as shown in Fig. 3(b). Due to the robust frequency offset               signal Cnuei[m], where m  Dsu . It then counts the number of
+tolerance of ZC sequences, this small residual Doppler shift            correlation peaks within Dsu that exceed the threshold th,2,
+is negligible. Hence, unless explicitly stated otherwise, the           i.e., Cnuei[m]  th,2, to detect potential preamble collisions.
+neighboring satellite Doppler shift term is omitted.                    Since the serving satellite has already verified the existence
+                                                                        of each preamble using the threshold th,1, the neighboring
+    After each IoT node precompensates for the Doppler                  satellite only identifies the dominant LoS peaks of active
+shift relative to the serving satellite, and the neighbor-              nodes using th,2. The number of such peaks is denoted by
+ing satellite subsequently compensates for the common                   msnue,i2 and is used to infer whether a collision has occurred.
+Doppler offset fcom, the received signal at the neighboring             In addition, the neighboring satellite further applies another
+satellite can be expressed as                                           detection threshold th,3 to detect superposition of LoS
+                                                                        components caused by collided preambles. The number
+             Li,nei                                                     of peaks exceeding th,3 within Dsu is denoted by msnue,i3.
+                                                                        Once the detection process is completed for all sections,
+ynei [n] =           hin,edisi n + in,dei +  i,est + w [n] (14)
+                                                                        the neighboring satellite transfers, for all preamble indices,
+            iA d=1                                                      both msnue,i2 and msnue,i3 to the serving satellite via the ISL.
+
+                                                                            4) Preamble Collision Determination at Serving Satel-
+                                                                        lite: After receiving msnue,i2 and msnue,i3, the serving satellite de-
+                                                                        termines whether the suth preamble is collided. A collision
+
+                                                                        is declared if any of the following conditions hold: first, if
+
+                                                                        the sum of the detected peaks at the serving and neighboring
+
+                                                                        satellites is greater than or equal to two, excluding the case
+
+                                                                        when both values are exactly one, i.e.,
+
+where Li,nei and in,dei denote the total number of multipaths              mssuer + msnue,i2  2, with mssuer, msnue,i2 = (1, 1) (17)
+from the ith node to the neighboring satellite and the relative
+delay of its dth multipath, respectively. Note that although            second, if the numbers of detected peaks at both satellites
+active IoT nodes perform open-loop power control for the                are equal and at least two, i.e.,
+serving satellite, the received signal power variation at a
+neighboring satellite remains marginal [41].                                              mssuer = msnue,i2  2         (18)
+
+    Thereafter, the neighboring satellite calculates the cor-           third, if at least one peak corresponding to superposition of
+relation value between ynei[n] and zr[n], which is given as
+                                                                        LoS components from collided nodes is detected at either
+
+                                                                        satellite, i.e.,
+
+              1      NZC -1                                                               max mssue,r3, msnue,i3  1.   (19)
+             NZC
+Cnei [m] =                 ynei[n]zr[(n + m)   mod  NZC]                Meanwhile, the suth preamble is considered to be success-
+          =                                                             fully detected without collision if exactly one effective peak
+                      n=0
+
+                   Li,nei                                               is detected at the serving satellite and at most one peak at
+
+                      hin,edi[m + sui NCpSrop                           the neighboring satellite, i.e.,
+
+             iA d=1
+
+            + NerTrN + i,est + in,dei] + w~ [m] .         (15)                            mssuer = 1 and msnue,i2  1.  (20)
+
+                                                                        By incorporating these decision rules, the serving satellite
+
+Although the ith preamble is time-aligned at the serving                can accurately detect preamble collisions.
+satellite due to TA, it arrives at the neighboring satellite                The serving satellite transmits an RAR only for pream-
+with an offset of i,est.
+                                                                        bles that are successfully detected without collision. If a
+    To resolve the RTT difference ambiguity for the uth sec-
+tion, the neighboring satellite compensates for the common              preamble collision is detected, the collided nodes retry
+
+                                                                        RA after the RAR window expires, following the random
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT                            2157
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+Algorithm 1: Procedure of ISC-eCD.                              where P5 denotes the RA success probability. If preamble
+                                                                collision detection is successful, the node recognizes that its
+  Step 1: Preparation (at the Serving satellite)                RA has failed after RAR window expires. Unlike terrestrial
+                                                                cellular networks, where the RAR window starts immedi-
+1: Broadcast min, max, section interval  , and                  ately after preamble transmission, IoT nodes in the NTN
+   Nu,PA for u = 1, . . . , NSEC via SIB19.                     first wait for the RTT after preamble transmission and then
+  Step 2: Preamble selection (at an Active IoT                  initiate the RAR window timer [42]. Then, the expected de-
+                                                                lay of RA failure for successful preamble collision detection
+      node)                                                     is obtained as
+
+2: for each active node i do                                                   T1 = TPA + T¯RTT + WRAR                 (21)
+
+3: Estimate i,est and determine section ui.
+4: Randomly select preamble sui  Sui .
+5: Transmit the preamble with TA and Doppler
+
+      pre-compensation.                                         where TPA, T¯RTT, and WRAR denote preamble duration, av-
+                                                                erage RTT delay, and RAR window duration, respectively.
+6: end for                                                      Similarly, the expected delay for miss detection is the same
+                                                                as T1, i.e., T2 = T1.
+      Step 3: Preamble detection (at the Neighboring
+                                                                    If preamble collision detection fails, the satellite sends
+      satellite)                                                an RAR to collided nodes. These nodes transmit MSG3 but
+                                                                cannot receive the CR message, retrying RA after the CR
+7: Apply common Doppler compensation by fcom.                   timer expires. Similarly, the CR timer starts only after the
+                                                                RTT has elapsed following MSG3 transmission [42]. Then,
+8: for u = 1 to NSEC do                                         the expected delay for failed preamble collision detection
+                                                                is given as
+9: Obtain Cnuei[m] from Cnei[m].
+10: for each s  Su do
+
+11:   Count peaks in Cnuei[m] exceeding th,2 and
+
+      th,3.
+
+12: end for
+
+13: end for                                                     T3 = TPA + TPD + 2T¯RTT + TCPODL                       (22)
+                                                                     + T¯RAR + TRp-ro3c + TMSG3 + WCR
+14: Send {msn,e2i, msn,e3i} for all s to the serving satellite
+    via ISL.
+
+      Step 4: Collision decision (at the Serving
+
+      satellite)                                                where TPD is the processing delay for preamble detection
+                                                                and TCPODL represents the processing delay for preamble col-
+15: for u = 1 to NSEC do                                        lision determination, respectively. T¯RAR = 0.5WRAR + TRAR
+                                                                denotes the average RAR reception delay, where TRAR is
+16: for each s  Su do                                           the duration of RAR. In order to enhance the reliability of
+
+17:   Count peaks in Cser[m] exceeding th,1, th,2,              ISC-eCD, the length of RAR window should be set to equal
+
+      and th,3.                                                 to or larger than the maximum ISL delay, which is given as
+
+18: Declare a preamble collision if any of the
+
+      conditions (17)­(19) holds.
+
+19: Declare successful preamble detection if                                   WRAR  TmISaxL + TPD + TCPODL            (23)
+
+      (20) holds.
+
+20: end for                                                     where TmISaxL  denotes the maximum      ISL delay between the
+                                                                serving and    neighboring satellites.  TRp-ro3c denotes the pro-
+21: end for
+
+                                                                cessing time between RAR reception and MSG3 transmis-
+
+back-off policy [42]. If a collision is not detected and the    sion. TMSG3 denotes the duration of MSG3 transmission, and
+preamble is incorrectly treated as successful, the collided     WCR represents the CR timer window.
+nodes proceed to transmit MSG3 but cannot receive the CR
+message. Consequently, after the CR timer expires, they             If a false collision alarm occurs, similar to failed pream-
+retry RA under the same back-off policy. In cases of false
+collision alarm, where the satellite mistakenly identifies a    ble collision detection case, the IoT nodes retry their RA
+noncollided preamble as collided, unnecessary RA retrials
+occur, increasing the overall RA delay. The overall ISC-eCD     after the CR timer expires. Thus, the expected delay for
+procedure is summarized in Algorithm 1.                         false collision alarm is the same as T3, i.e., T4 = T3.
+
+C. RA Delay of ISC-eCD                                              If the preamble is not collided and successfully detected,
+
+    In this section, we analyze the long-term average RA        the IoT nodes complete RA after reception of CR message.
+delay of ISC-eCD. There are five possible cases when an
+active IoT node transmits a preamble:                           Then, the expected delay is given as
+
+    1) P1 = Pr[Collision occurs and detected];                  T5 = TPA + T¯RTT + TPD + TISL + TCPODL                 (24)
+    2) P2 = Pr[Preamble miss detection];                             + T¯RAR + TRp-ro3c + TMSG3 + T¯CR
+    3) P3 = Pr[Collision occurs and detection failed];
+    4) P4 = Pr[No collision, false collision alarm];            where T¯CR denotes the average CR message reception de-
+    5) P5 = Pr[Successful detection without collision];         lay, which is given by T¯CR = 0.5WCR + TCR [8], with TCR
+
+                                                                denoting the CR message duration.
+
+                                                                    Each IoT node is allowed to retry RA up to a maximum
+                                                                number of times until it succeeds. Let us denote Nrteottx as the
+                                                                total number of RA retrials to succeed. Also, let us define
+
+                                                                Nk, j as the number of occurrences for delay case k in the
+
+                                                                jth instance before RA success, where Nrteottx =  4    Nk,  j  ,
+                                                                                                                  k=1
+
+2158                                IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+0  Nk, j  Nrteottx, for j = 1, . . . , 4Nrteottx . Nrteottx is limited by              ~ = ~ re + j~ im  CN (0, 2 NZC) denote the AWGN after
+the maximum number of RA retrials Nrmetaxx. Therefore, the                             the correlation operation.
+average RA delay of ISC-eCD is then obtained as
+                                                                                           From (27) and (28), J follows a Rician distribution
+                                 Nrteottx      4n                T¯BO
+                                 n=1           j=1                                     whose probability density function is expressed as
+
+       TRA  =  P5T5       +                          AjBj    +              (25)
+                          P5
+                              +            Nrteottx  4n                                                  x           - x2 + 2                 x
+                                           n=1       j=1  A                               f (x|, ) = exp                                   I0 2                 (29)
+                                                             j                                           2              22
+
+where  A j = P5      4       (PkNk,  j     ),        B j = T5 +    4    Tk  Nk,     ,
+                     k=1                                           k=1
+                                                                                 j                                                             n2
+                                                                                                                                              2NZC
+and T¯BO = 0.5WBO denotes the average random back-off                                  where  =       Kfac    and  =       (       1  +1)  +        ).   I (·)  de-
+                                                                                                     Kfac +1                  2(Kfac
+delay, where WBO is the duration of the back-off window.
+                                                                                       notes the modified Bessel function of the first kind with
+
+D. Performance Analysis                                                                order zero. The cumulative distribution function (CDF) of
+
+    In this section, we develop an analytical model of ISC-                            J is obtained as
+eCD to evaluate: 1) the probability of successful preamble
+collision detection (PSCD), defined as the probability that                                          Pr (J < x) = 1 - Q1                ,  x                    (30)
+a preamble collision is correctly detected when it actually                                                                                
+occurs; 2) the probability of false collision alarm (PFCA);
+and 3) the probability of preamble collision, defined as the                           where Q1(·, ·) denotes the Marcum Q function.
+probability that the satellite incorrectly declares a collision                            In the second case, the preamble ToAs of the collided
+when no actual collision has occurred. We adopt a Rician
+fading model and normalize the average received power                                  nodes coincide, so the correlation peaks of the two collided
+at the satellite to unity. For each node, the channels to the
+serving and neighboring satellites are assumed independent                             nodes i1 and i2 are superposed.
+and identically distributed. Note that even under a heavy                                  The magnitude of the superposed correlation peak, L =
+RA load, the probability of more than two nodes choosing
+the same preamble is very low [24]. Hence, we focus on                                 |Hi1 + Hi2 + ~ | = Y12 + Y22, becomes an RV, where
+the preamble collision event, specifically when two nodes
+choose the same preamble.                                                                    Yp  N (p(i1 , i2 ), L ), p  {1, 2}
+
+    For an arbitrary ith active node, the wireless channel to                                1(i1 , i2 ) =           Kfac   (cos      i1   +  cos  i2 )
+a satellite (serving or neighboring) is expressed as                                                               Kfac +  1
+
+                                                                                             2(i1 , i2 ) =           Kfac   (sin  i1       +  sin  i2 )
+                                                                                                                   Kfac +  1
+
+                                                                                             L2   =        1  +  1)  +   w2
+                                                                                                     2 (Kfac            2NZC
+                       Kfac e ji +                       1
+       Hi =          Kfac + 1                        Kfac + 1 gi            (26)       for a given i1 and i2 . ik denotes the phase of the LoS
+                                                                                       component in Hik , k = 1, 2.
+where Kfac is the Rician K-factor, i  Uniform[0, 2 ]
+is the phase of LoS component, and gi = gi,re + gi,im                                      For a given i1 and i2 , L  Rice(Y(i1 , i2 ), L )
+CN (0, 1) represents the NLoS component.                                               follows a Rician distribution, where Y (i1 , i2 ) =
+
+    For both serving and neighboring satellites, there are                               1(i1 , i2 )2 + 2(i1 , i2 )2. The CDF of L for a given
+two cases for preamble collision. In the first case, the ToA of
+the preamble is different, i.e., two distinct correlation peaks                        i1 and i2 is then obtained as
+exist in the ZCZ. For each correlation peak, the magnitude
+of the correlation peak at each satellite becomes a random                             Pr L < x|i1 , i2 = 1 - Q1           Y i1 , i2 , x                 . (31)
+variable (RV)                                                                                                                         L            L
+
+J = |Hi + ~ |                                                                          Since i1 and i2 follow uniform distribution between 0 and
+                                                                                       2 , respectively, Pr(L < th,3) can then be obtained as
+
+       =      Kfac e j +                       1          (gre  +  jgim )              Pr L < th,3 =
+            Kfac + 1                       Kfac +
+                                                     1                                        1    2      2          Y i1 , i2 , th,3
+                                                                                             4 2  0
+                                                                                       1  -                  Q1            L               L       di1 di2 .
+                                                                                                                                                           (32)
+          + (re + jim )                                                                                  0
+
+          = X12 + X22                                                       (27)       In the ISC-eCD, preamble collision detection fails in the
+where X and Y are given as                                                  (28)       following cases.
+
+X1 =         Kfac    cos  i   +              g 1          +  re                           1) The collided nodes' preamble ToAs coincide at both
+X2 =        Kfac +1                                                                          the serving and neighboring satellites, and in each
+                                           Kfac+1 re                                         satellite, the superposed correlation peak is below
+                                                                                             th,3.
+             Kfac    sin  i   +              g 1          +  im    .
+            Kfac +1
+                                           Kfac+1 im
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT                                                                     2159
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+    2) The preamble ToAs coincide at one satellite (serving        Similarly, a miss detection occurs only when the serving
+        or neighboring) but differ at the other. In the satel-     satellite observes no correlation peak above th,1, while at
+        lite where the ToAs differ, at least one of the two        the neighboring satellite, both the LoS component and the
+        correlation peaks is below th,2, while in the satellite    noise magnitude remain below th,2. The probability of miss
+        where they coincide, the superposed correlation peak       detection is then given by
+        is below th,3.
+                                                                   PMIS = Pr J < th,1 Pr M < th,1 NCprSop-1         (37)
+    3) The preamble ToAs differ at both satellites, and in                 × Pr J < th,3 Pr M < th,2 . NCprSop-1
+        each satellite, at least one of the two correlation peaks
+        is below th,2.                                             Since PFCA is the complementary probability of PSUC and
+                                                                   PMIS, it is given by
+    Then, the probability of failed collision detection, PFCD,
+is expressed as
+
+PFCD = PsSerPnDei Pr L < th,3 2                                    PFCA = 1 - PSUC - PMIS.                          (38)
+         + PsDerPnSei 1 - Pr J  th,2 2 Pr L < th,3
+                                                                   In the ISC-eCD, the number of preambles per section
+         + PsSerPnDei Pr L < th,3 1 - Pr J  th,2 2                 Nu,PA, u = {1, . . . , NSEC}, is proportional to the node dis-
+                                                                   tribution within serving beam. An arbitrary node in the
+         + PsDerPnDei 1 - Pr J  th,2 2 2                   (33)
+                                                                   uth section randomly selects the preamble among Nu,PA
+where PsSer = 1 (2NerTrN + 1) and PnSei = 1 NCpSrop denote the     preambles. Since the probability of an arbitrary node being
+probabilities that, for a collided preamble, the ToAs mea-         in the uth section is u, the probability of preamble collision
+sured at the serving and neighboring satellites coincide,          when the total NUE nodes in the serving beam attempt RA
+respectively. Since PSCD is the complementary probability          is then obtained as
+of failed preamble collision detection, from (30) and (32),
+PSCD is obtained as                                                              NSEC  1 - (1 -  u       NUE -1  .  (39)
+
+                                                                   PCOL = u ×                    Nu,PA  )
+
+                                                                                  u=1
+
+      PSCD = 1 - PFCD                                              E. Practical Considerations and Scope of the ISC-eCD
+
+         2NerTrN + NCpSrop - 1                    th,2  2              The ISC-eCD enables early preamble collision detection
+         NCpSrop 2NerTrN + 1                                       by exploiting the RTT difference between the serving and
+      =                              1 - Q1    ,                   neighboring satellites, together with inter-satellite cooper-
+                                                                   ation. In practice, several system level factors bound the
+      × Pr L < th,3                                                applicability and inform the configuration of ISC-eCD. This
+                                                                   section clarifies those factors and states design guidelines.
+      +  2NerTrN  NCpSrop  -  1  1 - Q1       , th,2 2
+         NCpSrop  2NerTrN  +  1                                        1) Time Variation of RTT Difference and SIB19 Period-
+                                                                   icity: As the satellites move, the RTT difference between
+      + NCpSrop     1            Pr  L < th,3 2.           (34)    the serving and neighboring satellites for a given IoT node
+                  2NerTrN + 1                                      varies continuously. Accordingly, SIB19, which includes
+                                                                   the minimum and maximum RTT differences within the
+In the ISC-eCD, the PFCA is defined as the event that a            serving beam, the section interval  , and the preamble
+preamble, although successfully transmitted without col-           indices allocated to each section, should be periodically
+lision, is mistakenly regarded as collided at the satellite.       updated and broadcast to enable IoT nodes to refresh their
+For a successfully transmitted preamble, three outcomes            section index and the corresponding preamble pool.
+are possible: it can be: 1) correctly declared as successful
+with probability PSUC; 2) missed with probability PMIS; or             2) Dynamic ISL Delay and RAR Window Configuration:
+3) falsely declared as collided with probability PFCA.             The ISL delay is time varying, with variability arising from
+                                                                   factors including jitter [43], which increases the latest pos-
+    The successful preamble detection without collision oc-        sible reception time of the RAR at an active node. To avoid
+curs when mssuer = 1 and msnue,i2  1, as in (20). The magnitude    RA failures caused by RAR reception after the expiration
+of noise in each ZCZ becomes an RV M following a                   of the RAR window, the window should be configured to
+Rayleigh distribution [11], whose CDF is given by                  accommodate the maximum expected dynamic ISL delay.
+                                                                   Specifically, the RAR window must be no shorter than the
+         Pr (M < x) = 1 - exp        - x2 · NZC   .        (35)    sum of the preamble detection processing time, the pro-
+                                          2                        cessing time for preamble collision identification, and the
+                                                                   maximum dynamic ISL latency. This configuration ensures
+Then, the probability of successful preamble detection with-       that the ISC-eCD remains effective under dynamic ISL
+out collision is obtained as                                       delay conditions.
+
+PSUC = Pr th,2  J < th,3 Pr M < th,1 NCprSop-1                         3) Detection Threshold Configuration: When config-
+                                                                   uring the thresholds th,p for p  {1, 2, 3}, it is advisable to
+         × Pr J < th,3 Pr M < th,2 . NCprSop-1             (36)    increase th,2 to reduce the probability of a false collision
+
+2160                                         IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+                                                                                 TABLE II
+                                                                   Simulation Parameters and Values
+
+Fig. 4. PSCD and PFCA of the ISC-eCD with respect to the value of
+                                       th,2 .
+
+alarm (i.e., declaring a collision when the preamble is actu-
+ally detected successfully without collision), even at the cost
+of a slight reduction in PSCD. This choice helps to avoid
+unnecessary RA retrial of RA success nodes. Thereafter, we
+set th,2 and th,3 to satisfy less than 1% of false collision
+alarm probability. In addition, we set th,1, which acts as the
+conventional detection threshold to satisfy miss detection
+probability less than 1% and false alarm less than 0.1%,
+according to the 3GPP RA requirement [44]. Note that
+the detection thresholds of ISC-eCD need to be adjusted
+depending on channel environment.
+
+IV. SIMULATION RESULTS                                               Fig. 5. Miss detection and false alarm probability of ISC-eCD with
+                                                                                                     respect to SNR.
+    In this section, we evaluate the performance of ISC-eCD
+through extensive simulations. To verify the feasibility of        be chosen to meet the requirement (i.e., ensuring that the
+the proposed ISC-eCD in NTN RA, we consider the practi-            PFCA is below 1%).
+cal NTN LoS channel model, NTN TDL-D channel model,
+as specified in the 3GPP TR 38.811 [5]. Furthermore, we                Fig. 5 shows the preamble miss detection probability
+assume the satellite configuration SET-1 with a regenerative       and false alarm probability of ISC-eCD with respect to
+payload, also defined in 3GPP TR 38.821 [4]. The neighbor-         varying signal-to-noise ratio (SNR). We assume that the
+ing satellite is selected as the first backward satellite in the   number of active nodes is 20 per RACH slot. The ISC-eCD
+same orbit. The detection thresholds th,1, th,2, and th,3 are      is shown to satisfy the 3GPP RA requirement of less than
+configured to satisfy the 3GPP RA requirements [44], i.e.,         1% of miss detection probability and less than 0.1% of false
+a miss detection probability below 1%, a false alarm prob-         alarm probability over a wide range of SNRs, roughly down
+ability below 0.1%, and a false collision alarm probability        to about -12.5 dB.
+below 1%.
+                                                                       Fig. 6(a) shows the preamble collision probability of
+    For comparison, we adopt two early preamble collision          ISC-eCD and NR RA with respect to the number of active
+detection schemes designed for NTN RA [8], [30]. For sim-          IoT nodes per RACH slot. In the case of NR RA, we set
+plicity, we refer to the conventional early preamble collision
+detection schemes in [8] and [30] as multiple-threshold
+early collision detection (MT-eCD) and single-root pream-
+ble sequence early collision detection (S-eCD), respec-
+tively. Detailed simulation parameters are summarized in
+Table II. Unless explicitly stated otherwise, the simulations
+are conducted using the values specified in Table II.
+
+    Fig. 4 shows the PSCD and PFCA of ISC-eCD with
+respect to the value of th,2. The thresholds th,1 and th,3
+are set to 0.1 and 1.7, respectively. To compare our analysis
+results with simulation results, we set the channel model
+as the Rician channel with Kfac = 10. As seen in Fig. 4,
+the analytical results of PSCD in (34) and PFCA in (38)
+closely match the simulation results, validating the accuracy
+of the analysis. As th,2 decreases, PSCD increases since the
+probability that a correlation peak exceeds th,2 becomes
+larger, albeit with a higher PFCA. Accordingly, th,2 should
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT          2161
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+      (a)
+                                                                                                        (a)
+
+      (b)                                                        (b)
+
+Fig. 6. (a) Preamble collision probability and (b) PSCD and PFCA with Fig. 7. Average (a) RA delay and (b) number of RA-success nodes with
+      respect to the number of active nodes for each RACH slot.
+                                                                 respect to the number of new active nodes for each RACH slot.
+
+the minimum ZCZ length to NCS = 13 in accordance with            delay for RA-success nodes that reached the maximum
+the 3GPP TS 38.211 [38]. The ISC-eCD achieves a lower            number of preamble retransmissions Nrmetaxx.
+collision probability than NR RA, even with the use of
+guard preambles. This is because in the ISC-eCD, the ZCZ             Fig. 7(a) and (b) shows the long-term RA performance
+is specifically redesigned for the NTN environment and,          in terms of average RA delay and average number of
+thanks to node-side TA, no longer needs to accommodate           RA-success nodes, respectively. In Fig. 7(a), it is shown
+RTT. Consequently, by designing the ZCZ according to             that the RA delay of ISC-eCD is lower than those of the
+the TA estimation error and  , the ISC-eCD can increase          conventional schemes. This result stems from two main
+the effective number of preambles. Moreover, it can also         factors. First, the ISC-eCD provides a larger number of
+be identified that our performance analysis in (39) closely      preambles compared to MT-eCD and S-eCD using new ZCZ
+matches the experimental results, thereby confirming the         design, resulting in a lower preamble collision probability.
+accuracy of our analysis.                                        Second, the ISC-eCD successfully detects preamble col-
+                                                                 lisions more accurately than MT-eCD and S-eCD, which
+    Fig. 6(b) shows the PSCD and PFCA with respect to the        enables IoT nodes suffering preamble collision to retry RA
+number of active IoT nodes per RACH slot. The ISC-eCD            more promptly. Consequently, even under high node arrival
+achieves higher PSCD than both MT-eCD and S-eCD. This            rates, the ISC-eCD maintains a lower average RA delay than
+is because the ISC-eCD can detect preamble collisions even       MT-eCD and S-eCD.
+when the preambles are time-aligned at the serving satellite,
+by utilizing the RTT differences observed at the neighboring         In Fig. 7(b), the average RA-success nodes of ISC-eCD
+satellite.                                                       are higher than that of conventional schemes. Specifically,
+                                                                 the number of RA-success nodes obtained by the ISC-eCD
+    In contrast, both the S-eCD and MT-eCD exhibit lower         increases almost linearly until reaching 44, which implies
+PSCD than the ISC-eCD. This is because the PSCD of               that most nodes attempting RA succeed within Nrmetaxx retrials.
+MT-eCD degrades when the TA error is small, even though          However, when the number of nodes exceeds 45, the number
+3GPP mandates high TA accuracy [37]. In the case of              of RA nodes decreases due to severe PRACH conges-
+S-eCD, its collision detection capability varies depending       tion. The performance gain of ISC-eCD over conventional
+on the preamble index. Moreover, its ideal performance can       schemes again comes from increased effective number of
+only be achieved when TA is perfect, which is impractical        preambles and the accurate preamble collision detection.
+in real scenarios. In addition, the ISC-eCD shows less than
+1% of PFCA, while the S-eCD shows higher PFCA. Since                 Fig. 8 presents the long-term RA performance in terms
+PFCA results in unnecessary RA retrials to RA-success            of the average RA delay and the average number of RA-
+nodes, a high PFCA undermines the collision detection            success nodes under dynamic ISL delay, respectively. For
+performance.                                                     each RACH slot, the ISL delay is modeled as the sum of
+                                                                 a fixed delay and a dynamic component, where the latter
+    Fig. 7 shows the long-term average performance of            follows a uniform distribution between 0 and the maximum
+ISC-eCD across different scenarios, evaluated in terms of        dynamic ISL delay. In addition, depending on the maximum
+the average RA delay and the average number of RA-               ISL delay, the length of the RAR window is configured ac-
+success nodes, respectively. To observe the tendency more        cording to (23) to ensure that an active node can successfully
+clearly, we consider the delays of IoT nodes exceeding the       receive the RAR even under the maximum delay.
+maximum number of preamble transmissions as the average
+                                                                     As shown in Fig. 8(a), the average RA delay increases
+                                                                 with the maximum ISL delay, since collided nodes must
+
+2162       IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+Fig. 8. Average (a) RA delay and (b) number of RA-success nodes with  Fig. 10. Average (a) RA delay and (b) RA-success nodes with respect
+  respect to the number of new active nodes for each RACH slot under   to the number of new active nodes for each RACH slot under residual
+                                dynamic ISL delay.
+                                                                                                        Doppler shift.
+
+                                              (a)                     average RA delay increases, while the peak number of
+                                                                      RA-success nodes decreases. When the number of active
+                                              (b)                     nodes per RACH slot is small, the average RA delay does
+                                                                      not increase significantly because preamble collisions rarely
+Fig. 9. Average (a) RA delay and (b) number of RA-success nodes with  occur. In contrast, as the number of active nodes grows,
+  respect to the number of new active nodes for each RACH slot under  collisions become more frequent, and outdated SIB19 infor-
+                             different SIB19 periods.                 mation degrades preamble collision detection performance,
+                                                                      leading to increased RA delay and reduced RA-success
+wait until the enlarged RAR window expires, which is                  nodes.
+configured to accommodate the maximum ISL delay. As
+the number of nodes per RACH slot increases, the RA                       Fig. 10(a) and (b) shows the average RA delay and
+delay of ISC-eCD becomes lower than that of the conven-               average RA-success nodes, respectively, under the existence
+tional schemes, since the ISC-eCD achieves higher PSCD                of residual Doppler shift. We assume that each received
+and a lower preamble collision probability compared with              preamble suffers from residual Doppler shift uniformly
+MT-eCD and S-eCD. In Fig. 8(b), it can be observed that               distributed between 0 and 300 Hz at both serving and
+the average number of RA-success nodes achieved by the                neighboring satellites. It is shown in Fig. 10(a) and (b)
+ISC-eCD increases almost linearly with the number of ac-              that the ISC-eCD exhibits robust performance for a wide
+tive nodes, regardless of the maximum dynamic ISL delay.              range of the number of nodes per RACH slot, even under
+Fig. 8(b) also reveals an intriguing observation: increasing          residual Doppler shift, compared to the ideal Doppler shift
+the maximum delay yields a (slightly) higher success rate.            compensation case. This is because the ISC-eCD maintains
+This is because the dynamic ISL delay effectively plays               inherent characteristics of ZC sequence robust to Doppler
+the role of a random back-off, dispersing collided nodes              shift, so that the ISC-eCD shows robust performance in
+into different RACH slots and thereby slightly alleviating            residual Doppler shift.
+PRACH congestion.
+                                                                          From Figs. 8­10, it is evident that the ISC-eCD main-
+    Fig. 9(a) and (b) shows the average RA delay and the              tains robust performance under various SIB19 periods, dy-
+average number of RA-success nodes under different SIB19              namic ISL delays, and residual Doppler shifts. This con-
+periods, respectively. As the SIB19 period increases, the             sistent behavior highlights the practicality and resilience of
+                                                                      the proposed ISC-eCD scheme for supporting massive RA
+                                                                      in NR NTNs.
+
+                                                                          Finally, Fig. 11 shows the PUSCH resource efficiency
+                                                                      of MSG3, which is defined as the ratio of the number of
+                                                                      MSG3 allocated to the successfully detected preambles to
+                                                                      the total number of allocated MSG3 resources. The ISC-
+                                                                      eCD achieves higher resource efficiency than MT-eCD and
+                                                                      S-eCD. Also, while the ISC-eCD maintains high resource
+                                                                      efficiency as the number of active IoT nodes increases,
+                                                                      MT-eCD and S-eCD suffer performance degradation. This
+                                                                      is due to two reasons. First, the ISC-eCD can serve more
+                                                                      preambles than MT-eCD and S-eCD by exploiting new
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT  2163
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+   Fig. 11. PUSCH resource efficiency with respect to the number of      [6] Z. Dawy, W. Saad, A. Ghosh, J. G. Andrews, and E. Yaacoub,
+                     active IoT nodes for each RACH slot.                     "Toward massive machine type cellular communications," IEEE
+                                                                              Wirel. Commun., vol. 24, no. 1, pp. 120­128, Feb. 2017.
+ZCZ design. Thus, the preamble collision probability is
+significantly reduced, which, in turn, prevents unnecessary              [7] E. Dahlman, S. Parkvall, and J. Skold, 5G NR: The Next Generation
+MSG3 allocation to collided preambles. Second, the ISC-                       Wireless Access Technology. New York, NY, USA: Academic, 2020.
+eCD achieves higher preamble collision detection accuracy
+than MT-eCD and S-eCD, thus accurately allocating MSG3                   [8] J. Jeong, H. Lee, and D. Hong, "Enhanced early preamble collision
+resources only to successfully detected nodes.                                detector for LEO satellite-based NTN IoT random access," IEEE
+                                                                              Trans. Veh. Technol., vol. 74, no. 8, pp. 12496­12511, Aug. 2025.
+V. CONCLUSION
+                                                                         [9] S. Kim, J. Kim, and D. Hong, "A new non-orthogonal transceiver for
+    In this article, we proposed an ISC-eCD, a novel RA                       asynchronous grant-free transmission systems," IEEE Trans. Wirel.
+framework for NTN IoT systems, which leverages the RTT                        Commun., vol. 20, no. 3, pp. 1889­1902, Mar. 2021.
+difference between the serving and neighboring satellites,
+together with a new ZCZ design, to effectively increase                 [10] T. Kim, I. Bang, and D. K. Sung, "An enhanced PRACH preamble
+the number of preambles. By exploiting intersatellite RTT                     detector for cellular IoT communications," IEEE Commun. Lett., vol.
+differences, the ISC-eCD enables immediate and accurate                       21, no. 12, pp. 2678­2681, Dec. 2017.
+preamble collision detection, even in scenarios where colli-
+sions cannot be distinguished at the serving satellite. Taking          [11] J. Jeong and D. Hong, "Two-stage preamble detector for LEO
+advantage of the fact that IoT nodes transmit preambles after                 satellite-based NTN IoT random access," IEEE Trans. Veh. Technol.,
+performing TA, we designed a new ZCZ that significantly                       vol. 72, no. 11, pp. 14443­14455, Nov. 2023.
+increases the effective number of orthogonal preambles
+without requiring additional root sequences. Simulation                 [12] N. K. Pratas, H. Thomsen, C . Stefanovic´, and P. Popovski, "Code-
+results demonstrate that the ISC-eCD outperforms conven-                      expanded random access for machine-type communications," in
+tional methods in terms of RA delay, collision detection                      Proc. IEEE Glob. Commun. Workshops, 2012, pp. 1681­1686.
+accuracy, RA success probability, and MSG3 resource effi-
+ciency even under practical scenarios. These results validate           [13] Y. He and G. Ren, "Spatial filtering based random access for machine-
+ISC-eCD as an effective and scalable solution for supporting                  type communications in massive MIMO cellular networks," IEEE
+massive IoT connectivity in LEO satellite-based NTNs.                         Trans. Veh. Technol., vol. 69, no. 10, pp. 11479­11490, Oct. 2020.
+
+    As future research topics, we will improve the proposed             [14] Z. Shi and J. Liu, "Massive access in 5G and beyond ultra-dense
+collision detection techniques exploiting RTT differences                     networks: An MARL-based NORA scheme," IEEE Trans. Commun.,
+from multiple satellites and investigate a preamble reuse                     vol. 71, no. 4, pp. 2170­2183, Apr. 2023.
+scheme leveraging the RTT differences between satellites.
+                                                                        [15] J.-B. Seo, S. De, and H. Jin, "Real-time transmission control for
+REFERENCES                                                                    multichannel NOMA random access systems," IEEE Internet Things
+                                                                              J., vol. 10, no. 10, pp. 8984­8995, May 2023.
+ [1] J. Heo, S. Sung, H. Lee, I. Hwang, and D. Hong, "MIMO satellite
+      communication systems: A survey from the PHY layer perspective,"  [16] K. M. Kim and T.-J. Lee, "Random access and uplink shared channel
+      IEEE Commun. Surveys Tut., vol. 25, no. 3, pp. 1543­1570, Third         resource allocation with NOMA," IEEE Trans. Mobile Comput., vol.
+      Quarter 2023.                                                           23, no. 6, pp. 6896­6907, Jun. 2024.
+
+ [2] R. Wang, M. A. Kishk, and M.-S. Alouini, "Ultra-dense LEO          [17] J. Son et al., "Frequency asynchronous NOMA in LEO satellite
+      satellite-based communication systems: A novel modeling tech-           communication systems," in Proc. IEEE Int. Conf. Acoust., Speech,
+      nique," IEEE Commun. Mag., vol. 60, no. 4, pp. 25­31, Apr. 2022.        Signal Process. Workshops, 2023, pp. 1­5.
+
+ [3] Study on Narrow-Band Internet of Things (NB-IoT)/Enhanced Ma-      [18] R. F. Sari, R. Harwahyu, and R.-G. Cheng, "Load estimation and
+      chine Type Communication (eMTC) Support for Non-Terrestrial             connection request barring for random access in massive C-IoT,"
+      Networks (NTN), 3GPP Tech. Specification TR 36.763 V17.0.0,             IEEE Internet Things J., vol. 7, no. 7, pp. 6539­6549, Jul. 2020.
+      3GPP TSG RAN WG1 Meeting #88, Jun. 2021.
+                                                                        [19] M. Vilgelm, S. R. Linares, and W. Kellerer, "Enhancing cellular
+ [4] Solutions for NR to Support Non-Terrestrial Networks (NTN), 3GPP         M2M random access with binary countdown contention resolution,"
+      Tech. Specification TR 38.821 V16.1.0, 3GPP TSG RAN WG1                 in Proc. IEEE 28th Annu. Int. Symp. Pers., Indoor, Mobile Radio
+      Meeting #88, May 2021.                                                  Commun., 2017, pp. 1­6.
+
+ [5] Study on New Radio (NR) to Support Non-Terrestrial Networks,       [20] Y. Liang, X. Li, J. Zhang, and Z. Ding, "Non-orthogonal random
+      3GPP Tech. Specification TR 38.811 V15.4.0, 3GPP TSG RAN                access for 5G networks," IEEE Trans. Wirel. Commun., vol. 16, no.
+      WG1 Meeting #88, Oct. 2022.                                             7, pp. 4817­4831, Jul. 2017.
+
+                                                                        [21] H. S. Jang, S. M. Kim, H.-S. Park, and D. K. Sung, "A pream-
+                                                                              ble collision resolution scheme via tagged preambles for cellular
+                                                                              IoT/M2M communications," IEEE Trans. Veh. Technol., vol. 67, no.
+                                                                              2, pp. 1825­1829, Feb. 2018.
+
+                                                                        [22] Z. Alavikia and A. Ghasemi, "Collision-aware resource access
+                                                                              scheme for LTE-based machine-to-machine communications," IEEE
+                                                                              Trans. Veh. Technol., vol. 67, no. 5, pp. 4683­4688, May 2018.
+
+                                                                        [23] N. Zhang, G. Kang, J. Wang, Y. Guo, and F. Labeau, "Resource
+                                                                              allocation in a new random access for M2M communications," IEEE
+                                                                              Commun. Lett., vol. 19, no. 5, pp. 843­846, May 2015.
+
+                                                                        [24] H. S. Jang, H. Lee, T. Q. S. Quek, and H. Shin, "Deep learning-based
+                                                                              cellular random access framework," IEEE Trans. Wirel. Commun.,
+                                                                              vol. 20, no. 11, pp. 7503­7518, Nov. 2021.
+
+                                                                        [25] C. Zhang, X. Sun, W. Xia, J. Zhang, H. Zhu, and X. Wang,
+                                                                              "Deep learning based double-contention random access for massive
+                                                                              machine-type communication," IEEE Trans. Wirel. Commun., vol.
+                                                                              22, no. 3, pp. 1794­1807, Mar. 2023.
+
+                                                                        [26] A. E. Mostafa et al., "Aggregate preamble sequence design and
+                                                                              detection for massive IoT with deep learning," IEEE Trans. Veh.
+                                                                              Technol., vol. 70, no. 4, pp. 3800­3816, Apr. 2021.
+
+                                                                        [27] L. Zhen, M. Li, C. Chakraborty, J. Jiang, A. Polavarapu, and F. Alqah-
+                                                                              tani, "A lightweight transformer-based collision detection and load
+                                                                              estimation scheme for massive random access in 6G satellite-ground
+                                                                              integrated vehicular networks," IEEE Trans. Intell. Transp. Syst., vol.
+                                                                              26, no. 10, pp. 17638­17652, Oct. 2025.
+
+2164  IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 62 2026
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+[28] H. S. Jang, S. M. Kim, H.-S. Park, and D. K. Sung, "An early             [36] NR; Radio Resource Control (RRC); Protocol Specification, "3rd
+      preamble collision detection scheme based on tagged preambles for             Generation Partnership Project (3GPP)," Tech. Specification TS
+      cellular M2M random access," IEEE Trans. Veh. Technol., vol. 66,              38.331 version 18.5.0 Release 18, Mar. 2025.
+      no. 7, pp. 5974­5984, Jul. 2017.
+                                                                              [37] NR; Requirements for Support of Radio Resource Management,
+[29] L. Zhen, H. Kong, Y. Zhang, W. Wang, and K. Yu, "Efficient collision           3rd Generation Partnership Project (3GPP), Tech. Specification TS
+      detection based on Zadoff-Chu sequences for satellite-enabled M2M             38.133 version 18.9.0 Release 18, Apr. 2025.
+      random access," in Proc. IEEE Int. Conf. Commun., 2021, pp. 1­6.
+                                                                              [38] NR; Physical Channels and Modulation, 3rd Generation Partnership
+[30] L. Zhen, Y. Zhang, K. Yu, N. Kumar, A. Barnawi, and Y. Xie,                    Project (3GPP), Tech. Specification TS 38.211 version 18.2.0 Re-
+      "Early collision detection for massive random access in satellite-            lease 18, May 2024.
+      based Internet of Things," IEEE Trans. Veh. Technol., vol. 70, no. 5,
+      pp. 5184­5189, May 2021.                                                [39] Evolved Universal Terrestrial Radio Access (E-UTRA); Physical
+                                                                                    Layer Procedures, 3rd Generation Partnership Project (3GPP), Tech.
+[31] B. A. Homssi et al., "Next generation mega satellite net-                      Specification TR36.213 V12.4.0, Dec. 2014.
+      works for access equality: Opportunities, challenges, and per-
+      formance," IEEE Commun. Mag., vol. 60, no. 4, pp. 18­24,                [40] UE Time and Frequency Synchronisation for IoT NTN, 3rd Genera-
+      Apr. 2022.                                                                    tion Partnership Project (3GPP), document R1-2100601, TSG RAN
+                                                                                    WG1 #104e, Jan. 2021.
+[32] I. P. Vieira, T. C. Pita, and D. A. A. Mello, "Modulation and signal
+      processing for LEO-LEO optical inter-satellite links," IEEE Access,     [41] E. Juan, M. Lauridsen, J. Wigard, and P. Mogensen, "Location-based
+      vol. 11, pp. 63598­63611, 2023.                                               handover triggering for low-Earth orbit satellite networks," in Proc.
+                                                                                    IEEE Veh. Technol. Conf., Jun. 2022, pp. 1­6.
+[33] A. U. Chaudhry and H. Yanikomeroglu, "When to crossover from
+      Earth to space for lower latency data communications?," IEEE            [42] NR; Medium Access Control (MAC) Protocol Specification, 3rd
+      Trans. Aerosp. Electron. Syst., vol. 58, no. 5, pp. 3962­3978,                Generation Partnership Project (3GPP) Tech. Specification TS
+      Oct. 2022.                                                                    38.321 version 18.5.0 Release 18, Mar. 2025.
+
+[34] H. Yang et al., "Interruption tolerance strategy for LEO constellation   [43] B. Shang, S. Zhang, and Z. J. Wong, "Channel modeling and rate
+      with optical inter-satellite link," IEEE Trans. Netw. Service Manage.,        analysis of optical inter-satellite link (OISL)," IEEE Trans. Veh.
+      vol. 20, no. 4, pp. 4815­4830, Dec. 2023.                                     Technol., vol. 74, no. 7, pp. 11650­11655, Jul. 2025.
+
+[35] D. Bhattacharjee et al., "OnDemand routing in LEO MegaConstel-           [44] NR; Physical Layer Procedures for Data, 3rd Generation Partner-
+      lations with dynamic laser inter-satellite links," IEEE Trans. Aerosp.        ship Project (3GPP), Tech. Specification TS 38.214 version 18.2.0
+      Electron. Syst., vol. 60, no. 5, pp. 7089­7105, Oct. 2024.                    Release 18, May 2024.
+
+JEONG AND YUN: INTERSATELLITE COOPERATION FOR EARLY PREAMBLE COLLISION DETECTION IN NTN IOT  2165
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:34 UTC from IEEE Xplore. Restrictions apply.
+

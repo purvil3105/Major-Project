@@ -1,0 +1,907 @@
+IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022                                                                                 14913
+
+   NB-IoT Random Access for Nonterrestrial
+       Networks: Preamble Detection and
+              Uplink Synchronization
+
+Houcine Chougrani , Steven Kisseleff , Member, IEEE, Wallace A. Martins , Senior Member, IEEE,
+                                 and Symeon Chatzinotas , Senior Member, IEEE
+
+   Abstract--The satellite component is recognized as a promising         areas is far more diverse than the covered ones, with fjords,
+solution to complement and extend the coverage of future                  mountains, islands, ice, deserts, and vast distances, leading
+Internet of Things (IoT) terrestrial networks (TNs). In this con-         to stringent constraints in terms of backhauling, power avail-
+text, a study item to integrate satellites into narrowband-IoT            ability, site construction, and maintenance [1]. In this context,
+(NB-IoT) systems has been approved within the 3rd Generation              nonterrestrial networks (NTNs) are a promising solution to
+Partnership Project (3GPP) standardization body. However, as              complement terrestrial networks (TNs) for global coverage
+NB-IoT systems were initially conceived for TNs, their basic              extension [2]. An NTN refers to a network or segment of
+design principles and operation might require some key modifica-          networks, using radio frequency (RF) resources on board of a
+tions when incorporating the satellite component. These changes           satellite or unmanned aerial system (UAS) platform. The pri-
+in NB-IoT systems, therefore, need to be carefully implemented            mary role of an NTN in this context is to complement the TN
+in order to guarantee a seamless integration of both TN and               services in under-served areas, to improve the TN service relia-
+nonterrestrial network (NTN) for a global coverage. This article          bility, especially for mission-critical services, and to enable the
+addresses this adaptation for the random access (RA) step in NB-          network scalability by means of efficient multicast/broadcast
+IoT systems, which is in fact the most challenging aspect in the          resources for data delivery [2], [3].
+NTN context, for it deals with multiuser time-frequency synchro-
+nization and timing advance for data scheduling. In particular,              In 2017, the 3rd Generation Partnership Project (3GPP)
+we propose an RA technique which is robust to typical satellite           started to study the integration of satellites into the 5G
+channel impairments, including long delays, significant Doppler           ecosystem [4]. The study was completed in 2019 during the
+effects, and wide beams, without requiring any modification to the        corresponding 3GPP November meeting with the technical
+current NB-IoT RA waveform. Performance evaluations demon-                reports TR 38.821 [5] and TR 38.811 [6]. Then, a new norma-
+strate the proposal's capability of addressing different NTN              tive working item (WI) for 5G new radio (NR) in NTN was
+configurations recently defined by 3GPP for the 5G new radio              approved in 3GPP Release 17 [7]. Recently, a new study WI
+system.                                                                   for narrowband Internet of Things (NB-IoT) support in NTN
+                                                                          has also been approved in 3GPP Release 17 [8].
+   Index Terms--3rd Generation Partnership Project (3GPP), 5G,
+narrowband-Internet of Things (NB-IoT), nonterrestrial network               NB-IoT is a recent cellular technology standardized by
+(NTN), random access (RA), satellite.                                     3GPP that aims to provide improved coverage for a massive
+                                                                          number of low-throughput low-cost devices with low device
+                          I. INTRODUCTION                                 power consumption in delay-tolerant applications. Prospective
+                                                                          applications include utility metering, environment monitoring,
+I N RECENT years, a high connectivity demand has started                  asset tracking, municipal light, and waste management, to
+   to be experienced in wireless communications. Virtually,               name but a few [9]. However, in many cases, these devices
+everyone and everything need to be connected. This univer-                are deployed in remote areas which are out of reach of
+sal connectivity poses serious challenges to terrestrial radio            the TN. By integrating NB-IoT into an NTN, 3GPP aims
+coverage. In fact, the geography of the current uncovered                 to provide a standardized solution enabling global Internet
+                                                                          of Things operation anywhere on Earth. In this direction,
+   Manuscript received 14 January 2021; revised 27 May 2021,              numerous companies (e.g., Eutelsat and MediaTek) and start-
+29 September 2021; accepted 15 October 2021. Date of publication          ups (e.g., OQTechnology, Sateliot, and Kepler Communication
+27 October 2021; date of current version 8 August 2022. This work         Inc.) have already started the integration of NB-IoT into NTNs
+was supported by the Luxembourg National Research Fund (FNR) in the       via satellite. However, the current NB-IoT protocol [10], [11]
+frameworks of the FNR-CORE Project "MegaLEO: Self-Organised Lower         was initially designed for TNs and does not account for satel-
+Earth Orbit Mega-Constellations" under Grant C20/IS/14767486/MegaLeo.     lite constraints, such as larger propagation delays, stronger
+(Corresponding author: Houcine Chougrani.)                                Doppler effects (in case of nongeostationary satellites), limited
+                                                                          onboard power availability, etc.
+   Houcine Chougrani, Steven Kisseleff, and Symeon Chatzinotas
+are with the Interdisciplinary Centre for Security, Reliability              In order to adopt NB-IoT in satellite systems, some modifi-
+and Trust, University of Luxembourg, 1855 Luxembourg City,                cations to the NB-IoT protocol are therefore required. In this
+Luxembourg (e-mail: houcine.chougrani@uni.lu; steven.kisseleff@uni.lu;
+symeon.chatzinotas@uni.lu).
+
+   Wallace A. Martins is with the Interdisciplinary Centre for Security,
+Reliability and Trust, University of Luxembourg, 1855 Luxembourg
+City, Luxembourg, and also with the Electrical Engineering Program
+(PEE/COPPE), Federal University of Rio de Janeiro, Rio de Janeiro 21941-
+901, Brazil (e-mail: wallace.alvesmartins@uni.lu).
+
+   Digital Object Identifier 10.1109/JIOT.2021.3123376
+
+This work is licensed under a Creative Commons Attribution 4.0 License. For more information, see https://creativecommons.org/licenses/by/4.0/
+14914                                                               IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+context, and from the physical-layer (PHY) perspective, one of             waveform, which makes it a seamless solution when
+the major challenges is the random access (RA) which man-                  integrating the satellite into the NB-IoT system.
+ages the uplink synchronization and requests for scheduling            2) The Doppler rate corresponding to each UE is estimated
+data transmissions. In fact, the current NB-IoT RA preamble,               within the satellite coverage. This allows for the NTN
+namely, narrowband physical RA channel (NPRACH) cannot                     system to take this information into account for UE
+support the satellite channel impairments (e.g., strong Doppler            data scheduling, which is very useful for the system to
+and long delays) which are more severe compared to those                   preserve uplink multiple access orthogonality.
+faced by TNs.                                                          3) PHY-based simulations and performance evaluations in
+                                                                           terms of preamble detection probability as well as
+   The above problem is a new challenge to be faced at the                 Doppler and Time-of-Arrival (ToA) estimation accuracy
+PHY level. The most relevant related work in this area is by               are provided under realistic scenarios recently defined
+MediaTek Inc. [12]. The authors have considered a user equip-              by 3GPP in the context of NTN.
+ment (UE) without built-in global navigation satellite system          The remainder of this article is organized as follows. In
+(GNSS) capabilities and proposed a new solution to tackle           Section II, a background on the 3GPP-based solutions and
+the relatively large residual frequency offset during the RA        recommendations to integrate satellites into a 5G system is
+reception with relatively mild changes to the existing NB-IoT       provided. Section III contains a system overview, including
+RA preamble. The proposed solution relies on the introduc-          the system parameters, link budget, LEO channel impairments,
+tion of a fractional frequency-hopping sequence per preamble        and the NB-IoT RA preamble. In Section IV, the pream-
+to remove the ambiguity among UEs in the presence of large          ble detection and ToA estimation method for TN is briefly
+frequency offsets. The authors, however, have not explicitly        described. Then, a novel method for preamble detection and
+pointed out the solution for managing the relatively large dif-     ToA estimation in NTN is proposed in Section V. A compre-
+ferential delay (DD) that may impact the orthogonality of UEs       hensive set of simulation results is provided and discussed in
+in the network. Another work in [13] has analyzed the RA            Section VI. The concluding remarks are drawn in Section VII.
+procedure and proposed some system-level recommendations,
+such as reducing the beam width (i.e., cell) in order to handle         II. 3GPP-BASED SATELLITE INTEGRATION INTO 5G
+the large DD and residual frequency offset of UEs within this
+beam using the current preamble, and/or the proposal of a new          NB-IoT is a recent cellular technology standardized by
+preamble with longer cyclic prefix (CP) and larger bandwidth        3GPP that inherits from the existing long-term evolution
+to cope with DD and frequency offsets. The first recommen-          (LTE) technology. The radio access is based on orthogo-
+dation (i.e., small cells) is not straightforward, for it requires  nal frequency-division multiple access (OFDMA) for down-
+a complex antenna technology that may lead to increased size        link and single-carrier frequency-division multiple access
+and power consumption of the low Earth orbit (LEO) satel-           (SC-FDMA) for uplink with 180-kHz bandwidth.
+lite. The second solution requires considerable changes in the
+standard, which is something that both 3GPP and stakehold-             As we pointed out in the previous section, the adoption of
+ers try to avoid for flexibility, time-to-market, and backward      NB-IoT in satellite systems requires some modifications either
+compatibility reasons.                                              to the system and/or to the protocols. However, since NB-IoT
+                                                                    is a 3GPP-based protocol, the recent 3GPP recommendations
+   In this work, we address the aforementioned issues without       in [5] and [6] to integrate 5G-NR into NTN could be adopted
+any modification to the current NB-IoT RA preamble. The             for NB-IoT. Those recommendations are based on the type of
+proposed method consists of the combination of a system-            UE in the NTN system as follows [5], [6].
+level solution that overcomes the problem of a large residual
+frequency offset with a signal processing solution that tackles        1) UE With GNSS Capability: The UE performs the pre-
+the large DD. In order to reduce the residual frequency off-               compensation of Doppler shift2 and delay propagation.
+set, we take advantage of the initial downlink synchronization.            This is possible, thanks to the knowledge of satellite
+More specifically, the UE uses the estimated frequency offset              ephemeris and available UE location. Depending on
+during the downlink to precompensate the uplink RA transmis-               the prediction accuracy, additional delay and frequency
+sion. For the DD problem, the inherent 2 -ambiguity problem                offsets are assumed to be handled by the protocol [6].
+is solved using a discrimination criterion based on the estima-
+tion of Doppler rate.1 In summary, the main contributions of           2) UE Without GNSS Capability: The satellite performs the
+this article are as follows.                                               precompensation of the Doppler shift at the center of
+                                                                           the beam on the ground and broadcasts the common
+   1) A detailed mathematical analysis including all satellite             delay3 to all UEs inside the concerned beam to be taken
+       impairments, i.e., delay, frequency offset, and Doppler             into account for the uplink transmission, as illustrated in
+       rate, is presented with an efficient RA receiver design             Fig. 1. In this case, the additional delay, called DD in
+       for integrating NB-IoT into NTN via LEO satellites.                 3GPP terminology, and the frequency offset in the beam
+       The designed receiver supports a coverage up to five                (e.g., UE1-DD and foff/UE1 in Fig. 1) are assumed to be
+       times the original maximum coverage in TN, and does                 handled by the protocol [7].
+       not require any modifications to the current preamble
+                                                                       2Shift of the signals' frequency content due to the motion of either the
+   1The time-varying Doppler shift.                                 receiver, the transmitter, or both of them.
+
+                                                                       3This common delay corresponds to the propagation time between the next
+                                                                    generation node B (gNB) and the closest point on Earth in the satellite beam
+                                                                    coverage.
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS                                                                                           14915
+
+                                                                                                   TABLE I
+                                                                    MATHEMATICAL SYMBOLS USED IN THE SYSTEM MODEL
+
+Fig. 1. Doppler shift precompensation mechanism and common and DD
+illustration for NTN.
+
+   In this context, one of the major challenges encountered                                                 TABLE II
+in the integration of 5G-NR into NTN from a PHY perspec-                         SATELLITE PARAMETERS FOR UL TRANSMISSIONS
+tive is RA. In 5G-NR as well as in NB-IoT, RA manages
+the uplink synchronization and requests for scheduling data        Furthermore, 3GPP targets both cases, i.e., UE with and with-
+transmissions. The uplink synchronization means that the base      out GNSS capability, which eventually means that the GNSS
+station (BS) has both to detect (and identify) all active UEs      solution should not be viewed as the key strategy.
+in its coverage area and to estimate their round-trip delays
+(RTDs). Through this, the propagation delay between each                                   III. SYSTEM MODEL
+UE and the BS is acquired/estimated, which enables attaining          In this section, we describe the system model adopted in
+a common timing reference. The acquired delay allows the BS        this work. The description includes the system architecture,
+to perform timing advance needed to keep the orthogonality         the link budget, the satellite channel impairments, and the
+among multiple UEs, which is typically required in SC-FDMA         NPRACH preamble. For clarity's sake, Table I summarizes
+systems. The estimation of RTD refers to a ToA estimation,         the mathematical symbols used in this section.
+whereas the user detection refers to NPRACH preamble detec-
+tion. It is worth noting that this operation is essential for a    A. System Architecture
+successful system operation. In fact, RA is the first phase           In the 3GPP framework, six reference scenarios have been
+of system operation and covers the first messages from each
+UE to the BS. Hence, a wrong detection and/or an erroneous         specified depending on the orbit nature--whether geosyn-
+ToA estimation would lead to increased system latency, overall     chronous Earth orbit (GEO) or LEO--, payload type--whether
+performance degradation, and even service outage in extreme        transparent or regenerative--, and beam type--whether steer-
+cases.                                                             able or fixed [5], [6]. We consider in this work the scenario
+                                                                   referred to as D2 in [5] among the NTN reference scenarios
+   Regarding 5G-NR RA, it was concluded in [5] that, in the        from 3GPP. Table II provides the satellite parameters for this
+case of UEs with GNSS capability (assumption for precom-           scenario. Note that 3GPP has defined two sets of beam lay-
+pensation of timing and frequency offset at the UE side based      out and RF parameters of the payload, namely: 1) Set-1 and
+on GNSS and ephemeris information), existing RA preambles          2) Set-2. Both parameter sets are taken into account in this
+can be reused if the knowledge of UE's geolocation is available    work. The satellite is placed at 600-km altitude (LEO) with
+and meets the prescribed accuracy level. It was also stated that   a regenerative payload, which means that the satellite imple-
+additional enhancements, such as repetitions and/or larger sub-    ments fully or partially the functionalities of the classical BS
+carrier spacing (SCS), are necessary to ensure uplink coverage.
+In contrast, for UEs without GNSS capabilities, [5] concluded
+that enhanced/new RA preambles should be proposed. This
+article addresses the same problem but for NB-IoT integration
+into NTNs considering LEO satellites. More specifically, this
+article provides a solution to integrate the NB-IoT NPRACH
+into the NTN context. We focus here on UEs without GNSS
+capabilities, since the applicability of GNSS solution for NB-
+IoT in NTN is questionable. In fact, the GNSS solution poses
+additional challenges, such as:
+
+   1) unclear update procedure for the satellite ephemeris at
+       the UE level;
+
+   2) reduced battery lifetime for the UEs due to the fre-
+       quent estimation of Doppler and delay along with
+       their compensation, thus requiring substantial additional
+       signal processing.
+14916                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+                   TABLE III
+       LINK BUDGET FOR NPRACH
+
+                                                                  Fig. 2. Beam layout for LEO satellite at 600 km.
+
+(i.e., gNB). The system is operating in S-band at a carrier                                 TABLE IV
+frequency of 2 GHz. The satellite generates several spot-beams    MD-RTD AFTER COMMON DELAY COMPENSATION
+over its coverage area to increase its capacity. These spot-
+beams are moving along with the satellite. Each spot-beam         in [5], 6-dB degradation is introduced in the SNR calculation
+size, however, depends on the elevation angle and the satel-      as an additional margin. Hence, the SNR is given by
+lite configuration, whether it is Set-1 or Set-2 (depending on
+the 3-dB beam width angular value). Moreover, antenna-gain-       SNR[dB] = CNR[dB] + 10 log10(g) - 6.              (2)
+to-noise-temperature (G/T) in Set-1 is greater than in Set-2,
+which comes as a byproduct of the reduction of the equiva-
+lent satellite antenna aperture. For more details related to the
+payload configuration and beam layout aspect, we refer the
+reader to [5], [14], and [15] where a thorough discussion can
+be found.
+
+B. Link Budget                                                    C. Satellite Channel Impairments
+
+   In this section, we calculate the link budget of the afore-       1) Long Propagation Delay: In satellite systems, the prop-
+mentioned system architecture for the RA in UL transmissions.     agation delays are long when compared to TN's delays due
+We consider a minimum elevation angle of 30, which repre-         to much longer distances between the UE and the satellite. In
+sents a typical elevation angle in satellite-based systems [6].   fact, the propagation delay depends on the satellite orbit, type
+The general formula for the link budget is derived from [16].     of payload, and elevation angle. In our scenario (i.e., LEO at
+It accounts for all the gains and losses in the propagation       600 km with regenerative payload), the minimum and maxi-
+medium from the transmitter to the receiver. Accordingly, the     mum RTDs at 30 and 90 are 7.17 and 4 ms, respectively.
+carrier-to-noise ratio (CNR) can be computed as follows:          Note that the RTD is approximated as twice the propagation
+                                                                  delay between the satellite and the UE. Adopting the rec-
+    CNR[dB] = EIRP[dBW] + G/T[dB] - kB[dBW/K/Hz]                  ommendations of [5] regarding the RTD--i.e., broadcasting
+                                                                  the common RTD (C-RTD) to all UEs within each beam--
+                    - PLFS[dB] - PLA[dB] - PLS[dB]                the maximum differential RTD (MD-RTD) will depend on
+                                                                  the beam size, which itself depends on the elevation angle,
+                    - PLAD[dB] - 10 log10(BWNB-IoT[Hz]) (1)       as shown in Fig. 2. Table IV provides the MD-RTD val-
+                                                                  ues at different elevation angles (after taking into account the
+where EIRP is the effective isotopic radiated power of            C-RTD) for both types of payload configurations, viz. Set-1
+the transmitting antenna, kB = -228.6 dBW/K/Hz is the             and Set-2. At higher elevation angles, the beam is small (e.g.,
+Boltzmann constant, PLFS represents the free space propa-         46 and 92 km beam diameters at 90 for Set-1 and Set-2,
+gation loss, PLA corresponds to atmospheric gas losses, PLS       respectively), whereas at lower elevation the beam becomes
+is a shadowing margin, PLAD denotes some underlying addi-         larger (e.g., 144 and 257 km beam diameters at 30 for Set-1
+tional losses due to the scintillation phenomena, and BWNB-IoT    and Set-2, respectively). For Set-1 configuration, the MD-RTD
+is the NB-IoT channel bandwidth. Table III illustrates the        varies from 3.25 to 807.13 s, whereas for Set-2 configura-
+link budget for both payload configurations (i.e., Set-1 and      tion, it starts from 13.04 s and reaches up to 1.40 ms. As it
+Set-2) in the UL. The values in the table are similar to the      will be discussed later, this is a problematic situation for the
+ones suggested in [5] and [16]. To obtain the signal-to-noise     RA in NB-IoT.
+ratio (SNR), the NPRACH bandwidth (i.e., BWNPRACH) of
+3.75 kHz is considered. This leads to a gain factor of g = 48
+(i.e., BWNB-IoT/BWNPRACH). Following the recommentation
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS                                                14917
+
+                                                                                            TABLE VI
+                                                                    NPRACH PREAMBLE FORMATS FOR FDD MODE
+
+Fig. 3. Doppler variation depending on the elevation angle.      NTN, as described in [5]. This is because TDD mode requires
+                                                                 a guard time that directly depends on the propagation delay
+                                         TABLE V                 between UE and satellite to prevent UE from transmitting and
+  RESIDUAL FREQUENCY OFFSET AFTER DOPPLER PRECOMPENSATION        receiving simultaneously. However, such a guard time might
+                                                                 be excessive in NTN and would lead to a very inefficient radio
+   2) Significant Doppler Effects: The high speed motion of      interface.
+LEO satellites introduces significant Doppler shifts on the NB-
+IoT signal as compared to those expected in TN systems. In          In FDD mode, there are three NPRACH formats, namely:
+our scenario, up to ±41-kHz Doppler shift (see Fig. 3) is        1) format 0; 2) format 1; and 3) format 2, as shown in Table VI.
+observed (with 30 minimum elevation angle). Furthermore,         The NPRACH formats with different CP, symbol group (SG)
+the received signals are impacted by a significant Doppler rate  sizes, and SG repetitions have been designed according to the
+(see Fig. 3) that varies between -101 Hz/s (for 30 elevation)    targeted cell sizes. The preamble consists of a set of SGs. An
+and -594 Hz/s (for 90 elevation), thus leading to additional     SG consists of a CP of length TCP and a sequence of L iden-
+degradation of the detection performance in case of longer       tical symbols with total length TSEQ. In the 3GPP standard, P
+preambles/data packets. Using the Doppler shift precompen-       SGs are treated as the basic unit of the preamble. The basic
+sation technique as defined in [5], the maximum residual         unit can be repeated up to Nrep = 2j, j  {0, 1, . . . , 7} times
+frequency offsets (normalized by the carrier frequency) at the   for coverage extension. Accordingly, the length of a pream-
+satellite receiver for RA are shown in Table V. This maxi-       ble equals P · Nrep SGs. The NPRACH transmission supports
+mum residual frequency offset is twice the offset of one-way     either a 3.75 or a 1.25 kHz subcarrier spacing (SCS, i.e., f ).
+propagation from satellite to UE. Note that in NB-IoT, the
+UE motion is negligible, and the residual frequency offsets         The hopping pattern is fixed within the basic unit of P SGs.
+account only for satellite motion and the precision of local     SGs in preamble format 0 and 1 (with 3.75-kHz SCS) hop by
+oscillators (LOs).                                               one or six subcarriers in frequency, whereas SGs in format 2
+                                                                 (with 1.25-kHz SCS) hop by one, three, or 18 subcarriers in
+D. NB-IoT Random Access                                          frequency [22]. Fig. 4 shows an example of preamble format 1
+   The RA preamble in NB-IoT, known as NPRACH pream-             with two preamble basic unit repetitions (i.e., Nrep = 2). Note
+                                                                 that when repetitions are configured, the hopping between the
+ble, was originally proposed in [17]­[20] and then adopted       basic units is no longer fixed, but it follows a pseudorandom
+by 3GPP and integrated into the NB-IoT Release 13 [21],          selection procedure defined in [22].
+followed by an enhancement in Release 15 [11], [22]. In the
+latter, a new preamble format is introduced for range enhance-      Currently, there are three possible CP lengths. CP lengths of
+ment and time-division multiplexing (TDD). Note that, in         66.7 s (for format 0), 266.67 s (for format 1), and 800 s
+Releases 13 and 14, only the frequency-division multiplexing     (for format 2) are designed to support cell radius of up to
+(FDD) mode was supported. It is worth noting here that our       10 km, 40 km, and 120 km, respectively. In terms of propaga-
+work focuses only on FDD since it is the preferable mode in      tion delay, the three formats account for maximum RTDs of
+                                                                 66.67, 266.67, and 800 s, respectively.
+
+                                                                 IV. PREAMBLE DETECTION AND TOA ESTIMATION IN TN
+
+                                                                    In this section, we provide a brief review of our recently
+                                                                 proposed method [23] for NPRACH detection and ToA estima-
+                                                                 tion in TN. This is an essential part to understand the proposed
+                                                                 solution in this article. Note that in the NB-IoT TN system,
+                                                                 the Doppler is negligible due to very low mobility conditions.
+                                                                 For clarity's sake, we employ the same notation and the same
+                                                                 variable definitions as provided in the 3GPP standard [22] and
+                                                                 in our previous work [23] in the rest of this article. These
+                                                                 mathematical notations are summarized in the Appendix.
+
+                                                                 A. Signal Model
+
+                                                                    Based on [23], the transmitted NPRACH baseband signal
+                                                                 can be written as
+
+                                                                                  sm,i[n] =     Sm,i[k]ej2  k  n  (3)
+                                                                                                            N
+
+                                                                                             k
+14918                                                              IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+Fig. 4. NPRACH preamble format 1 structure.
+
+where sm,i[n] is the nth sample of the time-domain waveform        processing gives
+of ith symbol in the mth SG, whereas Sm,i[k] denotes the ith
+symbol on the kth subcarrier during the mth SG; in this case,      Zm,1 = YmYm+1  e-j2foffNg ej2                    (m)  D  .  (6)
+Sm,i[k] = 1 for all m, i. Furthermore, the sample index n                                                                N
+belongs to the set {Nm,i - NCP, . . . , Nm,i + N - 1}, in which
+i  {0, . . . , L - 1}, with L being the number of symbols in one   2) Construct an array v such that the position of Zm,1
+SG, and Nm,i = mNg + iN, with Ng = NCP + LN being the                  in v corresponds to the hopping step (m). If there
+size of one SG, NCP denoting the CP size, and N denoting the           are multiple Zm,1 with an equal value of (m), i.e.,
+size of a symbol.                                                        (m1) = (m2) with m1 = m2, then their values are
+                                                                       first summed up before being inserted in v.
+   It was shown in [23] that the received signal after OFDM
+                                                                   3) Perform 1-D DFT (1D-DFT) with NDFT points on v[n]
+demodulation (i.e., CP removal and discrete Fourier trans-             to get
+
+form, DFT, and application) assuming a negligible intercarrier                          NDFT -1  v[n]e-j2  k     n
+                                                                                                              NDFT
+interference (ICI) can be expressed as                             V [k]             =                              .          (7)
+
+       Ym,i = hmej2foff(mNg+iN-D)                                                       n=0
+
+             ×    e-j2  nSRCA (m)   D  1 - ej2foffN   + Wm,i  (4)  4) Combine the results noncoherently over NRX receive
+                                    N  1 - ej2foff                     antennas to get
+
+where foff is the carrier frequency offset (CFO) normalized                          X[k] = |V[k]|2.                           (8)
+by the sampling frequency, D is the RTD normalized by the
+                                                                                             NRX
+symbol duration, hm is the channel coefficient for the mth SG,
+nRSCA(m) is the subcarrier occupied by the mth SG, and Wm,i is     5) Determine kmax = argmaxk{X[k]} and define Xmax =
+the noise term. Combining the symbols within the same mth              X[kmax].
+
+SG, we get the so-called SG-sum (SG-S) as follows:                 6) Compare Xmax to a predefined threshold (see [23]).
+                                                                       If Xmax is greater than or equal to the threshold the
+             L-1                                                       preamble presence is declared, otherwise it is considered
+
+       Ym =       Ym,i = hmej2foff(mNg-D)                              absent.
+
+             i=0                                                   7) If the preamble is declared as present, the ToA is
+
+                e-j2  nRSCA (m)  D     1 - ej2foffLN                   estimated as
+                                 N      1 - ej2foff
+             ×                                        + Wm.   (5)                    D^ = kmax .
+
+                                                                                        NDFT f                                 (9)
+
+B. Preamble Detection and ToA Estimation                              Note that the most interesting property of the above method
+                                                                   is its insensitivity to CFO when estimating ToA. This is due to
+   For the clarity of exposition, the noise term and some con-     the perfect elimination of the CFO effect in step 4). Indeed, the
+stant factors are omitted here. For more details, we refer the     term e-j2foffNg is common for all Zm,1 symbols (i.e., common
+reader to [23]. The process to detect the preamble and to          for all v[n]) and affects only the phase of v[n], not its magni-
+estimate the ToA is as follows.                                    tude. Similarly, since the DFT operation is linear, this factor
+                                                                   affects only the phase of V[k], not its magnitude, such that by
+   1) Perform differential processing by multiplying the mth       taking the absolute of V[k], the impact of CFO is completely
+       SG-S with the complex conjugated (m + 1)th SG-S.            eliminated [23].
+       Defining (m) = nSRCA(m + 1) - nRSCA(m) as the hopping
+       step between the mth and (m + 1)th SGs, the differential
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS  14919
+
+Fig. 5. Residual CFO reduction scheme.                                    by the UE at this level consists of three components.
+                                                                          The first one is the residual Doppler shift that depends
+              V. PREAMBLE DETECTION AND TOA                               on the UE location within the beam. The second and
+                        ESTIMATION IN NTN                                 third components are frequency offsets introduced by
+                                                                          imperfect accuracy of both satellite and UE LOs.
+   In this section, we first provide the solution to handle high      2) UE tracks frequency after the initial downlink syn-
+frequency offsets observed in NTN-LEO-based systems. Then,                chronization due to the high Doppler rate (e.g., during
+a detailed mathematical analysis is provided before describing            the demodulation of narrowband physical broadcast
+the solution for preamble detection and ToA estimation. Before            channel).
+describing the proposed method, we note here that in NTN              3) UE updates the initial estimated frequency offset con-
+systems, UEs may experience multiple visible satellites, lead-            sidering the tracking information just before the UL
+ing to interbeam interference. Although this issue concerns the           transmission.
+whole NTN operation system including the actual data trans-           4) UE precompensates the calculated frequency offset in
+missions (not only the preamble detection), we believe that this          the previous step and sends its RA signal.
+issue can be tackled using the classical color schemes, usually       At the end, the residual frequency offset seen by the
+employed in practical satellite communication where differ-        satellite receiver will depend on the performance of down-
+ent carriers are configured for the adjacent satellites/beams.     link frequency synchronization, frequency tracking, and LO
+Through this the interbeam interference will be reduced to         stability (LO frequency drift in time). To the best of our
+a minimum, which would have a negligible impact on the             knowledge, there is no work providing the downlink syn-
+performance of the proposed method.                                chronization performance for NB-IoT under a LEO satellite
+                                                                   scenario. However, if we can consider the downlink syn-
+A. Solution for Residual Frequency Offset                          chronization results for 5G-NR reported recently in [24], the
+                                                                   residual frequency offset after downlink frequency synchro-
+   We described in Section II the 3GPP solution to reduce large    nization was about 600 Hz (at 99% of cases). In such an
+Doppler shifts due to LEO satellites' motions. However, the        NTN scenario, note that preamble format 2 is not suitable
+residual frequency offset seen by the satellite (in uplink) is     because of its small SCS (i.e., only 1.25 kHz) which makes
+still high and it can even exceed the largest SCS in NPRACH,       it too sensitive to a frequency offset. A CFO of 600 Hz rep-
+i.e., 3.75 kHz (see Table V). This frequency misalignment          resents about half of its SCS. For this reason, we adopt in
+causes ICI over the subcarriers and also a mismatch between        this work the preamble format 1 since it has the largest SCS
+the sampling frequencies used at transmission and reception.       (i.e., 3.75 kHz) associated with the longest CP (i.e., 267 s).
+To tackle this issue, we propose a system-level solution to        However, if future NB-IoT UEs guarantees lower frequency
+reduce the overall frequency offsets seen by the satellite to a    offsets, preamble format 2 can be adopted with our proposed
+value that could be handled by the RA preamble. Accordingly,       method. It is worth pointing out that the UE hardware does
+in addition to the Doppler precompensation at the satellite, we    not require any modification, if the Doppler precompensation
+propose to precompensate the residual frequency offset at the      can be done at the satellite as assumed in our method, the
+UE level using the initial downlink frequency synchronization      maximum CFO seen at the UE level will be comparable to
+(known as the initial cell-search procedure). Fig. 5 illustrates   the terrestrial scenario and, therefore, resolvable by typical
+the different steps of the proposed system-level solution. The     NB-IoT UE implementation.
+general idea is that the UE estimates the frequency offset in the
+downlink synchronization process. Hence, it can shift the cen-     B. Solution for Differential RTD
+tral frequency to the opposite side of the estimated frequency
+offset for uplink transmission.                                       Regarding the differential RTD (D-RTD), one can see that
+                                                                   the current NPRACH preambles (see Table VI) cannot address
+   The process is done as follows.                                 beams at lower elevation, since the timing uncertainty (up to
+   1) UE acquires a downlink frequency synchronization dur-        1.4 ms) is much larger than the current CP length (266.67 s
+                                                                   for format 1). In order to better understand the proposed solu-
+       ing the initial cell-search procedure, which is not per-    tion to support long D-RTDs, the reasons behind the design
+       fectly accurate. In practice, the frequency offset seen     of NPRACH preamble are listed as follows.
+
+                                                                      1) A CP length needs to be at least equal to the expected
+                                                                          maximum RTD.
+
+                                                                      2) The frequency hopping is used to facilitate the ToA (i.e.,
+                                                                          RTD) estimation at the BS.
+
+                                                                      3) The maximum ToA that can be estimated corresponds
+                                                                          to the reciprocal minimum hopping step (i.e., ToA 
+                                                                          {0, . . . , 1/[ (m)min]}).
+
+                                                                      Regarding the CP, we propose to extend its length by consid-
+                                                                   ering the current one (with 266.67 s) plus additional symbols
+                                                                   from the SG. The number of additional symbols depends on
+14920                                                                 IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+Fig. 6. OFDM demodulation examples with the proposed CP extension
+scheme.
+
+the MD-RTD (i.e., beam width). Note that this is possible             Fig. 7. Flowchart of the overall solution for preamble detection and ToA
+since the current CP consists of multiple repetitions of the          estimation in NTN.
+same symbol. Fig. 6 shows, from the receiver perspective,
+three examples representing three scenarios where the D-RTD           performing DFT (step 1), we obtain
+belongs to three different coverage levels with MD-RTD of
+266.67, 533.34, and 800 s, respectively. For example, if the                     Nm,i +N -1
+MD-RTD is 800 s (Example 3 in Fig. 6), the receiver consid-
+ers the new CP, namely, CPnew, to be the current one plus two         Ym,i[l] =              ym,i [n]e-j2 ln/N
+symbols from the sequence within the SG. Accordingly, the
+receiver will discard (i.e., remove) in this case the CPnew when                 n=Nm,i
+the OFDM demodulation is done. Interestingly, the aforemen-
+tioned processing does not imply any change neither on the            =          Nm,i +N -1           foff  (n-D)+  1  (n-D)2
+transmitter nor on the standard. Hence, it does not limit the                                                       2
+practicality of the proposed solution.                                                      hmej2
+
+   The other issue that we need to solve, is the estimation                      n=Nm,i
+of ToA larger than 266.67 s (in case of using the pream-
+ble format 1), which represents the maximum ToA that can                         ×       ej2    k-l   ne-j2  k  D.                (11)
+be estimated according to the minimum hopping distance of                                        N           N
+3.75 kHz. A flowchart illustrating the overall solution for ToA
+estimation as well as the preamble detection is depicted in                         k
+Fig. 7. The flowchart aims to provide a roadmap for the reader
+to refer and follow the different steps detailed in the forth-           Assuming (for the analytical derivation) that the energy
+coming description. The step numbers that will refer to in
+the description correspond to the numbers in the flowchart in         leakage from other subcarriers is small, and when l =
+Fig. 7, unless otherwise specified.                                   nSRCA(m), (11) can be expressed as
+
+   First, let us take a look at the received signal in the presence   Ym,i = hmej2 foff(Nm,i-D)ej (Nm2 ,i+D2-2Nm,iD)
+of Doppler rate. Omitting the noise term (for the clarity of
+exposition), the received signal can be reformulated as                                nSRCA       D  N-1
+                                                                                                   N
+                                                                         ×       e-j2         (m)          ej2 foffn
+
+                                                                                                   n =0                           (12)
+
+                                                                         × ej  n 2+2n (Nm,i-D)
+
+       ym,i[n]  =  hmej2  foff  (n-D)+  1  (n-D)2  sm,i[n - D]        where n = n - Nm,i.
+                                        2                                Similar to [25] and [26], since  1, the approximation
+
+                =  hmej2  foff  (n-D)+  1  (n-D)2                     ej(n 2-2n D)  1 can be made in (12) for 0  n  N - 1.
+                                        2
+                                                                      Correspondingly, we obtain
+                   ×      ej2   k  (n-D)                        (10)
+                                N
+
+                      k                                               Ym,i = hmej2 foff(Nm,i-D)ej  Nm2 ,i+D2-2Nm,iD
+
+where  is the Doppler rate normalized by the squared sam-             ×  e-j2       nSRCA  (m)  D     1 - ej2(foff+Nm,i)N      .  (13)
+pling frequency. By removing the CP (i.e., NCP samples) and                                     N      1 - ej2(foff+Nm,i)
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS                                                                    14921
+
+   By combining the signals within the same mth SG, we get                      3) Perform 1D-DFT with NDFT points for each vu[n] to get
+the SG-S (step 2)                                                                   (step 6)
+
+      L -1                                                                                          NDFT -1      [n]e-j2  k     n
+                                                                                                                             NDFT
+Ym =        Ym,i = hmej2foff(mNg-D)                                                       Vu[k]  =           vu                    .  (17)
+
+      i=0                                                                                           n=0
+
+      ×  ej     (mNg )2 +D2 -2mNg D  e-j2       nSRCA  (m)  D                   4) Combine noncoherently over Nrep and NRX receive
+                                                            N                       antennas to get (step 7)
+
+         L -1   ej2 foffiN ej  (iN)2+2mNgiN-2iND                                                    Nrep -1
+
+      ×                                                                                   X[k] =                 |Vu[k]|2.            (18)
+
+           i=0
+
+         1 - ej2(foff+(mNg+iN))N                                                                    u=0 NRX
+         1 - ej2(foff+(mNg+iN))
+      ×                                                        (14)             5) Perform steps 5 and 6 of the TN method (steps 8­12 in
+
+                                                                                Fig. 7).
+
+where L = L-LCP, with LCP denoting the number of symbols                        C. Correct ToA Selection
+employed to extend the CP within the SG.
+                                                                                   1) ToA Selection Concept: As mentioned earlier, we need to
+   Reasoning as with (13) (i.e.,  1), approximations4                           solve the problem of estimating ToAs larger than the maximum
+ej[(iN)2-2iND]  1, ej2iN2  1 and ej2iN  1 can be                                allowed by the NPRACH preamble (i.e., ToA > 1/[ (m)min]).
+made in (14) for 0  i  L - 1. This leads to                                     In the proposed method, the estimated ToA will always be in
+                                                                                the range [0, 1/ (m)min]. But, if we analyze the ToA term
+Ym    =     hmej2  foff (mNg  -D)  e-j2  nSRCA  (m)  D                          in (16), i.e., ej2 (m)D/N , we note that there may be a 2 -
+                                                     N                          phase-ambiguity problem. In other words, the phase rotation
+                                                                                caused by D-RTD is prone to a 2 -ambiguity by multiples
+            × ej  (mNg)2+D2-2mNgD                                               of 1/ (m)min in the time estimates. Given that (m)min =
+                                                                                3.75 kHz (for format 1), the time domain ambiguity is in
+            ×   1 - ej2(foff+mNg)L N     .                     (15)             multiples of 266.67 s. This means that all possible D-RTDs
+                 1 - ej2(foff+mNg)                                              will be estimated as D-RTD modulo 266.67 s. For exam-
+                                                                                ple, D-RTDs of 66.67, 333.34, and 600 s will all have the
+   The preamble detection and ToA estimation method in NTN                      same phase rotation [i.e., 2 (m)D/N] and a ToA estimate
+is performed in the same way as described in Section IV for                     of 66.67 s. Note that depending on the CP length, a list of
+TN systems. However, one modification may be included if                        ToA candidates can be obtained. In principle, if the new CP is
+the Doppler rate is too high. This is because the assumption                    equal to c × 266.67 s, we will end up with c-ToA candidates.
+of having a constant CFO during the entire NPRACH period                        To select the right one, we propose a discrimination criteria
+no longer holds. Hence, when constructing the array v with                      based on the estimation of the underlying Doppler rate.
+Zm,1 symbols (step 2 in the TN method), we cannot sum up
+multiple Zm,1 with equal value of (m) (particularly for far                        It is well known that the Doppler rate depends on the posi-
+apart symbols), since they do not have the same phase due                       tion of the UE within the beam, similarly to the D-RTD.
+to the variant frequency offset. Furthermore, to eliminate the                  Also, the satellite knows the Doppler rate and D-RTD of
+CFO impact on the ToA estimation, the factor e-j2foffNg needs                   each geographical location within its coverage area (thanks
+to be a common factor for all Zm,1, which is not the case with                  to ephemeris and beam layout knowledge). Hence, the esti-
+time-varying CFO. Nevertheless, for the analytical derivation,                  mation of the Doppler rate during the NPRACH reception
+we assume that the CFO variation within one preamble basic                      allows us to select the correct ToA (step 16) by comparing
+unit5 is negligible. Accordingly, the proposed method for the                   the estimated Doppler rate with the available one predicted by
+NTN can be outlined as follows.                                                 the satellite. More explicitly, the estimated Doppler rate will
+                                                                                be compared to all Doppler rates corresponding to all D-RTD
+   1) Perform differential processing by multiplying the mth                    candidates (step 15). To illustrate this strategy, consider the
+       SG-S with the complex conjugated (m + 1)th SG-S                          following example. In a given beam, assume that the MD-
+       (step 3). This gives                                                     RTD is 800 s and the estimated ToA is 66.67 s. Due to
+                                                                                the phase ambiguity, there will be three D-RTD candidates,
+Zm,1 = YmYm+1  e-j2foffNg ej2            (m)    D                               namely, 66.67, 333.34, and 600 s with the corresponding
+                                                N                               Doppler rate (e.g., Set-2 beam with minimum elevation angle
+                                                                                of 42.1) of -305, -261, and -225 Hz/s, respectively. Next,
+         × e-j Ng2+2mNg2-2NgD e-jNg(L N-1). (16)                                assume that the estimated Doppler rate is -275 Hz/s. Since
+                                                                                -275 Hz/s is closer to -261 Hz/s than the other two Doppler
+2) For each preamble basic unit,6 we construct an array                         rate candidates, we can conclude that the most likely ToA is
+                                                                                333.34 s.
+    vu with the Zm,1 symbols belonging to the basic unit u.
+    Their position in vu corresponds to their hopping step                         Note that in this solution, the Doppler rate estimation does
+                                                                                not require a very high accuracy, especially at higher eleva-
+      (m) (steps 4 and 5). Thus, we end up with Nrep arrays.                    tion angles. In practice, the estimation error needs only to
+
+   4Approximations in (13) and (14) are possible only for indexes representing
+a short time duration. With indexes representing a long time duration (e.g.,
+index m) those approximations are no longer reasonable.
+
+   5The preamble basic unit contains P SGs, where P can be set according to
+Table VI.
+
+   6There are Nrep basic units in a preamble.
+14922                                                                IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+be less than half of the minimum difference between any              approximate ML estimator via a numerical evaluation of the
+two ToA candidates. At lower elevation angles, where wider
+beams are expected (i.e., higher D-RTD), Doppler rates are           discrete-time Fourier transform (DTFT). The key idea herein
+small and the number of ToA candidates is high. In this situa-
+tion, a very good Doppler rate estimation accuracy is required,      is to restrict the search space in frequency domain only to
+since the Doppler rate separating the ToA candidates is small.
+Nonetheless, for higher elevation angles, where high Doppler         the possible Doppler rate values (depending on the scenario)
+rates and low ToA candidates are expected, the accuracy is
+relaxed due to larger Doppler rate separation between the            rather than the whole spectrum. More specifically, note that the
+ToA candidates. In addition, note that the Set-1 configura-
+tion requires better accuracy compared to Set-2 configuration,       maximum Doppler rate that can be estimated with the above
+since it has a narrower beam. In the former example, the error       method corresponds to max = -(1/Ng2) = -390.625 kHz/s,
+should be smaller than 18 Hz/s.                                      whereas the maximum value in the adopted scenario is only
+                                                                     mscax = -594 Hz/s, which occupies a very small part of
+   2) Doppler Rate Estimation: After we outlined the concept         the considered spectrum. In addition, note that the mini-
+of selecting the correct ToA candidate based on the Doppler          mum Doppler rate is mscin = -101 Hz/s (see Section III-C).
+rate estimation, we describe in the following how the Doppler        Furthermore, each beam, depending on its size, has a minimum
+rate estimator is designed. Note that the Doppler rate is always     and maximum Doppler frequency drift between [mscin, mscax]
+negative and has a maximum value at 90 elevation angle.              depending on the elevation angle. All these aspects reduce fur-
+
+   We start by compensating the estimated ToA in (16) as             ther the space search in the spectrum, which can be exploited
+follows (step 13):
+                                                                     in order to considerably reduce the computational complexity
+
+                                                                     and increase the estimation accuracy.
+
+                                                                        First, the DTFT of tm with NDTFT points is calculated
+
+                                                                                 Nt -1
+
+                                                                     T(ejwq ) =         t[n]e-jwqn  (22)
+
+       tm = Zm,1e-j2            (m)  D^                                          n=0
+                                     N
+
+                  e-j2 foffNg e-j  Ng2+2mNg2-2NgD                    where Nt = PNrep - 1 is the number of sym-
+                                                                     bols in t[n], and wq = -2 q with  =
+                 × e-jNg(LN-1).                              (19)    [(mscax - mscin)Ng2/NDTFT] is the desired resolution con-
+                                                                     trolled by the number of DTFT points NDTFT, and q 
+   Interestingly, one can note that all the terms in (19) are con-   {[mscin/(mscax - mscin)], . . . , [mscax/(mscax - mscin)]} · NDTFT.
+stants except the term e-j2Ng2m that depends on m. Similarly
+to the ToA estimator, the Doppler rate  can be estimated using          Then, similar to the 1D-DFT-based method, we combine
+an approximate maximum-likelihood (ML) estimator based on
+1D-DFT with NDFT points. In this case, we obtain                     noncoherently over NRX antennas
+
+                                                                     J[q] = T ejwq 2.               (23)
+
+                           NDFT -1                                         NRX
+
+                 T [p]  =           t[n]e-j2  p     n  .     (20)       Let qmax  [1, NDTFT] be the index of the maximum value
+                                                 NDFT                of J[q]. Then, the Doppler rate is given by (step 14)
+
+                           n=0
+
+In the case of multiple receive antennas, the combina-               ^  =  qmax         + mscin.    (24)
+                                                                             Ng2
+tion of the signals is done noncoherently by summing up
+
+squared magnitudes of T[p] over NRX antennas, i.e., J[p] =              The complexity of the DTFT-based approximate ML esti-
+                                                                     mator will be O(NDTFT × Nt). To show the gain of the
+   NRX |T[p]|2.  Note that by taking the absolute square of  T [p],  proposed ML estimator based on DTFT compared to the
+we eliminate     the impact of the CFO given by e-j2foff     Ng as
+                                                                     standard DFT (implemented via FFT), we consider the same
+well as the other constant terms, since they affect only the
+                                                                     example as before with a target resolution of 6 Hz/s. For
+phase of T[p] and not its magnitude.                                 the largest spotbeam from Set-2 configuration at 30 (see
+
+Let pmax be the index of the maximum value of J[p]. The              Table IV), the maximum and minimum Doppler rate will be
+                                                                     -206 and -101 Hz/s, respectively. In this case, we need to
+Doppler rate can be estimated as                                     have NDTFT = (mscax - mscin/-6)  18. Assuming a preamble
+                                                                     with Nrep = 64 (i.e., Nt = 255), the foreseen complexity will
+                        ^  =  -    pmax   .                  (21)    be only O(NDTFT × Nt)  4600. Thus, we reduce the com-
+                                 NDFTNg2                             plexity by a factor of 220/4600  228, leading to a substantial
+                                                                     improvement in terms of computational complexity.
+   However, one can observe from (19) that w = 2 Ng2 in tm
+symbols is very small, since  1. Hence, to be able to esti-             Ultimately, based on the estimate of the Doppler rate, it is
+mate  by the above method (i.e., 1D-DFT) with a good esti-
+                                                                     possible to discriminate the candidates of ToA (step 15) and
+mation accuracy, a very large number of DFT points is needed.
+For example, if a resolution of 6 Hz/s is desirable, NDFT =          resolve the corresponding ambiguity (step 16), as described in
+(1/6 × Ng2)  216 is required. This leads to a very high com-
+putational complexity, namely, O(NDFT log2(NDFT))  220               Section V-C1.
+(considering radix-2 fast Fourier transform implementations),
+                                                                              VI. SIMULATION RESULTS AND DISCUSSION
+which may become a burden for the system operation, espe-
+                                                                        In this section, we provide simulation results to assess the
+cially due to the limited computational resources and power          performance of the proposed method. The PHY-based simu-
+                                                                     lation parameters are summarized in Table VII. The antenna
+available onboard of the satellite.
+
+   To reduce this computational complexity and enable an
+
+efficient implementation of the method, we consider the
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS  14923
+
+                                        TABLE VII                   alarm. More specifically, the probability of preamble detec-
+                              SIMULATION PARAMETERS                 tion should be equal to 99% (i.e., missed detection rate below
+                                                                    1%), and false alarm probability should be less than or equal
+configuration is set to one transmitter antenna (at the UE)         to 0.1%. According to [27], the probability of detection is
+and two receiver antennas (at the satellite) similar to the TN      defined as the conditional probability of correct detection of
+system. One active UE is considered first to obtain an upper-       the preamble when the signal is present. There are several
+bound performance for the proposed method. Then, three              error cases:
+active UEs with adjacent subcarriers are simulated to represent
+a realistic scenario specifically accounting for ICI effects [28].     1) detection of a wrong preamble (different than the one
+Regarding the channel model, it is worth noting here that the              sent);
+NTN propagation environment can exhibit NLOS/ multipath
+effects. The 3GPP study related to the channel model in TR             2) no detection of any preamble;
+38.811 [6] has developed a channel model for 5G-NR that sup-           3) correct preamble detection but with the wrong timing
+ports a range of deployment including urban, suburban and
+rural scenarios. However, in contrast to terrestrial propaga-              (ToA) estimation.
+tion environment, it was highlighted in TR 38.811 [6] that             This latter occurs if the ToA estimation error is larger than
+the large distance in NTN leads to lower delay spread and,          3.646 s.
+thus, to higher coherence bandwidth. In fact, TR 38.811 [6]            The false alarm probability is defined as the conditional total
+defined 100 ns to be the maximum Delay spread for our con-          probability of erroneous detection of the preamble when the
+sidered scenario (i.e., LEO at 600 km). This corresponds in         input contains only noise, i.e., in absence of the useful signal.
+the worst case (i.e., performance lower bound) to 200 kHz
+of coherence bandwidth. Hence, the NB-IoT NTN channel               B. Obtained Results
+is considered to be flat due to its narrow band nature (i.e.,
+180 kHz), especially for the RA (i.e., 45 kHz considering              The overall obtained results are first analyzed and discussed.
+maximum hopping of 12 subcarriers). Consequently, and as            The performance of ToA and Doppler rate estimators is pro-
+stated in TR 38.811 [6], the link-level simulation under flat       vided in terms of the cumulative distribution function (CDF) of
+fading does not require any channel modeling, only additive         the absolute ToA estimation error and Doppler rate estimation
+white Gaussian noise (AWGN) is considered. Both 32 and              error. All results are obtained with a false alarm probability
+64 repetitions (Nrep) are configured. The considered minimum        being less than 0.1%.
+elevation angles for Set-1 and Set-2 payload configurations
+are 30 and 31, respectively. This latter represents the MD-            1) Overall Performance: The obtained results are depicted
+RTD that the proposed method can address in case of Set-2           in Fig. 8 and presented in terms of missed detection rate versus
+configuration. The MD-RTDs for our scenario that exceed the         SNR. We start first by presenting and analyzing the case of sin-
+typical maximum RTD in the TN system (i.e., 266.67 s) are           gle UE. For an MD-RTD of 1333.4 s (e.g., scenario for beam
+considered to show the coverage extension provided by the           at minimum elevation angle of 31 for Set-2 configuration
+proposed method. Accordingly, the timing uncertainty is uni-        with 246-km diameters) the missed detection target of 10-2 is
+formly chosen from [0, MD-RTD] s. The maximum residual              achieved at the SNR of 15.5 and 9.3 dB for 32 and 64 repeti-
+frequency offset is chosen to be 600 Hz according to our dis-       tions, respectively, [see Fig. 8(a)]. In the case of an MD-RTD
+cussion in Section V-A. Finally, 256 points DFT (implemented        of 1067 s (e.g., scenario for beam at minimum elevation
+via FFT) and 62 points DTFT are set for ToA and Doppler             angle of 30 for Set-1 configuration with 144-km diameters)
+rate estimation, respectively.                                      the target is reached at the SNR of 14.8 and 8.1 dB for 32
+                                                                    and 64 repetitions, respectively, [see Fig. 8(b)]. For lower MD-
+A. 3GPP Performance Metrics                                         RTDs, lower SNR values are observed at the missed detection
+   3GPP has not yet defined performance metrics for NB-IoT          target [see Fig. 8(c) and (d)]. For an MD-RTD of 800 s the
+                                                                    target is reached at 7.9 and 2.8 dB for 32 and 64 repetitions,
+in NTN. However, we adopt in this work the same 3GPP                respectively, whereas for MD-RTD of 533.4 s, these values
+performance metrics as in TN. Accordingly, the performance          are 6.4 and 2.6 dB for 32 and 64 repetition, respectively. When
+metrics are the probability of preamble detection and false         analyzing the results, we note that the performance is enhanced
+                                                                    when we reduce the MD-RTD. This is an expected behavior,
+                                                                    since the number of useful symbols (/ CP) is inversely propor-
+                                                                    tional to the CP length. This leads to SNR enhancement (i.e.,
+                                                                    performance enhancement) when combining within the same
+                                                                    SG in (14). Furthermore, this is also related to the fact that at
+                                                                    lower elevation angles, where higher D-RTDS are expected,
+                                                                    better Doppler rate accuracy is needed compared to higher
+                                                                    elevation angles, as explained in Section V-C.
+
+                                                                       Regarding the case of three active UEs, naturally, we
+                                                                    observe some performance degradation compared to the
+                                                                    single-UE performance. This degradation is not the same for
+                                                                    all cases. For MD-RTDs above 1000 s, we observe a rel-
+                                                                    atively substantial degradation before the missed detection
+                                                                    target in case of 32 repetitions, and about 0.5-dB degradation
+14924                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+       (a)                                                        (b)
+
+       (c)                                                        (d)
+
+Fig. 8. NPRACH preamble detection performance with different MD-RTDs in our NTN scenario. (a) NTN beam with MD-RTD of 1333.4 s. (b) NTN
+beam with MD-RTD of 1066.7 s. (c) NTN beam with MD-RTD of 800 s. (d) NTN beam with MD-RTD of 533.3 s.
+
+at the missed detection target in the case of 64 repetitions.     small D-RTDs (i.e., higher elevation angles) for all repetitions.
+On the other hand, for MD-RTDs below 1000 s, we notice            For 32 repetitions, the Doppler rate errors (at 99% confidence
+about 0.5-dB degradation in case of 32 repetitions and negli-     level) are 9.8 Hz/s, 8.3 Hz/s, 17 Hz/s, 30.5 Hz/s for MD-RTDs
+gible degradation in case of 64 repetitions. The low impact       of 1333.4, 1066.7, 800, and 533.3 s, respectively. In the case
+of ICI at lower SNRs is understandable. In fact, at a low         of 64 repetitions, those values are 8.7, 7.8, 17, and 31 Hz/s for
+SNR regime, the noise is the dominant impairment. But when        MD-RTDs of 1333.4, 1066.7, 800, and 533.3 s, respectively.
+moving to moderate and high SNR regimes, the ICI starts to        As explained in Section V-C, this reflects the fact that for large
+be the dominant impairment leading to performance degrada-        D-RTD (i.e., lower elevation angles) one expects wider beams,
+tion. The substantial degradation in case of 32 repetitions at    smaller Doppler rates, and a high number of ToA candidates
+higher MD-RTDs (> 1000 s) can be explained by the lack            to be discriminated, thus requiring a very good accuracy com-
+of signal length (less repetitions) to estimate the Doppler rate  pared to higher elevation angles. In addition, one can note
+with enough accuracy in presence of ICI. On the other hand,       that the accuracy needed for MD-RTD of 1333.4 s is less
+it seems sufficient to have 64 repetitions to reach the required  than the one for MD-RTD of 1066.7 s. This is because the
+Doppler rate accuracy, leading to better overall performance.     latter MD-RTD represents Set-1 configuration, which has a
+                                                                  narrower beam compared to the case of MD-RTD of 1333.4 s
+   2) Estimators' Performance: Figs. 9 and 10, respectively,      in Set-2 configuration. Note that for 32 repetitions and in the
+show the performance of the Doppler rate and ToA estimators       case of MD-RTDs of 1333.4 and 1066.7 s, the required
+around the missed detection target of 10-2 for both 32 and 64     accuracy (expected to be  9 Hz/s and  8 Hz/s, respec-
+repetitions when three UEs are active.                            tively) to attain the target missed detection is not reached.
+                                                                  This is why in those cases (i.e., 32 repetitions with MD-RTD
+   First, when observing the Doppler estimation accuracy (see     of 1333.4 and 1066.7 s) the missed detection target is not
+Fig. 9), one can note that the estimation accuracy required       achieved.
+to achieve the missed detection target is high in the case
+of large D-RTDs (i.e., lower elevation angles), compared to
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS                14925
+
+(a)                                                                          (a)
+
+(b)                                                                          (b)
+
+Fig. 9. CDF of absolute Doppler rate estimation error at the missed detec-   Fig. 10. CDF of absolute ToA estimation error at the missed detection
+tion target of 10-2. (a) CDF of absolute Doppler rate estimation error with  target of 10-2. (a) CDF of absolute ToA estimation error with 32 repetitions.
+32 repetitions. (b) CDF of absolute Doppler rate estimation error with 64    (b) CDF of absolute ToA estimation error with 64 repetitions.
+repetitions.
+
+   Regarding the ToA estimator, as shown in Fig. 10, it is                   C. Discussion
+indeed very accurate at the target missed detection rate. For
+32 and 64 repetitions, the accuracy of the estimator is less than               The proposed method in this article is designed to work with
+1 s except for cases where MD-RTD is equal to 1333.4 and                     UEs without GNSS but could also work with UEs integrating
+1066.7 s with 32 repetitions. Those exceptions stem from the                 GNSS capability. The method can be useful in terms of ToA
+aforementioned lack of Doppler rate accuracy, which leads to                 estimation accuracy by eliminating the CFO as well as the
+a poor discrimination among the ToA candidates.                              Doppler rate effects when estimating the ToA. Furthermore,
+                                                                             independent of the UE type (with or without GNSS), the esti-
+   3) Concluding Remarks on the Results: The overall                         mation of the Doppler rate can be reported to upper layers for
+performance demonstrates the ability of the proposed method                  the scheduling algorithm, which could use it to preserve the
+to address the NTN scenario described in Section III.                        UEs' orthogonality for data transmission [29].
+Explicitly, the method can address UEs at minimum elevation
+angle of 31 for Set-2 configuration and UEs at 30 eleva-                        On the other hand, the actual performance of the method
+tion angles and even lower for Set-1 configuration. For both                 depends on the satellite altitude. Satellites at higher altitudes
+configurations, 64 preamble repetitions are needed for UEs at                have larger spotbeams and lower speed, leading to larger
+lower elevation angles, whereas for higher ones, the UEs can                 D-RTD and lower Doppler rates, assuming the same payload
+be served with lower preamble repetitions. It is worth noting                configurations. First, the method (i.e., without GNSS) cannot
+here that the obtained results may constitute a new reference                work if D-RTD exceeds the MD-RTD that the system can han-
+for future investigations of NPRACH detection performance                    dle (i.e., TSEQ). This issue can be tackled by considering higher
+in the NTN context, where the available literature is rather                 elevation angles (e.g., for a LEO at 2000 km, the minimum
+scarce.                                                                      elevation angle becomes around 42 for Set-1 configuration)
+                                                                             for the system operations. Now, when the Doppler rate is very
+14926                                                            IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+small, the method may not be able to discriminate between        mscax     Maximum Doppler rate for the considered
+the possible D-RTDs, since it is limited by the precision        mscin     scenario.
+of the Doppler rate estimator. For example, with a LEO at                  Minimum Doppler rate for the considered
+2000 km and minimum elevation angle of 42 degree with            hm,i      scenario.
+Set-1 configuration, the Doppler rate variation between the      hm        Channel gain of the ith symbol in the mth SG.
+two edges of the spotbeam is around 12 Hz/s (assuming a          nRSCA(m)  Channel gain of the mth SG.
+maximum Doppler rate of 125 Hz/s). Accordingly, in order                   Subcarrier occupied by the mth SG.
+to discriminate 5 D-RTDs, we need a precision better than          (m)     Hopping step between the mth and (m + 1)th
+12/5/2 = 1.2 Hz/s, which is difficult to achieve for 99% of                symbol groups.
+cases. In this configuration, adopting higher carrier frequency    (m)min  Minimum hopping step in the preamble.
+may solve this issue.                                            Zm,1      Differential symbol resulting from the mth and
+                                                                           the (m + 1)th SG differential processing.
+                         VII. CONCLUSION                         v         Array containing differential symbols with cor-
+                                                                           rected frequency hopping.
+   In this work, a new receiver method was designed for the      vu        Array containing differential symbols of uth
+integration of NB-IoT RA in NTNs. A detailed scenario defini-              preamble basic unit with corrected frequency
+tion along with link budget description as well as some design    NDFT     hopping.
+aspects related to the integration of NB-IoT RA via LEO          NRX       Number of DFT points.
+satellites were provided. The proposed method is designed        V         Number of receive antennas.
+to minimize the impact of frequency offset and Doppler rate                Post-DFT vector of corrected differential
+while extending the coverage beyond the typical limit of the     Vu        symbols.
+NB-IoT system in TNs. Performance evaluation showed how                    Post-DFT vector of corrected differential
+the proposed method can address the different configurations     X[k]      symbols of the uth preamble basic unit.
+defined by 3GPP standardization body for NTNs. Since numer-      Xmax      NPRACH detection metric vector.
+ous companies are interested into the integration of NB-IoT                Maximum value of the NPRACH detection
+via satellite, the proposed method can constitute a practical    D^        metric vector.
+and seamless solution for the RA channel.                        tm        Estimated ToA (i.e., RTD).
+                                                                 T         ToA corrected differential symbol.
+                               APPENDIX                                    Post-DTFT vector of ToA corrected differential
+       MATHEMATICAL SYMBOLS USED IN PREAMBLE                     Nt        symbols.
+DETECTION AND TOA ESTIMATION IN BOTH TN AND NTN                  NDTFT     Number of symbols in t vector.
+                                                                 J         Number of DTFT points.
+Symbol   Definition                                                        Post-DTFT vector of corrected differential
+sm,i[n]  Transmit signal at the nth sample of the ith            ^         symbols summed across receive antennas.
+         symbol in the mth SG.                                             Estimate of Doppler rate.
+Sm,i[k]  ith symbol on the kth subcarrier during the mth                   Resolution of Doppler rate estimation.
+         SG.
+Ng       Size of one SG in sample.                                                           REFERENCES
+NCP      CP size in sample.
+N        Symbol size in sample.                                  [1] Non-Terrestrial Networks Position Paper, NGMN Alliance, Frankfurt,
+ym,i[n]  Received time domain signal of the nth sample                Germany, Nov. 2019.
+         of the ith symbol in the mth SG.
+Ym,i[l]  Received frequency domain signal of the lth             [2] "5G; Study on scenarios and requirements for next generation access
+         subcarrier of the ith symbol in the mth SG.                  technologies, version 14.2.0 release 14," 3GPP, Sophia Antipolis, France,
+Wm,i     Additive noise signal in the ith symbol in the               Rep. TR 38.913, May 2017.
+         mth SG.
+Ym       Sum of frequency domain symbols of the mth              [3] O. Kodheli et al., "Satellite communications in the new space era: A
+         SG.                                                          survey and future challenges," IEEE Commun. Surveys Tuts., vol. 23,
+LCP      Number of symbols employed to extend the CP                  no. 1, pp. 70­109, 1st Quart., 2021.
+         within one SG.
+L        Number of remaining symbols after CP                    [4] "3rd generation partnership project; technical specification group radio
+         removal.                                                     access network; study on new radio (NR) to support non terrestrial
+foff     CFO normalized by the sampling frequency.                    networks (release 15), v0.1.0," 3GPP, Sophia Antipolis, France,
+D        RTD normalized by the symbol duration.                       Rep. TR 38.811, Jun. 2017.
+         Doppler rate normalized by squared sampling
+         frequency.                                              [5] "3rd generation partnership project; technical specification group
+max      Maximum Doppler rate that can be theoreti-                   radio access network; solutions for NR to support non-terrestrial
+         cally estimated.                                             networks (NTN) (release 16), v16.0.0," 3GPP, Sophia Antipolis, France,
+                                                                      Rep. TR 38.821, Dec. 2019.
+
+                                                                 [6] "3rd generation partnership project; technical specification group radio
+                                                                      access network; study on new radio (NR) to support non terrestrial
+                                                                      networks (release 15), v15.1.0," 3GPP, Sophia Antipolis, France,
+                                                                      Rep. TR 38.811, Jun. 2019.
+
+                                                                 [7] Solutions for NR to Support Non-Terrestrial Networks (NTN), document
+                                                                      RP-193144, 3GPP TSG RAN meeting #86, Thales, Paris, France,
+                                                                      Dec. 2019.
+
+                                                                 [8] New Study WID on NB-IoT/eTMC Support for NTN, document
+                                                                      RP-193235, 3GPP TSG RAN meeting #86, MediaTek Inc., Hsinchu,
+                                                                      Taiwan, Dec. 2019.
+CHOUGRANI et al.: NB-IoT RANDOM ACCESS FOR NONTERRESTRIAL NETWORKS            14927
+
+ [9] X. Lin, A. Adhikary, and Y.-P. Wang, "Random access preamble             [20] NB-IoT--Single Tone Frequency Hopping NB-PRACH Design, docu-
+      design and detection for 3GPP narrowband IoT systems," IEEE Wireless          ment R1-160275, 3GPP TSG-RAN1 #84, Ericsson, Stockholm, Sweden,
+      Commun. Lett., vol. 5, no. 6, pp. 640­643, Dec. 2016.                         Feb. 2016.
+
+[10] LTE; Evolved Universal Terrestrial Radio Access (E-UTRA); Physical       [21] LTE; Evolved Universal Terrestrial Radio Access (E-UTRA) and Evolved
+      Channels and Modulation, Version 13.7.1 Release 13, 3GPP Standard             Universal Terrestrial Radio Access Network (E-UTRAN); Overall
+      TS 36.211, Oct. 2017.                                                         Description, Version 13.2.0 Release 13, 3GPP Standard TS 36.300,
+                                                                                    Jan. 2016.
+[11] LTE; Evolved Universal Terrestrial Radio Access (E-UTRA); Radio
+      Resource Control (RRC); Protocol Specification, Version 13.8.1 Release  [22] LTE; Evolved Universal Terrestrial Radio Access (E-UTRA); Physical
+      13, 3GPP Standard TS 36.331, Jan. 2018.                                       Channels and Modulation, Version 15.2.0 Release 15, 3GPP Standard
+                                                                                    TS 36.211, Oct. 2018.
+[12] G. Charbit, D. Lin, K. Medles, L. Li, and I.-K. Fu, "Space-terrestrial
+      radio network integration for IoT," in Proc. IEEE 2nd 6G Wireless       [23] H. Chougrani, S. Kisseleff, and S. Chatzinotas, "Efficient preamble
+      Summit (6G SUMMIT), 2020, pp. 1­5.                                            detection and time-of-arrival estimation for single-tone frequency hop-
+                                                                                    ping random access in NB-IoT," IEEE Internet Things J., vol. 8, no. 9,
+[13] O. Kodheli, N. Maturo, S. Chatzinotas, S. Andrenacci, and F. Zimmer,           pp. 7437­7449, May 2021, doi: 10.1109/JIOT.2020.3039004.
+      "On the random access procedure of NB-IoT non-terrestrial networks,"
+      in Proc. ASMS/SPSC, 2020, pp. 1­8.                                      [24] Discussion on Doppler Compensation, Timing Advance and RACH for
+                                                                                    NTN, document R1-1908049, 3GPP TSG RAN WG1 Meeting #98,
+[14] A. Guidotti, A. Vanelli-Coralli, A. Mengali, and S. Cioni, "Non-               Huawei, HiSilicon, CAICT, Shenzhen, China, Aug. 2019.
+      terrestrial networks: Link budget analysis," in Proc. IEEE Int. Conf.
+      Commun. (ICC), 2020, pp. 1­7.                                           [25] M. Morelli, "Doppler-rate estimation for burst digital transmission,"
+                                                                                    IEEE Trans. Commun., vol. 50, no. 5, pp. 707­710, May 2002.
+[15] Beam Size Computation and Alternative Satellite Specifications, docu-
+      ment R1-1907481, 3GPP TSG WG1 Meeting #97, ESA, Paris, France,          [26] U. Mengali and A. N. D'Andrea, Synchronization Techniques for Digital
+      May 2019.                                                                     Receivers. New York, NY, USA: Plenum Press, 1997.
+
+[16] NTN System Level and Link Budget Calibration: DL and UL Results,         [27] LTE; Evolved Universal Terrestrial Radio Access (E-UTRA); Base
+      document R1-1913224, 3GPP TSG RAN WG1 Meeting #99, ESA,                       Station (BS) Radio Transmission and Reception, Version 14.3.0 Release
+      Paris, France, Nov. 2019.                                                     14, 3GPP Standard TS 36.104, Apr. 2017.
+
+[17] Narrowband LTE--Random Access Design, document R1-156011, 3GPP           [28] NB-IoT--Near-Far Performance of NB-PRACH, document R1-160277,
+      TSG-RAN1 #82bis, Ericsson, Stockholm, Sweden, Oct. 2015.                      3GPP TSG-RAN1 #84, Ericsson, Stockholm, Sweden, Feb. 2016.
+
+[18] NB-IoT--Random Access Design, R1-157424, 3GPP TSG-RAN1#83,               [29] S. Kisseleff, E. Lagunas, T. S. Abdu, S. Chatzinotas, and B. Ottersten,
+      Ericsson, Stockholm, Sweden, Nov. 2015.                                       "Radio resource management techniques for multibeam satellite
+                                                                                    systems," IEEE Commun. Lett., vol. 25, no. 8, pp. 2448­2452,
+[19] NB-IoT--Design Considerations for Single Tone Frequency Hopped                 Aug. 2021.
+      NB-PRACH, document R1-160093, 3GPP TSG-RAN1 AH-NB-IoT,
+      Ericsson, Stockholm, Sweden, Jan. 2016.
+

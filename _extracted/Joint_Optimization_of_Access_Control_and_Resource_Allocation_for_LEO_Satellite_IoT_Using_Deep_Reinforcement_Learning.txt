@@ -1,0 +1,1083 @@
+6670  IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+Joint Optimization of Access Control and Resource
+   Allocation for LEO Satellite IoT Using Deep
+                 Reinforcement Learning
+
+      Xingmin Feng , Guizeng Yin, Huaiwei Quan, Zhao Li, and Fengkui Gong , Member, IEEE
+
+   Abstract--Integrated satellite-terrestrial communication is one             machine-type communication devices is growing exponentially
+of the key features of 6G, and the application of low-Earth                    [1]. As a result, supporting the large-scale deployment of
+orbit (LEO) satellites in global Internet of Things (IoT) services             Internet of Things (IoT) devices has become a key priority
+has attracted significant attention. In LEO satellite IoT systems,             for enterprises [2]. In this context, satellite networks are
+terrestrial devices connect to the network using random access.                regarded as an effective extension of terrestrial networks
+However, the rapid growth of IoT devices and significant satellite-            to achieve seamless coverage, with low earth orbit (LEO)
+terrestrial link delays pose serious challenges to existing access             satellites attracting particular attention [3], [4], [5]. There
+mechanisms. To address these issues, this paper proposes a                     is a growing consensus in both academia and industry that
+joint optimization algorithm for efficient access control and                  integrated satellite-terrestrial communication constitute a key
+resource allocation based on a cross-layer design. In the access               feature of 6G, with the envisioned capability to support future
+control phase, an optimization problem is formulated to maximize               IoT services [6], [7]. However, due to the long propagation
+the average random access efficiency, and matching theory is                   distance of satellite­terrestrial links, LEO satellite-assisted
+applied to reduce signaling overhead. In the resource allocation               communication systems experience non-negligible propaga-
+phase, a Lyapunov optimization-based long-term online algo-                    tion delays, which are lower than those in geostationary
+rithm was proposed, which achieves efficient time-frequency                    earth orbit satellite systems but higher than those in typical
+resource scheduling by transforming the long-term optimization                 terrestrial networks. Additionally, the high relative velocity of
+problem into a series of low-complexity short-term subproblems.                LEO satellites limits the coverage duration for fixed terrestrial
+To further enhance optimization and reduce computational com-                  devices. Therefore, traditional grant-based access protocols are
+plexity, a deep reinforcement learning (DRL) model is employed                 unsuitable for LEO satellite IoT systems due to their high
+to jointly optimize access control and resource allocation. The                signaling overhead and unacceptable transmission delays. To
+proposed algorithm is analyzed theoretically and validated                     address these challenges, efficient grant-free random access
+through simulations. Simulation results show that the proposed                 protocols must be designed for LEO satellite IoT systems [8],
+DRL-based joint optimization algorithm performs well under                     [9].
+various system configurations and significantly improves access
+efficiency and resource utilization.                                              In grant-free random access protocols, IoT devices do not
+                                                                               need to negotiate with the system, request authorization from
+   Index Terms--Satellite networks, random access, cross-layer                 the satellite receiver [10], [11], or engage in additional signal-
+design, Lyapunov optimization, deep reinforcement learning,                    ing. Instead, they access the channel directly through random
+joint optimization.                                                            contention. Specifically, when transmitting data, IoT devices
+                                                                               send a preamble along with the data packet to the satellite
+                          I. INTRODUCTION                                      receiver, enabling efficient access without signaling overhead.
+                                                                               This reduces both signaling overhead and latency, thereby
+A. Motivations and Summary of Contributions                                    improving the transmission efficiency of short packets in IoT
+                                                                               systems [12]. Furthermore, in LEO satellite IoT systems, the
+A S MOBILE communication advances from the fifth                               wide satellite coverage, dense terminal deployment, and highly
+      to the sixth generation (6G), the number of massive                      random traffic patterns make traditional access control mech-
+                                                                               anisms unsuitable for large-scale dynamic access scenarios.
+   Received 21 September 2025; revised 21 November 2025 and 22 January         Grant-free random access protocols can improve spectrum
+2026; accepted 23 February 2026. Date of publication 3 March 2026; date        utilization and reduce terminal access costs, making them the
+of current version 17 March 2026. This work was supported in part Natural      preferred access scheme for LEO satellite IoT systems [13].
+Science Basic Research Project of Shaanxi Province under Grant 2024JC-
+YBMS-509, in part the Youth Innovation Team of Shaanxi Universities. The          Random access (RA) consists of two main components:
+associate editor coordinating the review of this article and approving it for  access control and resource allocation [10]. First, the large-
+publication was Y. Shi. (Corresponding author: Fengkui Gong.)                  scale deployment of terrestrial devices requires ubiquitous
+                                                                               coverage provided by LEO satellites. However, the bursty traf-
+   Xingmin Feng is with the State Key Laboratory of Integrated Services Net-   fic patterns of IoT applications--such as periodic reporting and
+works and the School of Telecommunications Engineering, Xidian University,     event-triggered alerts--can cause a surge in access attempts
+Xi'an 710071, China (e-mail: xmfeng@stu.xidian.edu.cn).
+
+   Guizeng Yin is with the Aerospace Star Technology Company Ltd., Beijing
+100080, China (e-mail: 13801120807@139.com).
+
+   Huaiwei Quan is with Xi'an Aerospace Remote Sensing Data Technology
+Company Ltd., Xi'an 710071, China (e-mail: quan224@163.com).
+
+   Zhao Li is with Shaanxi Academy of Aerospace Technology Application
+Company Ltd., Xi'an 710071, China (e-mail: lizhao 829@qq.com).
+
+   Fengkui Gong is with the State Key Laboratory of Integrated
+Services Networks, Xidian University, Xi'an 710071, China (e-mail:
+fkgong@xidian.edu.cn).
+
+   Digital Object Identifier 10.1109/TCCN.2026.3670194
+
+                     2332-7731 © 2026 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence and
+                                   similar technologies. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                                     See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION  6671
+
+during peak times, leading to severe delays. Therefore, an        at maximizing the average random access efficiency (ARAE)
+efficient access control scheme is needed to maintain access      and employ matching theory to select competing devices for
+efficiency during peak periods [14]. Second, once devices gain    determining the optimal access strategy. During the resource
+access, limited on-board processing and scarce time-frequency     allocation phase, we jointly optimize rate control, power
+resources require dynamic allocation and optimization to meet     allocation, and channel selection for the admitted terrestrial
+the stringent quality of service (QoS) requirements of satellite  devices to improve long-term system throughput and energy
+IoT applications [15].                                            efficiency. To effectively handle the long-term constrained
+                                                                  optimization, we adopt the Lyapunov optimization framework,
+   In recent years, extensive research has been conducted         transforming the time-average power constraint into a queue
+on access control and resource allocation in satellite IoT        stability constraint. By minimizing the upper bound of the
+systems [16], [17], [18], [19], [20]. To enhance terminal access  drift-plus-penalty expression, we decouple the rate control
+success rates and meet the priority requirements of diverse       problem and jointly solve power allocation and channel selec-
+services, various dynamic access control mechanisms have          tion. However, coupling the continuous power allocation and
+been proposed, such as access probability adjustment strate-      discrete channel selection leads to an NP-hard optimization
+gies based on distributed queue modeling and access class         problem. To simplify the solution, we first determine the
+barring (ACB) [19]. These approaches effectively regulate         channel selection and then convert the problem into a convex
+access requests under limited resource conditions [21]. Mean-     optimization problem with low complexity.
+while, to address the highly uneven and bursty spatiotemporal
+distribution of traffic in satellite systems, adaptive resource      This paper employs DRL algorithms to jointly optimize
+allocation strategies and traffic prediction algorithms have      ARAE and channel selection, aiming for adaptive optimization
+been widely adopted. By incorporating predictive feedback         in complex dynamic environments. In recent years, DRL
+mechanisms and time-varying scheduling optimization, these        has attracted significant attention for its role in improving
+methods achieve dynamic resource efficiency balancing while       wireless communication network performance [22], [23]. Its
+reducing signaling overhead [16]. Furthermore, considering        data-driven nature provides a promising solution to complex
+the significant delay variation and link instability in LEO       optimization tasks like resource allocation. Specifically, the
+satellite networks, some studies have designed robust schedul-    DRL framework adopts a model-free approach to directly learn
+ing strategies for delay-sensitive services [17]. Additionally,   the optimal mapping from "states" (e.g., time-varying system
+with the continuous development of new multiple access            parameters) to "actions" (e.g., ARAE and channel selection)
+technologies such as non-orthogonal multiple access (NOMA),       using a deep neural network. This method continuously refines
+system throughput and access reliability in massive connectiv-    decision-making by interacting with the environment to max-
+ity scenarios have been further improved [18].                    imize cumulative "rewards". Compared to traditional mixed-
+                                                                  integer nonlinear programming, this approach avoids computa-
+   However, most current studies are limited to the optimiza-     tional complexity and leverages historical data for autonomous
+tion of a single network layer. For instance, some focus on       learning without requiring manually labeled samples, making
+optimizing application-layer performance while overlooking        it well-suited for real-time and online deployment.
+frame length differences across devices at the physical layer.
+These studies often assume that all devices use a uniform            The main contributions of this work are summarized as
+frame length structure. As frame lengths vary significantly       follows:
+across devices due to differing service requirements, a uniform
+frame structure may lead to slot redundancy for short-frame          1) We develop a feedback-driven two-stage access control
+devices or force long-frame devices to transmit in fragments.            mechanism that integrates slot-aware matching to reduce
+Other studies focus on optimizing physical layer performance             signaling overhead while maintaining ARAE stability.
+but ignore dynamic changes in upper-layer application require-
+ments. These studies often assume that terrestrial devices have      2) We propose a Lyapunov-based long-term online resource
+unlimited data to send, without accounting for the limited               allocation method that transforms the long-term stochas-
+and dynamic nature of data backlogs. As a result, resources              tic optimization into tractable per-frame deterministic
+may be allocated to devices with low data demands, causing               decisions for joint rate control, channel selection, and
+inefficiency. Moreover, current studies often focus only on              power allocation.
+short-term resource optimization, neglecting long-term net-
+work objectives and constraints. This short-term approach can        3) We present a DRL-assisted cross-layer joint optimization
+lead to shortsighted resource use and long-term performance              mechanism that integrates access control and resource
+degradation in satellite IoT systems, reducing overall resource          allocation with low online complexity, enabling efficient
+efficiency.                                                              per-frame decision-making under dynamic traffic and
+                                                                         resource conditions.
+   To address these challenges, this paper proposes an online
+joint access control and resource allocation algorithm based      B. Related Works
+on deep reinforcement learning (DRL). The approach adopts
+a cross-layer design that integrates matching theory and Lya-        In recent years, with the rapid deployment of LEO satellite
+punov optimization to improve the long-term communication         constellations and the growing global demand for IoT services,
+performance of LEO satellite IoT systems. During the access       satellite IoT faces significant challenges in large-scale terminal
+control phase, we formulate an optimization problem aimed         access. Access control and resource allocation have emerged
+                                                                  as critical technical bottlenecks requiring urgent solutions.
+                                                                  In response, both academia and industry have conducted
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6672  IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+extensive and in-depth research, focusing on enhancing access         Specifically, DRL methods can be employed to construct a
+efficiency, optimizing resource utilization, and ensuring quality  closed-loop adaptive control system that autonomously learns
+of service.                                                        optimized access control and resource scheduling strategies
+                                                                   by continuously sensing the current system state, such as ter-
+   At the access control level, some studies adopt adaptive        minal access requests, resource allocation status, and channel
+optimization approaches by incorporating traffic prediction        occupancy. For example, [23] proposed a two-stage algorithm
+mechanisms and dynamic access control strategies. For              based on multi-agent Q-learning to address the challenges of
+instance, [16] proposes an access control scheme based on          dynamic RA and complex resource allocation in LEO satellite
+Long Short-Term Memory networks, introducing an access             networks. By jointly optimizing user time-slot scheduling and
+efficiency metric to dynamically adjust access probabilities       power allocation, the proposed method significantly improves
+and resource block allocation under uneven traffic conditions.     system utility while effectively reducing computational com-
+This approach improves access efficiency by 23% while sig-         plexity. [24] tackled the overload problem in large-scale
+nificantly reducing control signaling overhead. Additionally,      concurrent access scenarios by proposing a deep learning-
+[19] presents a dynamic distributed queue random access            based collision detection and load estimation scheme. This
+algorithm. This method compresses the traditional four-step        approach employs a multi-feature enhancement network and
+access procedure into two steps, greatly reducing interaction      an adaptive neuron optimization strategy to map key features
+complexity and latency.                                            into a higher-dimensional space, thereby improving model
+                                                                   representation and generalization capability. [25] integrated
+   Meanwhile, to enhance system throughput in large-               DRL with power-domain NOMA to design a NOMA-aided
+scale short-packet communication scenarios, researchers have       slotted ALOHA protocol, which effectively alleviates col-
+explored novel multiple access schemes and efficient access        lision and throughput degradation in high-load conditions
+protocol designs. Reference [18] points out that traditional       through multi-beam coupling and adaptive repetition con-
+orthogonal access methods fall short in supporting massive         trol. In addition, [13] proposed the emergent random access
+concurrent terminal access. To address this, intelligent hybrid    channel protocol (eRACH) protocol based on multi-agent
+NOMA and short-packet superimposed pilot NOMA mecha-               deep reinforcement learning, enabling autonomous learning
+nisms are proposed, which significantly improve throughput         and protocol evolution in non-stationary environments without
+under dynamic topologies by optimizing power allocation            centralized coordination or inter-user communication. Exper-
+and resource mapping. Building upon this, [20] extends             imental results demonstrate that eRACH achieves a 54.6%
+access scheduling optimization to integrated space-air-ground      improvement in average throughput while reducing access
+networks by developing a robust two-stage stochastic opti-         delay by nearly half.
+mization model across physical and link layers, ensuring QoS
+under traffic uncertainty while reducing end-to-end latency and       However, the above studies mainly focus on short-term
+system energy consumption.                                         performance enhancement or single-layer optimization, with-
+                                                                   out fully considering cross-layer interactions between the
+   In summary, while current research has improved satellite       application layer and the physical layer, nor the long-term
+network access through control design, conflict avoidance,         dynamic behavior of satellite IoT systems. In contrast, this
+and protocol simplification, most methods remain inadequate        paper extends the scope by emphasizing cross-layer coordi-
+for highly dynamic environments. They often depend on              nation and long-term performance improvement, aiming to
+prior knowledge of traffic or environment models, hindering        enhance the adaptability, stability, and overall efficiency of
+adaptation to changes in terminal behavior, service load,          satellite IoT systems under dynamic and large-scale access
+and topology. Furthermore, many algorithms employ offline          conditions.
+solutions or static parameters, lacking real-time responsive-
+ness. Finally, multi-objective optimization relies on fixed           Based on this perspective, this work further develops a
+weights, preventing a globally optimal balance for long-term       DRL-based framework for joint access control and resource
+performance.                                                       allocation, tailored to the practical requirements of satel-
+                                                                   lite IoT systems with massive terminals and time-varying
+   To address the above challenges, artificial intelligence        environments. The proposed framework intelligently sched-
+technologies--particularly DRL--have attracted increasing          ules and efficiently utilizes limited communication resources
+attention in recent years for their applications in commu-         while ensuring high access success rates and low con-
+nication systems [13], [22], [23], [24], [25]. DRL enables         trol overhead, thereby improving the system's long-term
+agents to autonomously learn optimal policies through con-         performance and service capability in complex operational
+tinuous interaction with the environment, without requiring        scenarios.
+precise modeling of complex system dynamics. Its advantages
+include: first, strong state awareness, allowing it to capture        The remainder of this paper is organized as follows. Sec-
+complex temporal dependencies among network states, traffic        tion II presents the system model. Section III details the
+patterns, and terminal behaviors; second, long-term reward         two-stage adaptive access control scheme. Section IV explains
+optimization, supporting multi-objective joint optimization of     the resource allocation scheme using Lyapunov optimization.
+access success rate and resource utilization to enhance system     Section V introduces the proposed DRL-based joint optimiza-
+performance over the entire operational cycle; and third,          tion algorithm. Section VI presents the simulation results.
+strong policy generalization, enabling adaptation and transfer     Section VII concludes the paper.
+across diverse service models and multi-constellation orbital
+architectures.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION                                                   6673
+
+                                                                   Fig. 2. Geometric representation of satellite coverage.
+
+Fig. 1. LEO satellite IoT system model.
+
+                         II. SYSTEM MODEL                          Fig. 3. Multi-channel frame slotted ALOHA.
+
+   In this paper, we consider a LEO satellite IoT system, where    satellite and the edge of its coverage dmax satisfies
+the LEO satellite acts as a base station to serve a large number
+of terrestrial devices. This section presents the RA system                               = dm 2 ax + Re2 - (Re + Rs)2 ,    (1)
+model for LEO satellite IoT, including the classification of               cos  +         2Redmax
+terrestrial devices and the applied RA protocol.                           2
+
+A. Service-Oriented Classification of Terrestrial Devices          where Rs is the satellite's orbital altitude, Re is the Earth's
+                                                                   radius, and  is the minimum elevation angle. Thus, dmax
+   In typical LEO satellite IoT systems, terrestrial devices       is positive value and, according to [27] and [28], it can be
+exhibit diverse service requirements with significantly different
+latency demands. As illustrated in Fig. 1, various represen-       calculated as follows
+tative application scenarios are categorized based on their
+sensitivity to communication delay into two groups: delay-         dmax = -Re sin  + (Re sin )2 + Rs2 + 2ReRs. (2)
+tolerant (DT) devices and delay-sensitive (DS) devices [26].
+Specifically, DS devices typically have a maximum tolerable           This maximum slant range plays a critical role in deter-
+latency of no more than 200 ms, while DT devices can               mining the worst-case propagation delay between terrestrial
+tolerate latencies exceeding 200 ms [10]. DT applications          terminals and the satellite, which must be considered when
+include remote meter reading, wildlife monitoring, and agri-       designing efficient RA mechanisms.
+cultural IoT. These services generally do not require real-time
+transmission and place greater emphasis on wide coverage,             As illustrated in Fig. 3, we consider a multi-channel frame-
+low power consumption, and long-term operation. In contrast,       slotted ALOHA protocol with frequency division duplexing,
+DS applications, such as emergency communications, remote          where each frame consists of M frequency channels and
+control, real-time alerts, and typhoon monitoring, demand          A time slots, and each slot lasts T ms. Therefore, the total
+higher communication reliability and real-time performance,        number of random access opportunities per frame is given by
+requiring the system to provide low-latency and highly avail-      J = M A.
+able connectivity.
+                                                                      This protocol structure, combined with the delay character-
+   In this paper, there are H DT and I DS devices waiting          istics derived from satellite coverage, forms the foundation of
+to access the satellite within its coverage area. These sets       the system's access and transmission model.
+are denoted as DT H = {DT1, . . . , DTh, . . . , DTH } and
+DSI = {DS1, . . . , DSi, . . . , DSI }, respectively. The corre-     III. TWO-STAGE ADAPTIVE ACCESS CONTROL DESIGN
+sponding index sets are denoted as H = 1, . . . , h, . . . , H
+and I = 1, . . . , i, . . . , I .                                     In this section, we propose a two-stage adaptive access
+                                                                   control scheme designed to enhance the ARAE while reducing
+B. Satellite Coverage Model and the Employed RA Protocol           signaling overhead.
+
+   As shown in Fig. 2, based on the features of satellite
+coverage, according to the cosine law, the distance between a
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6674                                                         IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+Fig. 4. Graphic representation of adaptive update interval.        satellite only if C^h  C0. This stage can be interpreted
+                                                                   as a random device selection process. In the second stage,
+A. Parameter Update Process                                        corresponding to scenario 2), the satellite employs a matching
+                                                                   mechanism. The satellite broadcasts matching information
+   During the access control phase, the satellite broadcasts       {m, A - m} to all devices, where m is the number of
+updated parameters. The time between two consecutive broad-        time slots already used on sub-channel m. Upon receiving the
+casts is defined as the update interval. Specifically, the update  matching information, terrestrial devices perform matching-
+interval is dynamically adjusted through an adaptive mecha-        based access. Devices compare their sub-frame lengths with
+nism based on resource utilization status. The access control      A - m as the basis for matching. A device is added to the
+module updates its strategy only when the resource allocation      matching candidate set only if its sub-frame length is less than
+module detects available time slots and sends a feedback           or equal to A-m. Moreover, the closer a device's sub-frame
+signal. We define the length of the interval between the i-        length is to A - m, the higher its matching priority. This
+th and i + 1-th signaling updates as Bi time steps, and the        stage can be interpreted as selecting the most suitable devices
+current time length at the i-th update is denoted as               for access. In both stages, the set of successfully connected
+                                                                   devices is denoted as FK = {F1, . . . , Fk, . . . , FK }. The
+                                                                   corresponding index set is denoted as K = 1, . . . , k, . . . , K .
+
+                                                                   B. Optimization Problem
+
+              i-1                                                     To optimize access control in these two stages, we formulate
+                                                                   an optimization problem to maximize the ARAE. We first
+                                                                   define ARAE and then formulate the corresponding optimiza-
+                                                                   tion problem.
+      Wi  =                  Bj  i>1                         (3)
+                                        .                             Given that the update interval spans Bi time steps, the
+                                                                   ARAE is defined as the average efficiency of terminal devices
+                j=1                                                accessing satellite resources within one update period. This
+                                                                   metric accounts for both the number of simultaneously access-
+                                                                   ing devices and the probability of access collisions, thereby
+                                                                   serving as an effective indicator of access success rate in multi-
+             0                   i=1                               user scenarios. It is shown as follows
+
+For clarity, a graphical representation of Wi and Bi is provided    St, J            1 Wi+1  St   1-  1 St-1  ,  (4)
+in Fig. 4.                                                                       =           J
+                                                                                                      J
+   The duration of each time step is defined as b seconds. As                       Bi t=Wi
+shown in Fig. 4, when the resource allocation state gradually
+stabilizes, the interval between the i-th and i + 1-th access      where St = kK t,k, and t,k denotes the sub-frame
+control updates increases, reducing signaling overhead. Mean-      length of the k-th device accessing the satellite at time step t.
+while, as resource allocation improves, an increasing number
+of devices are connected, thereby ensuring high connection         Since J is calculated from a fixed formula, it can be treated
+efficiency.
+                                                                   as a constant. Therefore, (St, J) can be expressed as
+   During the i-th access control period, if the resource allo-
+cation module detects either of the following two scenarios,        St, J = M A  1 Wi+1       St  1-     1 St-1  . (5)
+the satellite broadcasts updated parameters:                                     =           MA
+                                                                                    Bi t=Wi              MA
+   1) No devices are transmitting on a sub-channel, indicating
+       that all time slots are idle. In this case, DS devices are     Our objective is to maximize the ARAE by optimizing
+       granted direct access. Once all such devices complete       (St, J = M A) during the update interval Bi. The corre-
+       transmission, DT devices may also access the channel.       sponding optimization problem is formulated as follows
+
+   2) Some devices transmit on a sub-channel, but not all          P1 : max  ( St| J = M A) ,                    (6a)
+       time slots are occupied. In this case, device matching
+       is required.                                                              s.t. C1 : E (th)  max,          (6b)
+
+   These two scenarios correspond to the two stages of access      where E(·) denotes the expectation operator, E(th) refers
+control. In the first stage, corresponding to scenario 1), the     to the average access delay of edge users within satellite
+satellite employs an ACB scheme [29] specifically for DT           coverage, and max is the maximum allowable access delay.
+devices, while DS devices are granted direct access without
+undergoing the ACB check due to their stringent delay require-        In satellite communications, the one-way propagation delay
+ments. In this stage, the satellite broadcasts an ACB barring      of edge users is defined as
+factor C0  [0, 1] to all DT devices. Each device DTh  DT H
+generates a random access number C^h  [0, 1] after receiving                      = dmax ,                       (7)
+C0 from the satellite. Device DTh is allowed to access the                                   c
+
+                                                                   where c denotes the speed of light. Due to the long propagation
+                                                                   distance in satellite communications, if a RA attempt fails (i.e.,
+                                                                   no successful access feedback is received), the user must wait
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION                                                           6675
+
+for the next frame after a round-trip delay of 2 to retransmit.
+The frame number at which the edge user attempts the next
+retransmission is given by
+
+                         n=         2  ,                              (8)
+
+                                AT
+
+where · denotes the rounding-up function. As a result,                      Fig. 5. Schematic diagram of device information queue.
+each retransmission consumes n + 1 frames. Thus, if a user
+successfully accesses the satellite after r retransmissions, it
+must wait for r(n + 1) + 1 frames until the successfully
+accessed information is sent back.
+
+   First, the round-trip propagation delay is not considered.
+Accordingly, the average random access delay caused by
+retransmission for edge users at the t-th time step can be
+expressed as follows
+
+                                                                            arriving at and departing from the queue, respectively. In other
+                                                                            words, Rk(t) and Vk(t) also denote the data transmission rates
+E(tre) = AT [r(n + 1) + 1]pts(1 - pts)r,                              (9)   at a time step. Let Qk(t) represent the data backlog, i.e.,
+                                                                            the amount of buffered data in queue k. The objective is to
+                    r=0                                                     design an online algorithm, based on Lyapunov optimization,
+                                                                            that maximizes the long-term data upload efficiency of all
+where pst =   1  -  1  St -1  denotes  the   probability       of  a  suc-  terrestrial devices while ensuring queue stability and meeting
+                    J                                                       average power constraints.
+
+cessful access at the t-th time step. Based on (9), it can be
+
+deduced that
+
+                    
+
+E(rte) = AT [r(n + 1) + 1]pts(1 - pts)r
+
+   r=0
+
+                                       
+
+= AT rnpts 1-pts r + AT (r+1)pst 1 - pts r                                  A. Dynamic Queue Model
+
+   r=0                                 r=0                                     After access control, for the k-th device, the backlog Qk of
+                                                                            queue k evolves as
+=  n(1        -  pts)       AT  (r  +  1)pst (1  -  pts)r  +  AT
+                       r=0                                    pts
+
+   n(1 - pst ) + 1            AT                                            Qk(t + 1) = max {Qk(t) - Vk(t) + Rk(t), 0} . (12)
+                              pts .
+=                                                                     (10)
+
+                                                                            Qk is stable in terms of average velocity [30] if
+
+   Considering the round-trip propagation delay, the access                 lim E {|Qk (T )|} = 0.                                  (13)
+delay is defined as the time interval between the first access              T   T
+attempt and the receipt of a successful access response.
+Accordingly, the average access delay for edge users within                    For device k, the application-layer satisfaction level Uk is
+the satellite coverage during the next Bi time steps is                     positively correlated with the rate Rk(t) at which data exits
+                                                                            the device and enters the information queue. Uk is defined as
+                     1 Wi+1
+E(th) = 2 + Bi t=Wi E                  nt e                                 Uk [Rk(t)] = kRk(t),                                    (14)
+
+                        AT Wi+1     n  1 - pts            1           (11)  where k is a weight parameter representing the importance
+              = 2 +                                 + 1 pst .               or priority of Rk(t) for device k. By adjusting the value of
+                                                                            k, differentiated scheduling for various types of services in
+                         Bi i=Wi                                            resource allocation can be achieved.
+
+   Based on the above analysis, the key to solving (P1) is                     The transmission rate Vk(t) of device k is calculated using
+to determine an appropriate value for St that maximizes the                 the following formula
+ARAE while satisfying constraint C1. To this end, this paper
+proposes a joint algorithm, which is co-optimized with the                                   M            1 + pk (t) gk,m (t) ,
+resource allocation problem discussed later and solved using                                                          0
+a DRL model.                                                                Vk (t) = xk,m (t)Wm (t) log2                          (15)
+
+                                                                                            m=1
+
+      IV. RESOURCE ALLOCATION DESIGN BASED ON                               where Wm(t) denotes the bandwidth of the m-th sub-channel,
+                     LYAPUNOV OPTIMIZATION
+                                                                            pk(t) is the transmit power of device k, gk,m(t) represents the
+   In the resource allocation stage, we focus on the K ter-                 channel gain, and 0 is the noise power. xk,m(t) is a binary
+restrial devices that have been granted access. To enhance
+clarity, a device information queue is illustrated in Fig. 5. In            channel selection indicator: if xk,m(t) = 1, device k transmits
+practical scenarios, this queue resides within each terrestrial
+device. At time step t, Rk(t) and Vk(t) denote the data volume              on the m-th sub-channel; otherwise, xk,m(t) = 0.
+
+                                                                            In fact, the lifespan and connectivity of an IoT network
+
+                                                                            heavily depend on the battery status of its devices. Since
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6676                                               IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+replacing batteries after deployment is challenging, a long-              By introducing virtual queues, the long-term time-average
+term average power consumption constraint is imposed to                constraint in (P2) can be reformulated as a queue stability
+ensure reliable network operation, as defined                          constraint.
+
+                      1 T -1   E {E(t)}  Pmean,                           The virtual queue corresponding to constraint C6 is defined
+      0  lim                                                    (16)   as follows
+           T  T
+                          t=0                                                Z (t + 1) = max {Z (t) - Pmean + E (t) , 0} . (19)
+
+where E(t) =  K        M       xk,m (t)pk (t)  represents  the  total  If Z(t) is stable in terms of average rate, then C6 holds
+              k=1      m=1                                             automatically. Relevant similar proofs can be found in [34].
+
+energy consumption, and Pmean denotes the time-averaged                   Therefore, (P2) can be rewritten as
+
+power consumption constraint.
+
+B. Problem Statement                                                   P3 :             max                 U¯ (T )                       (20a)
+
+                                                                             {Rk (t)},{xk,m (t)},{pk (t)}
+
+   The objective of resource allocation is to maximize the time-                        s.t. C2  C5,                                      (20b)
+averaged satisfaction of all devices, which is given by
+                                                                                           C8 : Qkand Zare mean rate stable k.
+                       1 T -1          K                                                                                              (20c)
+
+      U (T ) = lim             E             Uk [Rk(t)] . (17)         C. Lyapunov Optimization
+                T  T
+                          t=0          k=1
+
+The optimization problem is formulated as follows                         Let G(t) = Q(t), Z(t) denote the joint queue state vector,
+                                                                       combining the data queue and the virtual queue. The Lyapunov
+P2 :          max                   U¯ (T )                     (18a)  function is defined as follows
+
+      {Rk (t)},{xk,m (t)},{pk (t)}
+
+                                    K                                                               1  K                    1Z2
+                                                                                    L (G (t)) =                             2
+              s.t. C2 : 0  pk (t)  Pmax,                   (18b)                                            Q2k  (t)  +          (t) .    (21)
+                                                                                                    2
+                                                                                                       k=1
+                               k=1
+
+                                    K                                     The Lyapunov drift is defined as the conditionally expected
+                                                                       change of the Lyapunov function in two consecutive time
+                   C3 : 0  Rk (t)  Rmax,                        (18c)  steps. The one-step conditional Lyapunov drift is given by
+
+                               k=1
+
+                   C4 : xk,m (t)  {0, 1}, k, m, (18d)                   G t E L G t + 1 - L G t G t . (22)
+
+                          M
+
+                   C5 : xk,m (t)  1, k,                         (18e)  Intuitively, a smaller Lyapunov drift is crucial for ensuring
+
+                          m=1                                          queue stability. Further details are available in [35].
+                                                                          To maximize U¯ (T ) while maintaining queue stability, we
+                   C6  :   lim      1 T -1   E {E (t)}  Pmean,
+                                                                       define the drift-minus-reward expression as follows
+                          T 
+                                    T  t=0
+                                                                             DM (G(t)) =  (G(t)) - E {U (t)|G(t)} , (23)
+                   k, m,
+                                                                (18f)  where U (t) =       K    Uk  [Rk  (t)].       is  a  non-negative  weight
+                                                                                           k=1
+                   C7 : Qkis mean rate stable, k, (18g)
+                                                                       parameter representing the relative importance of Lyapnuov
+
+among these, C2 denotes the short-term constraint on trans-            drift  G t compared to expected reward E {U (t) |G (t)},
+mission power. C3 limits the rate at which device data enters
+the information queue. C4 and C5 are channel selection con-            i.e., the trade-off between "queue stability" and "reward
+straints, allowing a sub-channel to be shared among multiple
+devices, while each device can select only one sub-channel.            maximization".
+C6 refers to the long-term constraint on transmission power,
+and C7 corresponds to the queue stability constraint defined           Next, we derive the upper bound of DM (G(t)). First, we
+in (12).
+                                                                       have
+   For solving optimization problem (P2), Lyapunov opti-
+mization is employed. This technique is effective for long-term              Qk (t + 1)2 = Qk (t)2 + 2Qk (t) (Rk (t) - Vk (t))
+optimization and has been widely adopted in resource alloca-
+tion problems. For instance, [31] used Lyapunov optimization                               + (Rk (t) - Vk (t))2 ,
+to derive the optimal resource allocation for downlink non-
+orthogonal multiple access systems. Similarly, [32] proposed                 Z (t + 1)2 = Z (t)2 + 2Z (t) (E (t) - Pmean)
+a Lyapunov-based cross-layer approach for joint rate control
+and resource allocation to maximize the time-averaged user                                 + (E (t) - Pmean)2 .                           (24)
+satisfaction.
+                                                                       By summing up the K queues on both sides of (24), we obtain
+   One key advantage of Lyapunov optimization is its ability
+to convert long-term optimization problems into a sequence                   1K                                    1     K
+of short-term sub-problems, and to transform long-term                       2                                  =
+constraints into queue stability constraints [30], [33]. The                        Qk2 (t + 1)-Qk2 (t)                     (Rk(t) - Vk(t))2
+implementation steps are outlined as follows.                                                                      2
+                                                                             k=1                                      k=1
+
+                                                                                                            K
+
+                                                                                                        + Qk(t) (Rk(t) - Vk(t)) .
+
+                                                                                                            k=1
+
+                                                                                                                                            (25)
+
+                                                                       1Z2   (t  +  1)  -  1Z2  (t)  =   1  (E   (t)  -  Pmean)2
+                                                                       2                   2             2
+
+                                                                                                        + Z (t) (E (t) - Pmean) . (26)
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION  6677
+
+   By taking the conditional expectations of both sides of (25)  where
+and (26), and then combining the results, we obtain
+                                                                      f [pk (t) , xk,m (t)] = Qk (t) Vk (t) - Z (t) pk(t). (32)
+(G (t))
+                                                                    Intuitively, it tends to increase the transmission rate of
+               K                                                 devices with longer data queue backlogs, while penalizing
+                                                                 those devices that exceed the average power constraint.
+          Qk (t) E Rk (t) - Vk (t) G (t)
+                                                                            V. JOINT OPTIMIZATION BASED ON DRL
+         k=1
+                                                                    Although (P5) is a non-convex problem, it becomes convex
+         + Z (t) E E (t) - Pmean G (t) + ,              (27)     with respect to pk(t) when xk,m(t) is fixed. Notably, the
+                                                                 high-level objective in (P1)--maximizing ARAE--depends
+where  is a positive constant satisfying the following con-      on the access outcomes and sub-frame durations, which are
+                                                                 in turn determined by the access control decision St and the
+straint                                                          resource allocation results from (P5). This reveals a hierarchi-
+                                                                 cal relationship: (P5) governs the fine-grained physical-layer
+              1K       E  Rk2 (t) + Vk2 (t) |G (t)               resource allocation that influences the system-level metric
+                                                                 optimized in (P1). To ensure that the solution of (P5)
+                                                                 contributes effectively to the optimization of (P1), we design
+              2                                                  a joint DRL-based framework that simultaneously learns the
+                 k=1                                             optimal St and xk,m(t). Based on the selected xk,m(t), the
+                                                                 optimal pk(t) is then computed analytically. This coordinated
+                    1  E2 (t) + Pm2ean|G (t)  .         (28)     optimization approach ensures that the objectives of both (P1)
+                 + 2E                                            and (P5) are aligned and jointly optimized.
+
+Therefore, we can obtain the upper bound of the drift-minus-        Reinforcement learning formulates problems as
+                                                                 Markov Decision Processes (MDPs), defined by the
+reward term after sorting as                                     tuple {S, A, P, R, }. S represents the state space, and
+                                                                 A denotes the action space. P is the state transition
+         (G (t)) - E {Uk (t) |G (t)}                             matrix, which defines the probability of transitioning from
+                                                                 the current state to a subsequent state, as described as
+         K                                                       Ps s = P (St+1 = s |St = s, At = a). R is the reward
+                                                                 function, which evaluates the effect of an action taken by the
+          E { Qk (t) Rk (t) - Uk [Rk (t)]| G (t)}                agent in a given state.   [0, 1] is the discount factor that
+                                                                 determines the importance of future rewards.
+         k=1
+                                                                    In the problem addressed in this paper, both the state space
+              K                                                  and the discrete action space are extremely large. To address
+                                                                 this, we adopt a specific DRL algorithm: the Deep Determin-
+         - Qk (t) E { Vk (t)| G (t)}                             istic Policy Gradient (DDPG) algorithm [36]. DDPG extends
+                                                                 the Deep Q-Networks (DQN) by combining it with determin-
+         k=1                                                     istic policy gradients, enabling end-to-end learning directly
+                                                                 from raw environmental data. This allows for more efficient
+         + Z (t) E { E (t) - Pmean| G (t)} .            (29)     handling of high-dimensional inputs and large action spaces.
+                                                                 To enable practical deployment in satellite environments, we
+   At the t-th time step, we apply the expected opportunity      adopt a hybrid strategy for the DRL agent that combines
+minimization technique [35]. Specifically, we observe the        centralized training with distributed execution. The agent is
+queue backlog G t and decide on resource allocation control      trained at the gateway station using global state information,
+measures accordingly, in order to minimize the upper bound       and a lightweight version is deployed onboard the satellite
+in (29). A closer look at (29) reveals that the first term on    for real-time decision-making. This approach balances model
+the right-hand side only involves the rate control variable      performance with onboard resource limitations, while the
+{Rk (t)}, while the second and third terms are associated        high-rate, low-latency satellite­gateway link supports timely
+only with the power allocation and channel selection variables   synchronization and model updates when needed.
+{pk (t)} and {xk,m (t)}, respectively. Therefore, problem
+(P3) can be decoupled into two independent subproblems:             Next, we show how to formulate the joint optimization of
+a rate control subproblem and a joint power allocation and       access control and resource allocation as an MDP problem and
+channel selection subproblem.                                    solve it using the DDPG algorithm. In the proposed algorithm,
+                                                                 the state space, action space, and reward function are designed
+   The rate control subproblem is formulated as follows          to model the system and are used to train the neural network.
+
+                   K                                                1) State Space: The state space S captures real-time service
+                                                                 demands from all devices connected to the satellite. The
+P4 : min               Qk (t) Rk (t) - Uk [Rk (t)]      (30a)    agent observes each device's total frame length, sub-frame
+                                                        (30b)
+         {Rk (t)} k=1
+
+         s.t. C3,
+
+(P4) is a convex optimization problem that can be solved
+using the Karush-Kuhn-Tucker (KKT) conditions. Due to
+space constraints, the detailed solution process is omitted.
+
+   For the second and third terms on the right-hand side of
+(29), note that Qk(t) and Z (t) represent queue backlogs,
+which are treated as deterministic variables at each time step.
+Pmean is the time-averaged constraint of power consumption,
+which is treated as a constant. Therefore, by removing the
+constant term, the joint power allocation and channel selection
+subproblem can be expressed as
+
+                              K
+
+         P5 : max                f [pk (t) , xk,m (t)]  (31a)
+                                                        (31b)
+         {xk,m(t)},{pk(t)} k=1
+
+                 s.t. C2, C4, C5,
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6678                                                  IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+length, and service type. Then, the environmental information       packets receivable given available channels and backlog). The
+is quantized into vectors or matrices as input to the agent,        normalized throughput term is
+allowing the deep reinforcement learning algorithm to process
+it effectively. The state space comprises two components. The       (s, a) =  (s, a) - base            ,  (36)
+first component records the number of time slots used by each
+sub-channel, while the second records the number of idle time                 max(, max(s, a) - base)
+slots per sub-channel. Therefore, the state space is defined as
+follows                                                             where  is a constant to avoid division by zero. Finally,
+                                                                    the overall reward combines the normalized channel-saving
+
+             1 2 · · · m · · · M                                    difference with the normalized throughput through a weak
+           A - 1A - 2· · ·A - m· · ·A - M                           weighting factor :
+
+S = {s} =                                             .             R(s, a) = R0norm(s, a) + (s, a).      (37)
+
+                                                      (33)             Next, we present how the DDPG algorithm is used to
+                                                                    optimize the proposed joint optimization problem. There are
+2) Action Space: When the satellite updates its parameters,         four networks in the DDPG algorithm, namely the target actor
+                                                                    network  (s| ), the online actor network (s|), the target
+the agent observes state st and select an action in the action      critic network Q (s, a |Q ), and the online critic network
+                                                                    Q(s, a|Q). Here  denotes the weight parameters of the
+space to determine which sub-channel each terrestrial device        neural network.
+
+should access, i.e., xk,m(t). For the action space in this             The online actor network iteratively updates the policy
+                                                                    network parameters, while the online critic network evaluates
+paper, directly constructing a permutation space of device-         the current Q-value. Additionally, the purpose of introducing
+                                                                    the target actor network and critic network is to improve the
+to-subchannel mappings leads to an excessively large action         stability of optimization.
+
+space, resulting in high memory usage, increased compu-                The online actor network generates an action at = (st|)
+                                                                    based on the current state st. According to the Univer-
+tational cost, and prolonged training time. Therefore, it is        sal Approximation Theorem, a multilayer perceptron with a
+                                                                    sufficient number of neurons and appropriate activation func-
+essential to optimize the action space, enabling the policy         tions can approximate any continuous function with arbitrary
+                                                                    accuracy.
+network to efficiently select actions instead of relying on brute-
+                                                                       Since DDPG uses a deterministic strategy, meaning it pro-
+force enumeration.                                                  duces the same action for a given state, which can limit its
+                                                                    exploration capability. To enhance exploration during training,
+Accordingly, instead of directly outputting a permutation,          noise is added to the actions generated by the online actor
+                                                                    network. The formula for adding noise is defined as
+the agent generates weights of M channels. A permutation is
+
+then obtained by sorting the channels based on these weights.
+
+Thus, the action space is a 1 × M array, which is defined as
+
+follows
+
+         A = {a} = 1 2 · · · m · · · M ,              (34)
+
+where m denotes the weight coefficient of the m-th sub-
+channel. Based on the obtained action space, the devices and
+
+channels are re-matched to determine xk,m(t) and St.
+   3) Reward: After performing an action based on the current
+
+state, the agent receives a corresponding reward to update          at = (st|) + N 0, 2 ,                 (38)
+
+its policy. In the proposed model, we first calculate the
+
+number of channels that can be saved under ideal conditions,        where N 0, 2 denotes a Gaussian distribution with zero
+                                                                    mean and variance 2.
+denoted by N^ (s, a) =   M
+                                                                       Meanwhile, an experience replay buffer (ERB) is main-
+                              1 - i/A . Next, we obtain the         tained to store tuples of states, actions, rewards, and next states
+                                                                    generated from the agent's interactions with the environment.
+                         i=1                                        This enables random sampling during learning process, which
+                                                                    helps eliminate correlations between data. This approach effec-
+number of channels saved after agent optimization, denoted by       tively reduces the temporal dependence of data, lowers training
+N~ (s, a). The difference between these two values represents       variance, and improves learning stability. At each training step,
+                                                                    the DDPG model randomly samples a batch of data from the
+the primary component of the reward. To ensure numerical            ERB to update the policy and value function.
+
+stability and comparability, this difference is normalized by          Afterwards, the target actor network determines the action
+                                                                    based on the next state st+1, which is generated by the target
+the maximum number of channels that can be saved in the             actor network  (st+1| ). The target value is then computed
+                                                                    by the target critic network as follows
+system, denoted as Nmax:
+
+           R0norm(s, a)  =  N~ (s, a) - N^ (s, a)     (35)
+                                                   .
+
+                                   Nmax
+
+   In addition, to directly incorporate a QoS-related signal,       yt = R(st, at) + Q (st+1,  (st+1 |  ) | Q ), (39)
+we define the system throughput at each time step as the
+number of data packets successfully received by the system,         where Q is obtained by feeding the current state st and the
+denoted by (s, a). To avoid saturation when the learned             policy  from the target actor network into the target critic
+policy consistently outperforms a weak baseline, we adopt           network. In the online critic network, the action-value function
+a two-anchor normalization that measures the progress from          Q is computed using the current state st and the corresponding
+the baseline level to a capacity upper bound. Let base be           action at. The computed Q-value is then used to calculate
+the average throughput of a baseline random-access scheme
+obtained from a short warm-up of 5000 time steps, and let
+max(s, a) denote the per-step capacity opportunity (maximum
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION                                      6679
+
+Fig. 6. Framework of the DDPG algorithm.
+
+the loss function L, which updates the weight parameters of           In the aforementioned process, all four networks are updated
+the online actor and critic networks, denoted as Q and ,           iteratively, as shown in Fig. 6. Each complete update of all
+respectively. The loss function L is defined as follows            networks is referred to as a training step within the training
+                                                                   phase. An episode refers to the full process during which the
+L = E(yt - Q(st, at | Q)).                (40)                     agent interacts with the environment over multiple steps until a
+                                                                   predefined termination condition is met. The proposed DDPG
+   After training on a mini-batch of data, the actor's policy      algorithm is summarized in Algorithm 1. After convergence
+is updated using the deterministic policy gradient method, as      through either offline or online training, the agent adjust
+follows                                                            xk,m(t) based on environmental observations and broadcast
+                                                                   the corresponding decisions from the satellite to the terrestrial
+                 1                                                 devices. Upon receiving the broadcast, the terrestrial devices
+   |st = B aQ(s, a|Q)|st,at  (s|)|st , (41)                        initiate the random access process and begin data transmission.
+
+                               t                                      Next, we will explain the step for solving pk(t) in line 10 of
+                                                                   Algorithm 1. When xk,m(t) = 1, it indicates that device k is
+where B denotes the number of samples in a batch. After            transmitting over the m-th sub-channel. Under this condition,
+obtaining Q and , the parameters of the target actor and           the maximum value of f [pk (t) , xk,m (t) = 1] can be obtained
+critic networks are updated as follows                             by solving the following power allocation problem
+
+Q  Q + (1 - )Q ,
+
+   + (1 - ) ,                             (42)
+
+where is the update factor of the deep neural network. The                 P6 : max f [ pk (t)| xk,m (t) = 1]  (43a)
+parameters of the target actor and critic networks are updated                                                 (43b)
+using a soft updating mechanism, which enables a smooth                             pk (t)
+transition of the target network and mitigates instability caused
+by abrupt changes.                                                                 s.t. C2.
+
+                                                                   Since xk,m(t) is fixed, (P6) becomes a straightforward convex
+                                                                   optimization problem that can be solved by applying the
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6680                                           IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+Algorithm 1 The DDPG Algorithm for Access Control and                            TABLE I
+Resource Allocation                                                 DDPG MODEL PARAMETERS
+
+                                                                    given µ, the optimal transmit power pk(t) for each user is
+                                                                    derived based on the KKT conditions, and µ is iteratively
+                                                                    adjusted to satisfy the total power constraint. This method
+                                                                    exhibits rapid convergence and is well-suited for online power
+                                                                    control in large-scale systems.
+
+KKT conditions. The Lagrangian associated with (P6) is                                  VI. SIMULATION RESULTS
+formulated as follows
+                                                                       This section evaluates the performance of the proposed
+      L ({pk (t)} , µ) = -f [ pk (t)| xk,m (t) = 1]                 long-term joint optimization algorithm for access control and
+                                                                    resource allocation LEO satellite IoT. We first present the
+          K                                                         experimental setup and parameters.
+
+      +µ                          pk - pmax .        (44)              The simulation of the proposed DDPG-based joint opti-
+                                                                    mization algorithm comprises two phases: training and testing.
+          k=1                                                       During the training phase, to enhance the efficiency of DDPG
+                                                                    network training, each terrestrial device is configured to com-
+   By taking the partial derivative of (44) with respect to pk(t),  plete data transmission within a single time step by setting the
+the KKT condition is derived as                                     sub-frame length equal to the total frame length. Additionally,
+                                                                    the access control mechanism excludes matching strategies in
+      Qk (t) Wm (t) gk,m (t) = Z (t) + µ,            (45)           this phase, ensuring that newly arrived terrestrial devices par-
+      ln 2 [0 + pk (t) gk,m (t)]                                    ticipate in channel selection at every time step. This maximizes
+                                                                    the diversity of training samples and accelerates convergence.
+where µ is the Lagrangian dual variable that cannot be              In the testing phase, the system operates under realistic
+expressed in closed-form. To address this, we employ the            conditions: terrestrial devices require multiple time steps to
+bisection method for numerical solution. Specifically, for each     complete data transmission, and a matching mechanism is
+                                                                    integrated into the access control to filter suitable devices
+                                                                    for network access. This setup validates the effectiveness and
+                                                                    robustness of the trained DDPG model in real-world scenarios.
+
+                                                                       In the access control simulation, the numbers of DS and
+                                                                    DT devices, H and I, are generated by two independent
+                                                                    time-varying Poisson processes with distinct rate profiles,
+                                                                    respectively. For the adopted random access protocol, the
+                                                                    number of sub-channels M and the number of time slots
+                                                                    per sub-channel A are treated as configurable parameters
+                                                                    and varied in the simulations (10MHz bandwidth per sub-
+                                                                    channel). The access-delay constraint is set to max = 100ms,
+                                                                    consistent with SpaceX's claimed Starlink latency. Other static
+                                                                    parameters are set as Re = 6371km and Rs = 700km.
+
+                                                                       In the resource allocation simulation, we evaluate the pro-
+                                                                    posed allocation scheme over a total of 100 time steps. Due to
+                                                                    the large number of accessed devices, only k = 1, 2, 3 devices
+                                                                    are demonstrated for clarity. The parameters Pmean and Pmax
+                                                                    are set to 0.7W and 1W, respectively. The maximum incoming
+                                                                    queue data rate Rmax is set to 10Mb/s. Additionally, 1 to 3
+                                                                    are assigned values of 0.3, 0.4 and 0.5, respectively.
+
+                                                                       Table I summarizes the corresponding parameters of the
+                                                                    DDPG-based DRL model. The proposed DNN models were
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION  6681
+
+Fig. 7. Loss function of DDPG model.                                  Fig. 9. ARAE convergence speed comparison under varying M and A.
+
+Fig. 8. ARAE performance comparison with vs. without matching mecha-  with ARAE stabilizing quickly. In contrast, M = A = 100
+nism.                                                                 exhibits slower convergence but still attains stability within
+                                                                      80 time steps. This indicates that the proposed algorithm
+trained on a simulation platform based on Python 3.80 and             maintains robust adaptability and performance across different
+PyTorch v2.4.0. Each DNN model contains a single hidden               system scales, demonstrating good scalability, especially in
+layer with 256 units. During the training process, the model          large-scale deployment scenarios where it effectively enhances
+performance gradually improves and stabilizes, and the algo-          access efficiency. However, when M = A = 500, the ARAE
+rithm eventually converges.                                           fails to converge to the optimal value. This is because, for large
+                                                                      values of M and A, relying solely on the matching mechanism
+   Fig. 7 illustrates the loss function of the proposed DDPG          approaches its performance ceiling and becomes insufficient
+algorithm during the training phase. As shown in Fig. 7,              to meet the system's optimization requirements. Therefore,
+the loss values remain relatively high within the first 400           in such scenarios, it is necessary to adopt the proposed joint
+iterations. However, after exceeding 400 iterations, the loss         optimization strategy for access control and resource allocation
+function of DDPG converges rapidly, demonstrating stable              to further improve access efficiency and resource utilization.
+optimization behavior.
+                                                                         Figs. 10(a) and 10(b) show the evolution of queue backlogs
+   Fig. 8 illustrates the variation trend of ARAE with and            Qk and Z over time, respectively. It is observed that queue
+without the proposed matching mechanism. As shown in                  backlogs tend to be stable within a short period of time,
+Fig. 8, when the matching mechanism introduced in Section III         which guarantees the stability of queues. We notice that Qk
+is not employed, ARAE fails to stabilize. However, once the           is positively related to k. The reason is that device k with a
+matching mechanism is applied, ARAE rapidly reaches its               larger k is generally allocated with a higher Rk to maximize
+maximum value and remains stable thereafter. Fig. 9 presents          the application-layer satisfaction Uk. On the basis of (12), a
+the evolution of ARAE over time steps under different values          higher Rk(t) also results in a larger data queue backlog Qk
+of M and A, where only the matching mechanism is used                 due to the large amount of data entering the queue.
+without resource allocation strategy. From Fig. 9, it can be
+observed that ARAE gradually converges across all M and A                Figs. 11 and 12 illustrate the performance comparison of
+configurations as time steps increase, indicating robust conver-      the proposed joint optimization algorithm and other bench-
+gence and stability of the proposed method. In the initial phase,     mark schemes in terms of the number of terrestrial devices
+the configuration M = A = 10 achieves faster convergence,             successfully connected to the satellite under different num-
+                                                                      bers of channels M and time slots A. The benchmark
+                                                                      schemes considered in this study include the following:
+                                                                      (a) JO-DP: this approach adopts the same joint optimiza-
+                                                                      tion framework as our proposed method but substitutes the
+                                                                      DDPG module with a dynamic programming algorithm.
+                                                                      (b) ResAlloc-only: a scheme which employs the proposed
+                                                                      resource allocation method but excludes the matching-based
+                                                                      access control. (c) DQN-woMAC: a DQN-based resource
+                                                                      allocation scheme which excludes the matching-based access
+                                                                      control. (d) ALOHA: the conventional ALOHA scheme. In
+                                                                      both simulation scenarios, the total frame length of each
+                                                                      terrestrial device is uniformly set to ten times the subframe
+                                                                      length.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6682                                             IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+                                                               Fig. 11. Comparison of the number of successfully accessed terrestrial devices
+                                                               under varying A.
+
+Fig. 10. Evolution of queue backlogs over time.
+
+   As shown in Fig. 11, the proposed joint optimization        Fig. 12. Comparison of the number of successfully accessed terrestrial devices
+algorithm consistently outperforms all benchmark schemes       under varying M .
+across different values of A = 10, 100, and 1000. Compared
+with the baseline ALOHA scheme, which adopts the standard      to the stagnation of ALOHA, highlights its capability to
+random access protocol without optimization, all intelligent   efficiently scale with increasing network demands.
+algorithms achieve significant improvements in the number
+of successfully connected devices. In particular, the joint       Fig. 12 further validates the advantages and scalability of
+optimization scheme demonstrates the highest performance       the proposed joint optimization scheme under varying resource
+by effectively coordinating matching-based access control and  conditions. As M increases, the performance superiority of
+Lyapunov-guided long-term resource allocation. The JO-DP       the joint optimization scheme becomes more evident. Notably,
+scheme achieves slightly lower performance, indicating that    the JO-DP scheme shows a widening performance gap as
+the DDPG model provides better adaptability and long-term      M grows, revealing that dynamic programming suffers from
+optimization capability under dynamic access conditions. The   limited adaptability in large-scale state spaces. Similarly, the
+DQN-woMAC and ResAlloc-only schemes exhibit similar            DQN-woMAC algorithm experiences degraded performance
+performance because the current state and action spaces are    when M becomes large due to the rapid expansion of both
+relatively small, limiting the learning gap between DQN and    the state and action spaces, which constrains the learning
+DDPG. Moreover, when A = 1000, the joint optimiza-             capability of DQN. In contrast, the joint optimization scheme
+tion scheme maintains steady growth, successfully connecting   approach maintains stable convergence and efficient resource
+6,000 devices, whereas the baseline ALOHA scheme nearly        utilization. Under more favorable conditions (e.g., M = 500),
+plateaus. The sustained growth of our method, in contrast      it fully leverages system resources, achieving over 40,000
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+FENG et al.: JOINT OPTIMIZATION OF ACCESS CONTROL AND RESOURCE ALLOCATION  6683
+
+                                                                       real-time performance and feasibility in large-scale access
+                                                                       scenarios.
+
+Fig. 13. Comparison of signaling overhead under different (M, A).                               VII. CONCLUSION
+
+                                                                          In this paper, we investigate the joint optimization of access
+                                                                       control and resource allocation in the context of random access
+                                                                       for LEO satellite IoT systems. To address the challenges
+                                                                       of access collisions and resource waste caused by massive
+                                                                       device connectivity, we propose a cross-layer joint decision-
+                                                                       making framework. At the short-term timescale, matching
+                                                                       theory is employed to reduce signaling overhead, while at
+                                                                       the long-term timescale, Lyapunov optimization is utilized to
+                                                                       achieve dynamic resource scheduling under the constraints of
+                                                                       queue stability and average power consumption. The core of
+                                                                       the proposed framework is based on the DDPG algorithm,
+                                                                       which is used to train and enhance the overall optimization
+                                                                       strategy, thereby improving system adaptability and perfor-
+                                                                       mance. Simulation results demonstrate that the proposed joint
+                                                                       decision-making framework achieves significant performance
+                                                                       gains in large-scale access scenarios, effectively mitigating
+                                                                       access collisions and resource inefficiencies, and substantially
+                                                                       enhancing overall system access efficiency.
+
+Fig. 14. Comparison of time consumption of the DDPG-based joint opti-                               REFERENCES
+mization algorithm under varying M (measured on NVIDIA GeForce GTX
+1630).                                                                 [1] M. Huang et al., "Robust secure precoding for UAV-aided multi-beam
+                                                                             satellite NOMA communications," IEEE Trans. Veh. Technol., vol. 73,
+successful connections within 100 time steps--substantially                  no. 6, pp. 8069­8082, Jun. 2024.
+outperforming all comparison schemes.
+                                                                       [2] M. Vaezi et al., "Cellular, wide-area, and non-terrestrial IoT: A survey
+   Fig. 13 illustrates the signaling utilization ratios of different         on 5G advances and the road toward 6G," IEEE Commun. Surveys Tuts.,
+schemes under various (M, A) configurations. Here, the sig-                  vol. 24, no. 2, pp. 1117­1174, 2nd Quart., 2022.
+naling utilization is defined as the ratio of signaling resource
+consumption to the total resource usage, measured in terms             [3] S. Cioni, R. De Gaudenzi, O. Del Rio Herrero, and N. Girault, "On the
+of time slot consumption over a fixed simulation period of                   satellite role in the era of 5G massive machine type communications,"
+1000 time steps. It can be observed that the joint optimization              IEEE Netw., vol. 32, no. 5, pp. 54­61, Sep. 2018.
+scheme consistently achieves the lowest signaling overhead
+across all configurations. As (M, A) increases, the signaling          [4] M. Bacco et al., "IoT applications and services in space information
+utilization exhibits a slow upward trend, primarily due to the               networks," IEEE Wireless Commun., vol. 26, no. 2, pp. 31­37, Apr.
+larger number of terminals involved, which leads to more fre-                2019.
+quent state updates--an expected phenomenon in large-scale
+access scenarios. Nevertheless, the increase remains gradual,          [5] J. Jiao, Y. Sun, S. Wu, Y. Wang, and Q. Zhang, "Network utility
+indicating that the proposed joint optimization framework                    maximization resource allocation for NOMA in satellite-based Internet
+can effectively manage signaling overhead and maintain high                  of Things," IEEE Internet Things J., vol. 7, no. 4, pp. 3230­3242, Apr.
+signaling efficiency even in large-scale deployment scenarios.               2020.
+
+   Fig. 14 illustrates the time consumption of the DDPG-               [6] J. Chu, X. Chen, C. Zhong, and Z. Zhang, "Robust design for NOMA-
+based joint optimization algorithm under different numbers of                based multibeam LEO satellite Internet of Things," IEEE Internet Things
+channels M , including both per-step computation time and the                J., vol. 8, no. 3, pp. 1959­1970, Feb. 2021.
+total time over 100 time steps. As M increase, the per-step
+time rises accordingly but remains relatively stable. Even with        [7] L. He, Z. Jia, J. Wang, E. Lansard, Z. Han, and C. Yuen, "Joint power
+M = 500, the total runtime of the algorithm over 100 time                    allocation and task scheduling for data offloading in non-geostationary
+steps is only about 3 seconds, accounting for merely 0.5% of                 orbit satellite networks," IEEE Trans. Netw. Service Manage., vol. 22,
+the typical LEO satellite beam dwell time of approximately                   no. 3, pp. 2882­2896, Jun. 2025.
+600 seconds [10]. This demonstrates the algorithm's strong
+                                                                       [8] Z. Zhang et al., "User activity detection and channel estimation for grant-
+                                                                             free random access in LEO satellite-enabled Internet of Things," IEEE
+                                                                             Internet Things J., vol. 7, no. 9, pp. 8811­8825, Sep. 2020.
+
+                                                                       [9] N. Ye, J. Yu, A. Wang, and R. Zhang, "Help from space: Grant-free
+                                                                             massive access for satellite-based IoT in the 6G era," Digit. Commun.
+                                                                             Netw., vol. 8, no. 2, pp. 215­224, Apr. 2022.
+
+                                                                       [10] T. T. T. Le, N. U. Hassan, X. Chen, M.-S. Alouini, Z. Han, and C. Yuen,
+                                                                             "A survey on random access protocols in direct-access LEO satellite-
+                                                                             based IoT communication," IEEE Commun. Surveys Tuts., vol. 27,
+                                                                             no. 1, pp. 426­462, Feb. 2025.
+
+                                                                       [11] M. Ying, X. Chen, and X. Shao, "Exploiting tensor-based Bayesian
+                                                                             learning for massive grant-free random access in LEO satellite Internet
+                                                                             of Things," IEEE Trans. Commun., vol. 71, no. 2, pp. 1141­1152, Feb.
+                                                                             2023.
+
+                                                                       [12] X. Zhou et al., "Active terminal identification, channel estimation,
+                                                                             and signal detection for grant-free NOMA-OTFS in LEO satellite
+                                                                             Internet-of-Things," IEEE Trans. Wireless Commun., vol. 22, no. 4,
+                                                                             pp. 2847­2866, Apr. 2023.
+
+                                                                       [13] J.-H. Lee, H. Seo, J. Park, M. Bennis, and Y.-C. Ko, "Learning
+                                                                             emergent random access protocol for LEO satellite networks," IEEE
+                                                                             Trans. Wireless Commun., vol. 22, no. 1, pp. 257­269, Jan. 2023.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+6684  IEEE TRANSACTIONS ON COGNITIVE COMMUNICATIONS AND NETWORKING, VOL. 12, 2026
+
+[14] B. Zhao, G. Ren, X. Dong, and H. Zhang, "Distributed Q-learning              [36] Q. Dong, X. Xu, S. Han, R. Liu, and X. Zhang, "DDPG-based
+      based joint relay selection and access control scheme for IoT-oriented            task offloading in satellite-terrestrial collaborative edge computing
+      satellite terrestrial relay networks," IEEE Commun. Lett., vol. 25, no. 6,        networks," in Proc. IEEE Int. Conf. Commun. Workshops (ICC Work-
+      pp. 1901­1905, Jun. 2021.                                                         shops), May 2023, pp. 1541­1546.
+
+[15] S. Fu, J. Gao, and L. Zhao, "Collaborative multi-resource allocation                                        Xingmin Feng was born in Gansu, China, in 2000.
+      in terrestrial-satellite network towards 6G," IEEE Trans. Wireless Com-                                    He received the B.S. degree in electronic infor-
+      mun., vol. 20, no. 11, pp. 7057­7071, Nov. 2021.                                                           mation from Northwest Minzu University in 2022.
+                                                                                                                 He is currently pursuing the Ph.D. degree with
+[16] H. Jia, C. Jiang, L. Kuang, and J. Lu, "Adaptive access control and                                         the State Key Laboratory of Integrated Services
+      resource allocation for random access in NGSO satellite networks,"                                         Networks (ISN), Xidian University. His research
+      IEEE Trans. Netw. Sci. Eng., vol. 9, no. 4, pp. 2721­2733, Jul. 2022.                                      interests include satellite communications, resource
+                                                                                                                 allocation, and artificial intelligence applications in
+[17] L. Zhen et al., "Optimal preamble design in spatial group-based random                                      satellite communications.
+      access for satellite-M2M communications," IEEE Wireless Commun.
+      Lett., vol. 8, no. 3, pp. 953­956, Jun. 2019.                                                              Guizeng Yin was born in Heilongjiang, China,
+                                                                                                                 in 1974. He received the B.E. degree from East
+[18] J. Jiao, S. Wu, R. Lu, and Q. Zhang, "Massive access in space-based                                         China University of Technology in 1996 and the
+      Internet of Things: Challenges, opportunities, and future directions,"                                     M.E. degree from Harbin Institute of Technol-
+      IEEE Wireless Commun., vol. 28, no. 5, pp. 118­125, Oct. 2021.                                             ogy in 2007. He is currently the Senior Manager
+                                                                                                                 at Aerospace Star Technology Company Ltd. His
+[19] H. Yuan, Y. Wang, H. Jia, Q. Zhang, Y. Zhang, and L. Feng, "Access                                          main research interests include product applica-
+      control and collision resolution for massive random access in satellite                                    tion scheme design, overall product scheme review,
+      Internet of Things networks," in Proc. IEEE Int. Workshop Radio Freq.                                      project quality supervision and process control,
+      Antenna Technol. (iWRF&AT), May 2024, pp. 522­527.                                                         project risk control, quality problem closure for
+                                                                                                                 satellite communications, satellite Internet informa-
+[20] Q. Chen, W. Meng, S. Han, C. Li, and H.-H. Chen, "Robust task                tion system commercial cryptography, commercial aerospace, and other
+      scheduling for delay-aware IoT applications in civil aircraft-augmented     related fields.
+      SAGIN," IEEE Trans. Commun., vol. 70, no. 8, pp. 5368­5385, Aug.
+      2022.                                                                                                      Huaiwei Quan was born in Bayannaoer, Inner
+                                                                                                                 Mongolia, in 1983. She received the master's degree
+[21] Q. Wei, Y. Chen, Z. Jia, W. Bai, T. Pei, and Q. Wu, "Energy-                                                from the School of Electronics and Information,
+      efficient caching and user selection for resource-limited SAGINs in                                        Northwestern Polytechnical University, in 2008.
+      emergency communications," IEEE Trans. Commun., vol. 73, no. 6,                                            From 2008 to 2015, she was a Test Engineer with
+      pp. 4121­4136, Jun. 2025.                                                                                  the Base Station Controller Department, Huawei
+                                                                                                                 Data Technology Company Ltd. She is currently the
+[22] X. Liu, H. Zhang, K. Long, A. Nallanathan, and V. C. M. Leung,                                              Director of the Test Center, Satellite Communication
+      "Deep dyna-reinforcement learning based on random access control in                                        Business Division, Xi'an Aerospace Remote Sensing
+      LEO satellite IoT networks," IEEE Internet Things J., vol. 9, no. 16,                                      Data Technology Corporation. Her main research
+      pp. 14818­14828, Aug. 2022.                                                                                areas include satellite communication product test-
+                                                                                  ing technology, test equipment solution research, and quality assurance of test
+[23] G. Zhang et al., "Satellite network random access based on multi-agent       equipment.
+      Q-learning," in Proc. Int. Conf. Ubiquitous Comput. Commun. (IUCC),
+      2024, pp. 442­447.                                                                                         Zhao Li was born in Shaanxi, China, in 1981. He
+                                                                                                                 received the master's degree from Xidian University,
+[24] L. Zhen, M. Li, Y. He, J. Su, K. Yu, and J. J. P. C. Rodrigues,                                             Xi'an, China, in 2007. He is currently the Director
+      "Collision detection and load estimation for massive random access                                         of the Communication and Navigation Technology
+      in satellite-based Internet of Things: A deep learning approach,"                                          Division, Shaanxi Academy of Aerospace Technol-
+      in Proc. GLOBECOM-IEEE Global Commun. Conf., Dec. 2024,                                                    ogy Application Company Ltd. (SATA, formerly
+      pp. 2599­2604.                                                                                             Xi'an Space Star Technology (Group) Company
+                                                                                                                 Ltd.), which was established in 1994. He is a premier
+[25] H. Yu, H. Zhao, Z. Fei, J. Wang, Z. Chen, and Y. Gong, "Deep-                                               provider and manufacturer of satellite communi-
+      reinforcement-learning-based NOMA-aided slotted ALOHA for LEO                                              cation, navigation, and remote sensing. His main
+      satellite IoT networks," IEEE Internet Things J., vol. 10, no. 20,                                         research interests include high-throughput satellite
+      pp. 17772­17784, Oct. 2023.                                                 communication, LEO satellite communication, satellite telemetry, tracking and
+                                                                                  command (TT&C), and aviation telemetry.
+[26] Z. Zhou, Y. Guo, Y. He, X. Zhao, and W. M. Bazzi, "Access con-
+      trol and resource allocation for M2M communications in industrial                                          Fengkui Gong (Member, IEEE) was born in
+      automation," IEEE Trans. Ind. Informat., vol. 15, no. 5, pp. 3093­3103,                                    Shandong, China, in 1979. He received the M.S.
+      May 2019.                                                                                                  and Ph.D. degrees from Xidian University, Xi'an,
+                                                                                                                 China, in 2004 and 2007, respectively. From 2011
+[27] R. Deng, B. Di, H. Zhang, L. Kuang, and L. Song, "Ultra-dense LEO                                           to 2012, he was a Visiting Scholar with the
+      satellite constellations: How many LEO satellites do we need?," IEEE                                       Department of Electrical and Computer Engineering,
+      Trans. Wireless Commun., vol. 20, no. 8, pp. 4843­4857, Aug. 2021.                                         McMaster University, Hamilton, ON, Canada. He
+                                                                                                                 is currently a Professor with the State Key Labo-
+[28] Study on New Radio (NR) to Support Nonterrestrial Networks, document                                        ratory of Integrated Services Networks, Department
+      TR 38.811, 3GPP, 2019.                                                                                     of Communication Engineering, Xidian University.
+                                                                                                                 His research interests include advanced transmission
+[29] W. Wei et al., "Random access control and beam management scheme             technologies for satellite internet and high-throughput satellites, robust FPGA
+      for the 5G NR based beam hopping LEO satellite communication                realization, multi-beam satellite precoding, and blind signal processing.
+      systems," Mobile Netw. Appl., vol. 28, no. 4, pp. 1531­1542, Aug. 2023.
+
+[30] S. K. Joshi, K. B. S. Manosha, M. Codreanu, and M. Latva-aho,
+      "Dynamic inter-operator spectrum sharing via Lyapunov optimization,"
+      IEEE Trans. Wireless Commun., vol. 16, no. 10, pp. 6365­6381, Oct.
+      2017.
+
+[31] W. Bao, H. Chen, Y. Li, and B. Vucetic, "Joint rate control and power
+      allocation for non-orthogonal multiple access systems," IEEE J. Sel.
+      Areas Commun., vol. 35, no. 12, pp. 2798­2811, Dec. 2017.
+
+[32] Y. Guo, Q. Yang, and K. S. Kwak, "Quality-oriented rate control and
+      resource allocation in time-varying OFDMA networks," IEEE Trans.
+      Veh. Technol., vol. 66, no. 3, pp. 2324­2338, Mar. 2017.
+
+[33] L. Tang, Y. Wei, W. Chen, and Q. Chen, "Delay-aware dynamic
+      resource allocation and ABS configuration algorithm in HetNets based
+      on Lyapunov optimization," IEEE Access, vol. 5, pp. 23764­23775,
+      2017.
+
+[34] Y. Mao, J. Zhang, and K. B. Letaief, "A Lyapunov optimization approach
+      for green cellular networks with hybrid energy supplies," IEEE J. Sel.
+      Areas Commun., vol. 33, no. 12, pp. 2463­2477, Dec. 2015.
+
+[35] M. Neely, Stochastic Network Optimization With Application to Com-
+      munication and Queueing Systems. San Rafael, CA, USA: Morgan &
+      Claypool, 2010.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:49 UTC from IEEE Xplore. Restrictions apply.
+

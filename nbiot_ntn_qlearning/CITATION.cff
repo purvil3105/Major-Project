@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it as below."
+title: "Q-Learning-Based RACH Parameter Optimization for NB-IoT Non-Terrestrial Networks"
+version: 1.0.0
+date-released: 2026-10-10
+url: "https://github.com/your-username/nbiot-ntn-qlearning"
+keywords:
+  - "NB-IoT"
+  - "Non-Terrestrial Networks (NTN)"
+  - "LEO Satellite"
+  - "Random Access (RACH)"
+  - "Q-Learning"
+  - "Reinforcement Learning"
+  - "3GPP Release 17"

@@ -1,0 +1,1296 @@
+                                                                                                                                                                                                                                                     1
+
+                                               Random Access for LEO Satellite
+                                         Communication Systems via Deep Learning
+
+                                                  Hyunwoo Lee, Graduate Student Member, IEEE, Ian P. Roberts, Member, IEEE,
+                                                             Jinkyo Jeong, Member, IEEE, and Daesik Hong, Fellow, IEEE
+
+arXiv:2512.07053v3 [eess.SP] 2 Jun 2026     Abstract--Integrating contention-based random access proce-               preambles and resolve potential collisions through a multi-
+                                         dures into low Earth orbit (LEO) satellite communication (Sat-               step handshake with the BS [7]. This approach is well-
+                                         Com) systems poses new challenges, including long propagation                suited for terrestrial environments as it provides a scalable
+                                         delays, large Doppler shifts, and a large number of simultaneous             and efficient way to manage sporadic access attempts from a
+                                         access attempts. These factors degrade the efficiency and respon-            large number of users. However, adapting these contention-
+                                         siveness of conventional random access schemes, particularly in              based mechanisms to LEO SatCom systems requires careful
+                                         scenarios such as satellite-based internet of things and direct-to-          consideration of several LEO-specific constraints that signif-
+                                         device services. In this paper, we propose a deep learning-based             icantly impact the performance and reliability of the access
+                                         random access framework designed for LEO SatCom systems.                     procedure. These constraints are summarized as follows, based
+                                         The framework incorporates an early preamble collision classifier            on a representative LEO scenario with an altitude of 600 km
+                                         that uses multi-antenna correlation features and a lightweight               and a minimum service elevation angle of 10 degrees [5]:
+                                         1D convolutional neural network to estimate the number of
+                                         collided users at the earliest stage. Based on this estimate, we                · Long propagation delay: The considerable distance
+                                         introduce an opportunistic transmission scheme that balances                       between the satellite and ground users introduces sig-
+                                         access probability and resource efficiency to improve success                      nificant propagation delays. Depending on the user's
+                                         rates and reduce delay. Simulation results under 3GPP-compliant                    location within the satellite footprint, the one-way delay
+                                         LEO settings confirm that the proposed framework achieves                          ranges from approximately 2 ms to 6.44 ms, resulting in
+                                         higher access success probability, lower delay, better physical                    a round-trip time (RTT) variation of up to 4.44 ms [5]. In
+                                         uplink shared channel utilization, and reduced computational                       random access procedures, such delays cause latency in
+                                         complexity compared to existing schemes.                                           the exchange of signaling messages, which can degrade
+                                                                                                                            responsiveness and increase the time required to complete
+                                            Index Terms--6G, satellite communication (SatCom), low                          access attempts. Moreover, because the satellite BS (SBS)
+                                         Earth orbit (LEO), non-terrestrial network, random access, deep                    must receive preambles from all users without prior
+                                         learning.                                                                          timing synchronization, it must set a reception window
+                                                                                                                            wide enough to account for this RTT uncertainty.
+                                                                   I. INTRODUCTION
+                                                                                                                         · Large Doppler shift: LEO satellites travel at high
+                                            Among the various types of non-terrestrial network plat-                        speeds, approximately 7.56 km/s, resulting in significant
+                                         forms, large-scale low Earth orbit (LEO) satellite constella-                      Doppler shifts. For instance, at a 2 GHz carrier frequency,
+                                         tions have emerged as a key enabler, owing to their ability to                     this can lead to frequency offsets up to 48 kHz [5], which
+                                         provide near-global coverage and relatively low latency due                        is nearly 38 times the 1.25 kHz subcarrier spacing used in
+                                         to their proximity to the Earth compared to higher-orbit sys-                      the 5G NR random access procedure [8]. Since the ran-
+                                         tems [1]­[3]. Reflecting this focus, since Release 17, the 3rd                     dom access waveform is designed under the assumption
+                                         Generation Partnership Project (3GPP) has concentrated on                          of small frequency offsets, such a large shift can cause
+                                         adapting terrestrial cellular technologies to tackle the unique                    severe inter-carrier interference and significantly degrade
+                                         challenges of LEO satellite communication (SatCom), such as                        preamble detection performance unless compensated at
+                                         long communication distances and high mobility [4]­[6].                            the user side.
+
+                                            Random access procedures are fundamental components of                       · Large number of simultaneous access attempts: Due
+                                         wireless networks that enable users to initiate connections                        to the large coverage area of LEO satellites compared to
+                                         with base stations (BSs). These procedures typically involve                       terrestrial BSs, the total number of users served simulta-
+                                         a sequence of message exchanges to establish uplink syn-                           neously is expected to be significantly higher. As a result,
+                                         chronization and request transmission resources. In terrestrial                    the number of users attempting random access at the
+                                         networks such as 4G LTE and 5G NR, contention-based                                same time can be substantially greater than in terrestrial
+                                         random access is used, where users transmit randomly selected                      networks, leading to a higher probability of preamble
+                                                                                                                            collisions and access delays. For instance, in a LEO
+                                            H. Lee and D. Hong are with the Information Telecommunication                   satellite-based internet of things (IoT) scenario, future
+                                         Lab (ITL), School of Electrical and Electronic Engineering, Yonsei Uni-            systems are expected to support up to one billion IoT
+                                         versity, Seoul, South Korea (e-mail: gksdnrh27@yonsei.ac.kr and dae-               nodes within a single satellite footprint [4]. In contrast,
+                                         sikh@yonsei.ac.kr).
+
+                                            I. P. Roberts is with the Wireless Lab, Department of Electrical and
+                                         Computer Engineering, UCLA, Los Angeles, CA, USA (e-mail: ian-
+                                         roberts@ucla.edu).
+
+                                            J. Jeong is with the Department of Electronic Engineering, Pukyong Na-
+                                         tional University, Busan 48513, South Korea (e-mail: jjk.jeong@pknu.ac.kr).
+                                                                       2
+
+      terrestrial networks, which operate with smaller coverage                  II. RELATED WORK AND CONTRIBUTIONS
+      areas and more densely deployed infrastructure, typically
+      serve between 100,000 and 10,000,000 nodes in total [9]­         A. Related Work
+      [11]. This implies that satellite-based systems may need
+      to accommodate 100 to 10,000 times more simultaneous                Contention-based random access serves as a fundamental
+      access attempts, significantly intensifying contention on        mechanism in cellular systems. A central challenge in this
+      the random access channel. Notably, even when a phased-          framework is resolving preamble collisions, as they directly
+      array antenna confines contention to a narrow beam, the          impact the success probability and latency of the access
+      beam footprint remains much larger than that of a typical        procedure. To address this challenge, extensive research has
+      terrestrial cell [11], and thus high contention can still arise  been conducted, with prior efforts broadly categorized into two
+      within a single beam.                                            directions: (1) reducing the likelihood of preamble collisions
+                                                                       and (2) resolving preamble collisions once they occur.
+To address two of these challenges--namely, large RTT uncer-
+tainty and Doppler-induced frequency offset--3GPP Release                 1) Reducing the likelihood of preamble collisions: To
+17 introduces the use of global navigation satellite system            alleviate preamble collisions in contention-based access, vari-
+(GNSS) functionality at the user and ephemeris informa-                ous techniques have been proposed to reduce the probability
+tion broadcast by the satellite [5]. With knowledge of both            that multiple users select the same preamble simultaneously.
+the user's position and the satellite's orbit, the user can            Key approaches explored in the literature include access class
+pre-compensate for the required timing advance (TA) and                barring (ACB) [13]­[15], adaptive random backoff strate-
+frequency offset before transmitting its preamble--a known             gies [16]­[18], and non-orthogonal preambles [19]­[23].
+sequence used to initiate random access [4]­[6]. This allows
+reuse of the terrestrial contention-based random access proce-            In the ACB scheme, the number of access attempts per
+dure in LEO SatCom systems, in which the user transmits a              random access channel (RACH) slot is regulated to avoid
+preamble (Step 1), the BS responds (Step 2), the user sends            excessive collisions. Before transmitting a preamble, each
+identity information (Step 3), and the BS acknowledges (Step           user performs an ACB check and proceeds only if it passes;
+4). However, despite enabling this reuse, the approach suffers         otherwise, the user defers the attempt to the next available
+from critical limitations in detecting and resolving preamble          RACH slot [13]­[15]. Similarly, many works have focused
+collisions. Collisions in Step 1 are not detected at the time of       on adjusting the backoff behavior of users after collisions.
+transmission but are only revealed later when the BS fails             In [16]­[18], dynamic backoff schemes were proposed that
+to decode signals in Step 3. On the user side, a collision             adapt the uniform backoff window based on observed collision
+is inferred only when a message is not received within the             levels. While ACB and backoff adjustment help mitigate
+collision resolution (CR) timer in Step 4.                             RACH congestion, they require tracking the backlog state of
+                                                                       all users. These approaches are less attractive in LEO SatCom
+   This mechanism results in delays of at least two RTTs               systems, where the service region changes dynamically due to
+and leads to inefficient use of physical uplink shared channel         satellite movement.
+(PUSCH) resources allocated for Step 3. Such issues are
+present in terrestrial networks but exacerbate in LEO sys-                One of the most effective ways to reduce preamble colli-
+tems due to inherently longer delays and a larger number               sions is to increase the number of available preambles [19]­
+of simultaneous access attempts. LEO satellite-based IoT               [23]. The authors of [19], [20] proposed a concatenated
+scenarios currently serve as a representative example, where           preamble structure that forms a composite sequence by com-
+the high density of devices leads to frequent access contention.       bining two Zadoff-Chu (ZC) sequences generated from dif-
+Similar challenges are also expected in emerging applications          ferent roots. This combinatorial design increases the number
+such as direct-to-device (D2D) services, where the number of           of unique preambles without requiring longer sequences or
+connected handheld devices is projected to grow significantly          additional time-frequency resources. Although this expanded
+in the coming years [12]. These observations highlight the             preamble space reduces collision probability, it also leads to
+need for improved random access mechanisms that can detect             increased non-orthogonality, resulting in higher interference as
+collisions early and increase access success rates, particularly       the user density grows. To mitigate such interference, succes-
+in LEO SatCom systems operating under high user density.               sive interference cancellation techniques have been employed
+                                                                       in [21]­[23]. While these methods help detect non-orthogonal
+   The rest of this paper is organized as follows. Section II          preambles more effectively, they rely on iterative cancellation
+provides an overview of related work aimed at resolving                procedures, which entail high computational complexity.
+preamble collisions and outlines the main contributions of this
+paper. Section III describes the conventional random access               Recent learning-based studies have investigated access-
+procedure for LEO SatCom systems. The proposed random                  control policies for LEO satellite networks to mitigate con-
+access framework is presented in Section IV. Section V                 tention under non-stationary topology and time-varying multi-
+provides simulation results to demonstrate the effectiveness           satellite coverage. For example, [24] proposes an emergent
+of the proposed framework and discusses key observations.              contention-based random access protocol (eRACH) learned via
+Finally, Section VI concludes the paper.                               multi-agent DRL, where distributed agents adapt their access
+                                                                       behaviors to evolving network states. Similarly, [25] formu-
+                                                                       lates user access as a long-term decision problem under time-
+                                                                       varying coverage and develops a decentralized multi-agent RL
+                                                                       mechanism to maximize long-term throughput. In addition,
+                                                                       some DRL studies in the satellite context focus on higher-layer
+                                                                                                                                     3
+
+network control such as transport-layer congestion control                                              TABLE I
+in space­air­ground integrated networks (SAGINs), rather            COMPARISON BETWEEN THE PROPOSED FRAMEWORK AND PRIOR
+than contention-based random access [26]. Overall, these RL-
+based approaches aim to reduce congestion through long-term                DEEP-LEARNING-BASED RANDOM ACCESS SCHEMES.
+access adaptation, thereby lowering the likelihood of persistent
+contention in random access procedures.                             Contention reso-   DRA [9]         DCRA [35]      Proposed
+                                                                    lution             Deterministic                  Stochastic
+   2) Resolving preamble collisions once they occur: When                              (TA-based)      Deterministic  (analytically
+multiple users select the same preamble and transmit it si-         Classifier uncer-                  (multiple      optimized)
+multaneously, the BS cannot distinguish between them and            tainty modeling    No              grants)        Yes
+responds with the same message. As a result, all those users        Additional
+receive the same grant for Step 3, causing a collision that         PUSCH per                          No             No
+leads to random access failure. Several approaches have been        collision
+proposed to handle such collisions after they occur, aiming         3GPP NR/NTN        Yes             Yes            Backward-
+to recover from contention rather than prevent it in advance.       compatibility                                     compatible
+These include transmission control [27], [28], non-orthogonal                          Infeasible      Requires
+random access [29]­[31], and early preamble collision detec-                           (TA-based       non-standard
+tion schemes [9], [10], [32]­[35].                                                     identification  PUSCH
+                                                                                       fails under     allocation
+   A user-side approach in [27] enables early collision detec-                         GNSS pre-
+tion by having users broadcast short contention signals before                         compensation)
+Step 3 transmission. While effective in terrestrial settings, this
+method is unsuitable for LEO SatCom due to wide coverage            achieves strong detection performance in terrestrial settings,
+and limited sensing among users. Alternatively, a BS-centric        its fully connected network architecture incurs high compu-
+scheme called Step 3 barring was proposed in [28], where            tational complexity. In [35], a double contention scheme was
+the BS estimates collision levels and broadcasts a uniform          proposed in which a neural network allocates two Step 3 grants
+barring probability to all users. Although compatible with          when two users collide, but it also suffers from high com-
+LEO SatCom, this approach cannot differentiate collided from        plexity, limited scalability beyond two users, and the need for
+non-collided users, causing unnecessary barring and increased       dynamically adjustable Step 3 resources, which conflicts with
+access delay.                                                       current standards [7]. In contrast, our proposed framework
+                                                                    resolves contention probabilistically based on classifier out-
+   In [29]­[31], non-orthogonal random access schemes were          puts while explicitly accounting for classification uncertainty,
+proposed where users sharing the same Step 3 grant transmit         without modifying baseline 3GPP resource allocation. Table I
+simultaneously using power-domain NOMA. This enables                provides a side-by-side summary of these differences along
+multiple users to share uplink resources through superim-           four key dimensions.
+posed transmissions and works well in terrestrial networks
+with diverse channel gains. In LEO SatCom, however, the             B. Contributions
+long transmission distance yields minimal power disparities,
+making such separation challenging and limiting their effec-           Most existing studies that address the preamble collision
+tiveness [36].                                                      problem still suffer from several limitations. These include
+                                                                    unnecessary delay, high computational complexity at the BS,
+   Several studies have sought to detect preamble collisions        increased complexity at the user, reduced PUSCH resource
+at the BS immediately after receiving Step 1 transmissions.         efficiency, and limited applicability in LEO SatCom systems.
+A common approach is to analyze the correlation output
+to identify multiple time of arrival (ToA) peaks [10], [32],           In this paper, we propose a deep learning-based random
+which works in terrestrial networks but becomes ineffective         access framework that overcomes these limitations and is well-
+in LEO SatCom due to TA pre-compensation using GNSS                 suited for LEO SatCom systems. Deep learning is employed to
+and ephemeris information [4]. To overcome this limitation,         enable early detection of preamble collisions and to estimate
+alternative schemes that do not rely on ToA differences have        the number of colliding users, a task that cannot be performed
+been proposed [9], [33]­[35]. For example, a prime-based            effectively without learning-based techniques. This capability
+cyclic shift scheme [33] enables fast collision detection but       is leveraged to enhance collision resolution and improve
+is sensitive to RTT uncertainty and fading. A multi-threshold       random access performance. The main contributions of this
+method [34] instead uses empirically derived thresholds, but        work are summarized as follows.
+lacks robustness under varying channel conditions.
+                                                                       · We propose a deep learning-based early preamble colli-
+   There have also been attempts to apply deep learning for               sion classifier tailored for LEO SatCom systems, which
+early preamble collision detection [9], [35]. In [9], a neural            is not a direct adaptation of existing terrestrial classi-
+network was used to estimate the number of colliding users                fiers but reflects NTN-specific design considerations. The
+and extract TA values, enabling the BS to broadcast multiple              classifier leverages per-antenna correlation values (rather
+Step 3 grants. However, in LEO SatCom, the 3GPP-mandated                  than averaged values) as input features, enabling early
+GNSS-based TA pre-compensation aligns the arrival timing of               estimation of the collision multiplicity (i.e., the number of
+preambles at the satellite, making the per-user identification            users selecting the same preamble) during the initial stage
+on which this approach relies infeasible. While the method                of the random access process. To satisfy practical satel-
+                                                                          lite payload constraints, a lightweight 1D convolutional
+                                                                          neural network architecture with a kernel size matched
+                                                                                                                                                  4
+
+  to the NTN channel delay spread is adopted to reduce                 Ground User                                                     Satellite
+  on-board computation and memory requirements while
+  maintaining high classification accuracy. This lightweight              Random          (Step 1) Preamble transmission on PRACH
+  design enables fast contention handling and supports                    backoff   (Timing advance and Doppler shift pre-compensation)
+  practical NTN deployment under stringent power and
+  latency budgets.                                                     RAR window     (Step 2) Random access response (RAR) message
+· We propose a collision-aware opportunistic Step 3 trans-                                                    on PDSCH
+  mission mechanism to improve random access perfor-
+  mance. The scheme exploits the estimated collision multi-        No  Did you receive RAR message
+  plicity from the proposed classifier and derives, in closed
+  form, a preamble-index-wise transmission probability that            within RAR window?
+  maximizes the random access success probability while
+  explicitly accounting for the classifier's estimation un-                        Yes
+  certainty. Unlike prior deep learning-based schemes that                                 (Step 3) Uplink data transmission on PUSCH
+  adopt deterministic resource allocation upon collision
+  detection, the proposed mechanism resolves contention                CR timer
+  probabilistically without allocating additional uplink re-
+  sources. By enabling probabilistic Step 3 attempts rather                         (Step 4) Contention resolution message on PDSCH
+  than a strict backoff, the proposed mechanism improves
+  the random access success opportunity and mitigates              No  Did you receive CR message
+  delay and uplink resource waste caused by unnecessary                before the CR timer expired?
+  transmissions.
+· We provide an NTN-compliant, system-level validation                             Yes                                       time 
+  under a 3GPP-aligned LEO SatCom scenario and extract                 Random access success
+  actionable design insights. Rather than merely presenting
+  simulation plots, the evaluation substantiates the fea-          Fig. 1. Conventional contention-based random access procedure for LEO
+  sibility of integrating the proposed framework into a            SatCom systems.
+  3GPP-aligned random access procedure and quantifies its
+  system-level gains over benchmark schemes. In addition,          Here, crs[m] denotes the normalized cyclic cross-correlation,
+  the results identify operating regimes where the proposed                                                       NZC-1
+  framework yields clear benefits and offer practical guide-       where the unnormalized correlation             n=0    zr   [n]zs[(n            +
+  lines for key system parameters such as active-user load
+  and received SNR regimes.                                        m) mod NZC] has magnitude NZC. The ZC sequence also
+
+                                                                   has the following cyclic auto-correlation property in which
+
+                                                                   the auto-correlation function takes the form of the Dirac delta
+
+                                                                   function [·] as
+
+                                                                                   1      NZC -1
+                                                                                     NZC
+                                                                   |crr[m]| =                        zr [n]zr[(n  +  m)  mod  NZC]
+
+                                                                                           n=0                                                    (3)
+
+                                                                       = NZC · [m] = NZC, m = 0,
+                                                                                                     0,              m = 0.
+                   III. PRELIMINARIES
+
+   This work builds upon the contention-based random access        These correlation properties allow each preamble to be
+framework defined by 3GPP for SatCom systems [5]. Before           uniquely identified by its root index r and cyclic shift index
+introducing our proposed framework, it is therefore useful         i. To enable multiple users to transmit distinct preambles
+to outline the 3GPP-specified procedure to establish notation      derived from the same root sequence without causing mu-
+and terminology. As illustrated in Fig. 1, the contention-based    tual interference, a cyclic shift size NCS is introduced. This
+random access framework for LEO SatCom systems consists            parameter ensures that the correlation peaks corresponding to
+of the following four steps.                                       different cyclically shifted sequences do not overlap within the
+                                                                   correlation window at the receiver. Accordingly, a preamble
+   (Step 1) Preamble Transmission: Since 4G LTE systems,           sequence is defined as
+a ZC sequence has been used as the random access preamble
+in 3GPP [7], and is expressed as                                   zr,i[n] = zr[(n + iNCS) mod NZC], n = 0, 1, ..., NZC - 1,
+                                                                                                                                           (4)
+zr[n] = exp  -jrn(n + 1)   ,  n = 0, 1, ..., NZC - 1, (1)
+                                                                   where NCS represents the cyclic shift size and determines
+                   NZC                                             the range of i  {0, ..., (NZC/NCS - 1)}. Since there are
+                                                                   NR root indices, the total number of available preambles is
+where r  {1, ..., NR} represents the root index, NR and            NPA = NR · NZC/NCS. Users randomly select one of
+NZC denote the number of roots and the sequence length             these available preambles and transmit it to the SBS when
+respectively. One of the key advantages of the ZC sequence         requesting random access. Given the large RTT uncertainty
+lies in its cyclic cross-correlation property, which ensures that  and Doppler shift inherent in satellite links, users are assumed
+sequences with different root indices exhibit a constant cross-    to apply pre-compensation for TA and frequency offset prior to
+correlation as                                                     transmission [5]. As investigated in 3GPP, such compensation
+                                                                   can be accomplished by GNSS-based synchronization, which
+|crs[m]| =  1      NZC -1  zr[n]zs[(n  +  m)  mod  NZC]  = 1.      can achieve high estimation accuracy [37], [38].
+              NZC    n=0
+
+                                                         (2)
+                                                                                          5
+
+Correlation value            Successful               Preamble collision                  connection request message using the PUSCH resource grant
+                       preamble detection             ZCZ of preamble                     included in the received RAR message. If multiple users have
+                                                                                          transmitted the same preamble and received the same PUSCH
+                     ZCZ of - 1 preamble                                                  resource grant, they will inadvertently transmit their RRC
+                                                                                          connection request messages over the same PUSCH resource.
+                     User 1                   User 2                      Threshold
+                                                                          User 3             (Step 4) Contention Resolution Message Transmission:
+                                 Caused by                                                If the SBS successfully decodes the RRC connection request
+                             multipath channel                                            message, it transmits a CR message containing the user
+                                                                                          identifier (ID). If multiple users simultaneously use the same
+                                                                           Time           PUSCH resource, the SBS would presumably fail to decode
+                                                                                 index    the RRC connection request messages in that resource and
+                                                                                          would thus not respond to those requests. A user that receives
+                     e            e                                                       the CR message within the predefined CR timer sends back
+                                                                                          a positive acknowledgement (ACK). In contrast, users that
+                     max     max  max                                                     do not receive the CR message before the CR timer expires
+                                                                                          reinitiate the random access procedure after some delay based
+                             CS                                                           on a predefined random backoff policy [7].
+
+Fig. 2. Preamble detection process in the SBS. The SBS computes the                          Based on this conventional scheme, a preamble collision that
+correlation values for each predefined ZCZ and then detects the presence                  occurs during Step 1 can only be detected by the user after Step
+of preambles based on a threshold.                                                        4. In other words, the user must wait for a duration equivalent
+                                                                                          to two times the RTT before reattempting access after a
+   (Step 2) Preamble Detection and Random Access Re-                                      failed random access attempt. Furthermore, in the event of
+sponse Transmission: After users transmit their preambles,                                a preamble collision, the same PUSCH resources are assigned
+the SBS receives the composite signal and computes the                                    to multiple users, causing a failure in decoding the Step 3
+correlation values between the received signal and each of the                            message at the BS and leading to significant PUSCH resource
+NR root ZC sequences to identify the transmitted preambles,                               waste. Therefore, if preamble collisions can be detected at a
+as illustrated in Fig. 2. Each root sequence is associated with                           step earlier than Step 4, both the random access delay and
+multiple cyclically shifted versions, and each of these shifted                           PUSCH resource inefficiency can be effectively mitigated. We
+sequences defines a preamble. To enable accurate detection,                               address this in the scheme proposed next.
+a zero correlation zone (ZCZ) is configured for each root
+sequence, within which the autocorrelation of the ZC sequence                                    IV. PROPOSED RANDOM ACCESS FRAMEWORK
+is ideally zero, minimizing mutual interference among differ-
+ent preambles. The correlation value is computed within this                                 Building on the observation that preamble collisions in LEO
+ZCZ region, and if the maximum value exceeds a predefined                                 random access cause excessive delay and PUSCH resource
+threshold, the corresponding preamble is considered to be                                 waste, we propose an enhanced framework specifically de-
+detected. In this work, the ZCZ length is set equal to the cyclic                         signed to address these issues. As illustrated in Fig. 3, the
+shift size NCS, ensuring that each user's preamble falls within                           proposed framework modifies the legacy 4-step procedure
+a distinct non-overlapping zone and can be reliably detected                              by incorporating two key features: (1) a deep learning-based
+by the SBS. In terrestrial networks, the ZCZ length is typically                          preamble collision classifier that enables early detection before
+determined based on the maximum expected timing misalign-                                 Step 4, and (2) an opportunistic transmission scheme for Step
+ment, which includes the maximum TA and the channel delay                                 3 that reduces unnecessary PUSCH usage in the presence of
+spread. However, in LEO SatCom systems, users perform TA                                  collisions. These enhancements aim to significantly reduce
+pre-compensation before transmission, which alters the delay                              random access delay and improve PUSCH utilization effi-
+characteristics. As a result, the design of ZCZ in SatCom must                            ciency in LEO environments.
+consider this pre-compensation behavior, and the required ZCZ
+length is derived accordingly.
+
+                             NCS  (max + 2me ax),                                    (5)  A. Preamble Transmission and Reception
+
+where max represents the maximum channel delay spread, and                                   In the proposed framework, each user randomly selects a
+me ax denotes the worst-case TA pre-compensation error. After                             preamble from the available set and applies TA and Doppler
+detecting the preamble, the SBS transmits a RAR message,                                  shift pre-compensation prior to transmission. The transmit
+which includes the detected preamble index, a TA command                                  signal of the dth user is thus expressed as
+to compensate for TA error, and a PUSCH resource grant for
+Step 3. Since the SBS detects preambles solely based on the                                sd[n] = Pdzrd [(n + idNCS + ^d) mod NZC]e-j2f^dnTs ,
+correlation values of the received signals, it can detect the                                                                                                     (6)
+presence of a preamble but cannot determine how many users
+transmitted that particular preamble.                                                     where Pd is the transmit power, and ^d and f^d denote the
+                                                                                          estimated TA and Doppler shift, respectively. Ts denotes the
+   (Step 3) Uplink Data Transmission: If users successfully                               sampling period. We consider a multi-path channel model
+receive the RAR message from the SBS within the predefined                                consisting of Ld paths for the dth user. The SBS is equipped
+RAR window, they transmit the radio resource control (RRC)                                with Nant antennas, each of which receives the superposition
+                                                                                                                                                                          6
+
+             Ground User                                         Satellite                                                   User 1 User 2 Summed
+
+    Random               (Step 1) Preamble transmission on PRACH                                                             (a) Case 1
+    backoff       (Timing advance and Doppler shift pre-compensation)
+                ¢ (Proposed) Early Preamble Collision Classifier                                               1             Two distinct peaks
+    RAR window
+                             i. Preamble detection and collision detection (w/ DL)                             0.5
+                             ii. Calculated Step 3 transmission probability 
+                             iii. Transmit RAR message includes the probability                                0    0  1  2  3  4                                5  6  7
+
+                     (Step 2) Random access response (RAR) message                          Correlation Value                                        (b) Case 2
+                                             on PDSCH                                                          2
+
+                                                                                                               1                A single dominant peak
+
+No  Did you receive RAR message                                                                                                 (Constructive interference)
+         within RAR window?
+
+                Yes £ (Proposed) Opportunistic Transmission Scheme                                             0    0  1  2  3  4                                5  6  7
+
+No  Determine whether to attempt                                                                                                                     (c) Case 3
+          Step 3 (based on )                                                                                   1
+
+                Yes                                                                                            0.5              No distinct peak
+
+                     (Step 3) Uplink data transmission on PUSCH                                                                 (Destructive interference)
+
+    CR timer         (Step 4) Contention resolution message on PDSCH                                           0    0  1  2  3  4                                5  6  7
+
+    Did you receive CR message                                                                                               Time Index
+    before the CR timer expired?
+No
+
+                Yes                                              time                       Fig. 4. Representative correlation patterns within one ZCZ for a two-user
+    Random access success                                                                   preamble collision: (a) Case 1: two separated peaks (distinct arrivals), (b)
+                                                                                            Case 2: a single dominant peak due to constructive superposition, and (c)
+                                                                                            Case 3: no prominent peak due to destructive superposition.
+
+Fig. 3. Proposed random access framework for LEO SatCom systems. The                        distinguished by the classifier, and it is independent of the
+framework modifies the conventional random access procedure by incorpo-                     total number of active users D in the system. For a given root
+rating an early preamble collision classifier and an opportunistic transmission             index and cyclic shift, the classifier considers a total (K + 1)
+scheme for Step 3.                                                                          classes defined as follows:
+
+of signals reflected through multiple paths. Each path is                                      · Class 0: Idle case, where no user has used the preamble.
+characterized by a channel coefficient hjd, and a propagation                                  · Class 1: Single user case, where exactly one user has
+delay dj, at the jth antenna. Over the short random-access
+time scale, we assume a quasi-static multipath channel. This is                                   used the preamble (no collision).
+                                                                                               · Class k (2  k  K - 1): Exactly k users have used
+because the considered satellite channel is line-of-sight (LoS)-
+                                                                                                  the preamble (collision).
+dominant with negligible scattering near the satellite, and the                                · Class K: K or more users have used the preamble
+
+device is assumed to be stationary during an access attempt [5].                                  (collision).
+
+The signal received at antenna j of the SBS is modeled as                                   The advantage of post-processing the correlation output, as
+                                                                                            opposed to relying solely on traditional threshold-based de-
+             D Ld                                                                           tection, is that it not only identifies whether a collision has
+                                                                                            occurred but also estimates the collision multiplicity up to the
+yj[n] =              hdj ,sd n + dj, + de e-j2fdenTs + w[n],                                designed cut-off K (with class K representing K or more
+                                                                                            users).
+             d=1 =1
+                                                                                               In realizing such a classifier, our goal is to propose a
+                                                                        (7)                 framework that can be easily integrated into legacy random
+                                                                                            access procedures by maintaining the core signaling of the
+where D denotes the total number of active users that attempt                               conventional random access framework. Consequently, the
+random access in the considered random access occasion, de                                  input data for the classifier should be correlation values (8).
+and fde represent the residual errors in timing and frequency                               Since each user independently selects a preamble and colli-
+pre-compensation for user d, and w[n] is additive white                                     sions across different preambles are independent events, we
+Gaussian noise with zero mean and variance w2 . Following                                   use a single ZCZ as the input data. A key point to note, as
+                                                                                            previously mentioned, is that in SatCom scenarios, TA is pre-
+the conventional detection procedure, the SBS computes the                                  compensated by the users during the preamble transmission
+                                                                                            stage. As shown in (5), the ZCZ size in SatCom scenarios
+correlation between the received signal and each ZC sequence.                               is expected to be considerably smaller than in terrestrial net-
+                                                                                            works, primarily because the otherwise large RTT uncertainty
+The correlation at lag m for root index r at antenna j is given                             is mitigated through TA pre-compensation. For example, while
+                                                                                            the typical ZCZ size in terrestrial networks is approximately 24
+by                                                                                          samples [9], it is assumed to be only 8 samples in SatCom sce-
+                                                                                            narios [23], [34]. This limited ZCZ size imposes a fundamental
+    crj [m]  =    1  NZC -1       yj [n]zr [(n  +  m)  mod  NZC]                    .  (8)  constraint on the amount of information that can be extracted
+                NZC    n=0                                                                  for preamble collision detection. More specifically, the smaller
+
+B. Preamble Collision Classifier
+
+   As mentioned, collisions are not detected by traditional
+schemes until Step 3. To detect preamble collisions at an early
+stage, we design a deep learning-based classifier that analyzes
+the correlation values in (8). Here, K is a design parameter
+that specifies the maximum collision multiplicity explicitly
+                                                                                                                                                                                                                   7
+
+  Input Layers: ×                     ×                                               ×                                                                                           Output
+
+Antenna 1          1D Convolutional Layer                                                                                                                                         Class 0       No detection
+                           ReLU Activation                                                                                                                                        Class 1       1 user detected
+Antenna 2                                                                                                                                                                         Class 2       2 users detected
+                                                                                 1D Convolutional Layer
+                                                                                          ReLU Activation                                                                                          
+
+                                                                                                                                                    Fully Connected Layer         Class         K+ users detected
+                                                                                                                                                             Softmax
+
+           
+
+                   # of channels: 16     # of channels: 32                                  Input size: 64
+                   Kernel size: 3        Kernel size: 3                                     Output size: + 1
+                   Stride: 1             Stride: 1
+Antenna            Padding: 1            Padding: 1
+
+Fig. 5. Structure of the proposed early preamble collision classifier. The classifier uses antenna-wise correlation values as input and consists of two 1D
+convolutional layers followed by a fully connected layer.
+
+number of samples reduces the temporal resolution available          ambiguous structures within a short ZCZ, where the infor-
+to distinguish multiple colliding signals. As a result, subtle
+differences in time alignment and energy distribution between        mative cues appear around a few adjacent lags rather than
+users become harder to capture, making it more challenging
+to detect collisions based solely on the correlation values. In      across the entire correlation sequence. Therefore, we employ
+particular, even for the same collision multiplicity, the resulting
+correlation sequence within a short ZCZ can vary significantly       1D convolutional layers to explicitly learn such local patterns
+depending on the relative arrival timing and phase among
+users, which may create ambiguous observations for simple            and their spatial consistency across antennas, while providing
+rule-based detection.
+                                                                     robustness to small timing shifts within the ZCZ. In other
+   To make this point intuitive, Fig. 4 illustrates representative
+correlation patterns within one ZCZ for a two-user colli-            words, convolution is adopted not only for efficiency but also
+sion, where two users select the same preamble. In Case 1
+(Fig. 4(a)), two sufficiently separated arrivals produce two dis-    because it is well matched to the underlying signal structure
+tinguishable peaks, making the collision visually apparent. In
+Case 2 (Fig. 4(b)), closely aligned arrivals can constructively      of collision-induced correlation features. At the same time,
+combine into a single dominant peak, which may resemble a
+collision-free single-user case. In Case 3 (Fig. 4(c)), destruc-     compared to fully connected layers, 1D convolutional layers
+tive superposition suppresses prominent peaks, which can even
+resemble an idle case. These examples show that collision-           require significantly fewer parameters due to weight sharing,
+induced signatures are not necessarily captured by a single
+peak-based statistic and that robust collision inference requires    which helps keep the model lightweight despite the increased
+exploiting local structures in the ZCZ.
+                                                                     input size. This is particularly attractive for practical NTN
+   This challenge motivates leveraging additional observations
+beyond a single correlation trace. Fortunately, LEO satellites       deployments where computational and memory resources may
+employ multi-antenna systems [11], which provide multiple
+observations of the transmitted preambles. In terrestrial net-       be limited.
+works, the correlation values obtained from multiple antennas
+or ports are typically averaged for threshold-based detec-           The structure of our proposed early preamble collision
+tion [7]. Similarly, existing deep learning-based schemes have
+also used the averaged correlation values as input data [9],         classifier is shown in Fig. 5. The input data consists of the
+[35]. Averaging enables receive antenna diversity but at the
+cost of reduced input dimensionality, which hinders full uti-        correlation values of the preamble's ZCZ for each antenna,
+lization of the original signal information. To fully exploit the
+information contained within preamble signals received across        denoted as cjr[m], where m  [(i - 1)NCS, iNCS - 1]. The
+multiple antennas, we use the correlation values from each an-       input layer is of size Nant × NCS, where NCS is set to 8
+tenna as input data for the classifier. This preserves the spatial
+and temporal diversity in the received signals, providing the        according to the condition in (5) [23]. The kernel size of the
+classifier with richer information for more accurate collision
+detection.                                                           1D convolutional layer is set to 3, which reflects the typical
+
+   However, using antenna-wise correlation values increases          delay spread of the SatCom channel as reported in [5] and
+the input dimensionality, which requires an appropriate feature
+extractor to avoid overfitting and to robustly capture collision-    captures local dependencies across adjacent samples. After
+induced signatures. More importantly, the discussion in Fig. 4
+indicates that collisions manifest as localized and sometimes        the input layer, the data passes through a 1D convolutional
+
+                                                                     layer with a kernel size of 3, stride 1, padding 1, and
+
+                                                                     16 channels. The rectified linear unit (ReLU), defined as
+
+                                                                     ReLU(x) = max(0, x), is used as the activation function.
+
+                                                                     The next layer is another 1D convolutional layer with the same
+
+                                                                     kernel size, stride, and padding, but with 32 channels, designed
+
+                                                                     to extract high-level features of the preamble collision pattern.
+
+                                                                     After passing through the activation function, the data is fed
+
+                                                                     into a fully connected layer for classification. The output size
+
+                                                                     of the fully connected layer is K + 1, corresponding to the
+
+                                                                     number of classes. The final output values zk are processed
+                                                                                                                                                                                  ezk
+                                                                     using the softmax function (zk)                                                                                        to compute the
+                                                                                                                                                                                  K    ezi
+                                                                                                                                                                                  i=0
+                                                                     probability of each class. Cross-entropy is used for the loss
+
+                                                                     function, i.e.,
+
+                                                                                  L      =  -1    NB    K                                                                  sn(k)  log  s^n(k),  (9)
+                                                                                              NB  n=1  k=0
+
+                                                                     where NB represents the batch size and s(k) and s^(k) denote
+                                                                     the one-hot encoded ground truth label and the output of the
+                                                                     softmax function, (zk), respectively. The network is trained
+                                                                     using the Adam optimizer to minimize this loss.
+                                                                                                            8
+
+   In summary, the proposed classifier allows the SBS to detect   related to the number of collisions. This design ensures that,
+and characterize preamble collisions immediately after Step       as the collision level increases, the chance of attempting Step
+1, rather than waiting until later stages. This early informa-    3 decreases, striking a balance between access opportunities
+tion opens the door to more efficient response strategies in      and collision risk. Each user then decides whether to attempt
+subsequent steps. In what follows, we introduce a method          Step 3 opportunistically according to the probability provided
+that leverages this information to reduce unnecessary resource    in the RAR message. The detailed operation of the scheme is
+usage and improve access success probability.                     as follows:
+
+C. Opportunistic Transmission Scheme for Step 3                     1) The SBS identifies the number of collided users in each
+                                                                        ZCZ using the collision classifier.
+   Given the ability to detect collisions immediately after Step
+1, it becomes possible to optimize how Step 3 transmissions         2) Based on the estimated number of collided users, the SBS
+are handled in the presence of such collisions. This sub-               computes the Step 3 transmission probability for each
+section introduces an opportunistic transmission scheme that            preamble index.
+aims to improve access success probability while preserving
+PUSCH resource efficiency. While the early preamble collision       3) The SBS transmits the RAR message to the users, includ-
+classifier enables the SBS to detect preamble collisions at             ing the preamble index, PUSCH grant, and a temporal
+an early stage, it can only identify whether a collision has            identifier linking the RAR to the original preamble. In
+occurred--not which specific users used the collided preamble.          addition, as a lightweight 3GPP standard extension, the
+A straightforward baseline approach is for the SBS to withhold          SBS delivers an 8-bit quantized index representing the
+the RAR message for preambles identified as collided. In this           Step 3 transmission probability (e.g., via an explicit RAR
+case, users that do not receive the RAR message--those that             extension field or a dedicated MAC control element
+used the preamble identified as collided by the SBS--follow             scheduled together with the RAR), without altering the
+a random backoff policy and reinitiate the random access                baseline random access timeline [39], [40].
+procedure from Step 1. This approach can reduce wasted use
+of PUSCH resources and shorten random access delay by               4) Each user refers to the RAR corresponding to its trans-
+eliminating unnecessary Step 3 transmissions that would oth-            mitted preamble index and decides whether to attempt
+erwise result in collisions. However, when all users involved           Step 3 or perform random backoff based on the received
+in a detected collision are forced to back off, their current           probability index.
+preamble transmissions are wasted, yielding no immediate
+access success. Consequently, the improvement in random              Based on the estimated number of collided users, we now
+access success probability remains limited. This motivates the    derive the Step 3 transmission probability that maximizes
+need for a more efficient scheme that can recover access          the random access success probability. Notably, the following
+opportunities while maintaining resource efficiency.              derivation does not rely on any specific traffic arrival model.
+                                                                  It is conditioned on the estimated collision multiplicity k^
+   To address this limitation, we propose a proper Step 3 trans-  for a given random access occasion, and thus remains valid
+mission scheme that leverages not only the preamble collision     regardless of how the set of active users is generated. This
+information but also the estimated number of collided users       probability allows the system to balance the trade-off between
+provided by the early preamble collision classifier. The core     minimizing unnecessary Step 3 transmissions and maintaining
+idea of the proposed scheme is to allow collided users to still   a high success probability, even in the presence of collisions.
+have an opportunity to attempt Step 3 rather than forcing all of  Let the number of collided users in the ZCZ of a given
+them to back off. To reflect the varying severity of collisions   preamble be classified as k^, and let the Step 3 transmission
+across different preambles, the SBS calculates a transmission     probability for this preamble be denoted as P . For notational
+probability for each preamble index based on the estimated        simplicity, we omit the preamble index in the following
+number of collided users, where the probability is inversely      derivation, without loss of generality. We define successful
+                                                                  random access as the event in which exactly one of the users
+                                                                  who selected the same preamble attempts Step 3, while all
+                                                                  others perform backoff. Based on this definition, the random
+
+                   K                      K                            P3  K
+                                                                    +
+P Success | k^  P     k · P k | k^  - P2       k(k - 1) · P k | k^              k(k - 1)(k - 2) · P k | k^
+                                                                        2
+                   k=0                    k=0                              k=0                              (12)
+
+                = P · E k | k^ - P 2 · E k(k - 1) | k^ + P 3 · E k(k - 1)(k - 2) | k^
+                                                                     2
+
+                                                                            2
+
+     2E k(k - 1) | k^ ± 4E k(k - 1) | k^ - 6E k(k - 1)(k - 2) | k^ · E k | k^
+
+P =                     3E k(k - 1)(k - 2) | k^                                        , 0  P  1            (14)
+                                                                                                                         9
+
+access success probability for the preamble is given as             Algorithm 1 Proposed Opportunistic Transmission Scheme
+
+                                        K                           Require: Classifier outputs k^, confusion matrix Q(k^, k), esti-
+                                                                    mated number of active users D^
+    P Success | k^ = k · P (1 - P )k-1 · P k | k^ , (10)
+                                                                         SBS Procedure:
+                                       k=0                           1: for each preamble index do
+                                                                     2: Compute P[k | k^] using (16) and (17)
+where k represents the actual number of collided users. The          3: Derive P by solving (14)
+term (1 - P )k-1 can be approximated using the Taylor series         4: Include P in the RAR message with the preamble
+expansion as
+                                                                         index, PUSCH grant, and temporary identifier
+    (1 - P )k-1  1 - (k - 1)P + (k - 1)(k - 2) P 2. (11)             5: end for
+                                                    2                6: Broadcast RAR messages to users
+
+Substituting this approximation (11) into (10) yields the ex-            User Procedure:
+pression shown in (12). Taking the derivative of (12) with
+respect to P and setting it to zero yields the value of P that      7: for each user that transmitted a preamble do
+maximizes the success probability:
+
+d P[Success | k^] = E k | k^ - 2P · E k(k - 1) | k^                 8: if RAR message is received for its preamble then
+
+dP                + 3 P 2 · E k(k - 1)(k - 2) | k^ . (13)           9:   Attempt Step 3 transmission with probability P
+
+                    2                                               10: else
+
+                                                                    11:  Backoff and retry
+
+The final expression for the Step 3 transmission probability        12: end if
+
+that maximizes the random access success probability is             13: end for
+
+provided in (14).
+   To compute the optimal Step 3 transmission probability P 
+
+in (14), it is necessary to know the conditional probability        approximation of P [k | k^] in (16), and (A3) substitution of D^
+P[k|k^]. Since the actual number of collided users k is un-         into the binomial prior P [k] in (17). The first approximation
+                                                                    contributes negligible error within the operating regime, as the
+known, we approximate this term as:                                 leading truncated term shifts P  by less than 10-3. The second
+                                                                    approximation benefits from the ratio structure of P  in (14),
+    P k | k^ =            P k^ | k · P[k]                           which makes the optimal probability first-order insensitive
+                                                                    to multiplicative perturbations of the confusion matrix. The
+                       K       k^                        (15)       third approximation is not a simplifying modeling choice but
+                       k=0                                          follows directly from the 3GPP-compliant uniform preamble
+                            P      |k  · P[k]                       selection [41], with |D^ - D| remaining within a few users
+                                                                    as supported by the classifier's reliable preamble presence
+                          Q k^, k · P[k]                            detection (Fig. 6) and consistent per-class accuracy (Table III).
+                                                                    The combined effect of these approximations is quantified
+                       K       k^, k           .         (16)       empirically in Sec. V.B through a comparison with a genie-
+                       k=0                                          aided variant of the proposed framework.
+                            Q          · P[k]
+                                                                                         V. SIMULATION RESULTS
+Here, Q(k^, k) denotes the confusion matrix which represents
+the proportion of samples with true label class k that are             This section evaluates the performance of the proposed deep
+classified as class k^ during the training of the collision         learning-based random access framework for LEO satellite
+classifier. The remaining probability term P[k] can either be       communication systems. The tapped delay line (TDL) channel
+inferred from long-term statistics or more simply by assuming       models recommended for NTN link-level evaluation in TR
+that all D users randomly select a preamble from the NPA            38.811 [5] and TR 38.821 [6] are employed throughout
+available options and is expressed as follows:                      this section, consistent with the 3GPP-standardized evalua-
+                                                                    tion methodology. As mandated by 3GPP NR/NTN [5], [6],
+    P[k]  D^           1    k          1   D^ -k         (17)       [41], the user performs GNSS-based TA and Doppler pre-
+               k                                                    compensation prior to PRACH transmission, with residual
+                    NPA        1-     NPA       .                   offsets bounded by the user accuracy requirements in TS
+                                                                    38.133 [37]. Other random access-related parameters are sum-
+Here, D^ represents the estimated total number of active users,     marized in Table II.
+which is computed by summing the class indices output by
+                                                                       The dataset for training the collision classifier consists
+the collision classifier across all preambles' ZCZs. Strictly       of ZCZ correlation values generated under the TDL-B and
+                                                                    TDL-D channel models, which are representative of non-
+speaking, the derived Step 3 transmission probability should        LoS (NLoS) and LoS-dominant propagation environments,
+                                                                    respectively. We emphasize that the classifier is designed
+be referred to as "quasi-optimal" because it depends on the         to learn collision-induced local patterns in the correlation
+classifier's accuracy Q(k^, k) and the inherent uncertainty in
+estimating the total number of active users D^ , rather than exact
+values. By substituting (17) into (16), we can obtain P[k|k^]
+which allows us to compute the expected values required for
+the quasi-optimal P in (14). The overall operation of the
+proposed opportunistic transmission scheme is summarized in
+
+Algorithm 1.
+   The derivation of the Step 3 transmission probability P 
+
+involves three approximations: (A1) second-order Taylor trun-
+cation of (1 - P )k-1 in (11), (A2) confusion-matrix-based
+                                                                                                                                                                                10
+
+                                  TABLE II
+SIMULATION PARAMETER SETTINGS [6], [10], [23], [42], [43].
+
+                                                                                              Misdetection probability
+
+Simulation Parameters                           Value                                         3GPP requirement [7] 10-1
+
+Length of ZC sequence                           839                 10-2                      False alarm probability
+Bandwidth of PRACH [MHz]                        1.08
+Size of cyclic shift                            8                                             3GPP requirement [7]
+Number of ZC root sequences                     1                   Misdetection Probability
+Total number of available preambles             104                                                                                                False Alarm Probability10-2
+Total number of RACH slots                      2000
+Maximum RTT pre-compensation error [samples]    2                   10-3                                                                                                  10-3
+RACH slot period [ms]                           10                                                                                                                        10-4
+Maximum number of random access retrial         10
+Transmission time for Step 1 [ms]               1                   10-4                                                  10-5
+Preamble detection processing time [ms]         2
+Transmission time for Step 2 [ms]               1                   -20   -18  -16  -14  -12  -10  -8                     10-6
+Processing time between Step 2 and Step 3 [ms]  3                                                                       -6
+Transmission time for Step 3 [ms]               3
+Transmission time for Step 4 [ms]               1                                   SNR [dB]
+Length of RAR window [ms]                       10
+Length of CR window [ms]                        64                  Fig. 6. Misdetection and false alarm probabilities of the proposed preamble
+Length of backoff window [ms]                   20                  collision classifier, with models trained individually at each SNR.
+
+sequence, particularly within the ZCZ, rather than to emulate             distinct Step 3 grants. However, it assumes that TA is
+every practical propagation impairment exhaustively. Data are             stationary and known to users in advance, making it
+collected for all classes from 0 to K, corresponding to K + 1             unsuitable for LEO SatCom systems. Therefore, for a
+collision scenarios. To accurately simulate the reception of              fair and implementable comparison under LEO SatCom
+preambles under these scenarios, appropriate transmit power               conditions, we adopt an LEO-compatible adaptation of
+and noise configurations are required. In 3GPP-compliant                  DRA as follows: when a collided preamble is detected,
+systems, preamble transmission is subject to open-loop power              all users who transmitted that preamble are forced to back
+control, where the transmit power is adjusted to achieve a                off (i.e., no Step 3 grant is allocated for that preamble in
+target received power at the base station and thereby satisfy             the current attempt).
+the detection criteria [41]. To capture this in our simulation, we     · Deep learning-based double contention random access
+configure the transmit power and noise level based on 3GPP                (DCRA) [35]: This scheme extends DRA [9] by adopting
+detection requirements. Specifically, we consider the 3GPP-               a wider and deeper neural network for improved collision
+specified targets of misdetection probability below 1% and                classification. When two users are classified as collided,
+false alarm probability below 0.1% as a reference operating               the system allocates two Step 3 grants, and each user
+requirement [7]. Fig. 6 evaluates the misdetection and false              randomly selects one of them for transmission.
+alarm probabilities of the proposed classifier under various           · Single-root preamble sequence-based early collision
+signal-to-noise ratio (SNR) conditions, where the misdetection            detection (S-eCD) [33]: This scheme uses a single root
+probability is defined as the likelihood of classifying a non-            ZC sequence and assigns a distinct prime number and
+zero class as class 0, and the false alarm probability is the             cyclic shift to each user such that their product maps to
+likelihood of classifying a true class 0 as another class. To             a unique correlation index. Since the BS can distinguish
+satisfy 3GPP requirements [7], the minimum required SNR                   different prime numbers regardless of cyclic shift, users
+is approximately -13 dB. Accordingly, 100,000 data samples                selecting the same prime number are identified as col-
+were collected at each SNRs of {-13, -12, -11, -10} dB,                   lided. The scheme detects collisions at an early stage and
+of which 70% were used for training and 30% for testing. Ad-              forces collided users to back off.
+ditionally, as in [9], to demonstrate the generalization perfor-       · Multiple threshold-based early collision detection
+mance of the trained classifier, 30,000 samples were collected            (MT-eCD) [34]: This scheme is designed for LoS-
+at each SNRs of {-9, -8, -7, -6, -5, -4} dB as a separate                 dominant LEO SatCom channels and detects early pream-
+test set. Hyperparameters including learning rate, batch size,            ble collisions by exploiting the constructive and de-
+number of epochs, and Adam optimizer settings were tuned                  structive interference behavior using multiple decision
+using K-fold cross-validation. The final values were set to a             thresholds. The scheme detects collisions at an early stage
+learning rate of 10-3, a batch size of 32, 20 epochs, and Adam            and forces collided users to back off.
+optimizer parameters (1, 2) = (0.9, 0.999), respectively.
+                                                                    A. Preamble Collision Classification Performance
+   The following schemes were considered for comparison:
+                                                                       This subsection demonstrates the effectiveness of the pro-
+   · Deep learning-based random access framework for                posed early preamble collision classifier in LEO satellite
+      terrestrial networks (DRA) [9]: This scheme employs a         communication systems. For comparison, preamble collision
+      deep learning-based classifier for collision detection and    classifiers originally developed for terrestrial networks, namely
+      uses a separate neural network to extract TA informa-         the DRA [9] and the DCRA [35], are adopted as benchmarks.
+      tion, which is then used to identify users and allocate
+                                                                                                                                                          11
+
+                                                                                       TABLE III
+CLASSIFICATION ACCURACY OF PREAMBLE COLLISION CLASSIFIERS WITH VARYING CHANNEL MODELS, NUMBERS OF ANTENNAS, AND MAXIMUM
+
+                                                                             NUMBER OF CLASSES (K ).
+
+           K =3          1 antenna    K =6     K=3          2 antennas    K =6     K=3          4 antennas    K =6     K=3          8 antennas    K=6
+                    K=4 K=5                             K=4 K=5                             K=4 K=5                             K=4 K=5
+            0.774                      0.536    0.825                      0.591    0.862                      0.644    0.898                      0.714
+(a) TDL-B   0.775   0.678    0.598     0.544    0.833   0.727    0.649     0.599    0.865   0.777    0.700     0.648    0.902   0.830    0.767     0.716
+DRA [9]     0.773   0.680    0.604     0.541    0.830   0.740    0.659     0.597    0.863   0.784    0.703     0.642    0.900   0.837    0.771     0.710
+DCRA [35]           0.675    0.591                      0.739    0.658                      0.778    0.700                      0.831    0.764
+Proposed    0.849                      0.608    0.883                      0.660    0.917                      0.732    0.951                      0.813
+            0.850   0.754    0.669     0.609    0.884   0.807    0.731     0.668    0.915   0.854    0.791     0.732    0.952   0.912    0.864     0.822
+(b) TDL-D   0.845   0.755    0.678     0.603    0.897   0.804    0.736     0.681    0.941   0.855    0.793     0.759    0.972   0.915    0.865     0.835
+DRA [9]             0.751    0.667                      0.824    0.746                      0.884    0.820                      0.930    0.882
+DCRA [35]
+Proposed
+
+                                                                               TABLE IV
+NUMBER OF PARAMETERS FOR EACH CLASSIFIER WITH VARYING NUMBERS OF ANTENNAS AND MAXIMUM NUMBER OF CLASSES (K ).
+
+                    1 antenna                           2 antennas                          4 antennas                          8 antennas
+
+           K=3      K=4 K=5           K=6      K =3     K=4 K=5           K =6     K =3     K=4 K=5           K=6      K=3      K=4 K=5           K =6
+
+DRA [9]    1.766e5  1.769e5  1.771e5  1.774e5  1.766e5  1.769e5  1.771e5  1.774e5  1.766e5  1.769e5  1.771e5  1.774e5  1.766e5  1.769e5  1.771e5  1.774e5
+DCRA [35]  6.270e6  6.271e6  6.272e6  6.273e6  6.270e6  6.271e6  6.272e6  6.273e6  6.270e6  6.271e6  6.272e6  6.273e6  6.270e6  6.271e6  6.272e6  6.273e6
+Proposed    1,844    1,909    1,974    2,039    1,940    2,005    2,070    2,135    2,036    2,101    2,166    2,231    2,228    2,293    2,358    2,423
+
+   Table III presents the classification accuracy of the preamble         eters. For instance, with 8 antennas and K = 6, the proposed
+collision classifiers under different channel models, antenna             classifier requires about 73 times fewer parameters than DRA
+configurations, and values of K. Recall that the classifier has           and nearly 2,600 times fewer parameters than DCRA. This
+(K + 1) output classes, corresponding to 0 through K users                reduction directly translates into lower on-board compute
+selecting the same preamble. Under the TDL-B channel model,               and memory requirements, which is particularly beneficial
+all three classifiers exhibit similar classification accuracy.            for practical NTN deployments subject to stringent payload
+Since TDL-B is a NLoS channel model, it tends to yield                    constraints [2]. In summary, the proposed classifier provides a
+less pronounced local structures in the ZCZ region, which can             favorable accuracy­complexity trade-off, achieving compara-
+reduce the benefit of the 1D convolutional layer. As reflected in         ble or even superior classification accuracy with substantially
+Table III, in such cases, deeper and wider neural networks, as            reduced model size and implementation cost.
+used in DRA and DCRA, may slightly improve classification
+by compensating for the weak structural features. In contrast,               Beyond parameter count, we further quantify the actual on-
+under the TDL-D channel model, which is dominated by LoS                  board computational feasibility of the proposed framework.
+propagation, a different trend emerges, which is representative           Counting multiplications and additions, the inference cost of
+of LoS-dominant settings often considered in LEO SatCom                   the proposed classifier is approximately 10.4 kFLOPs per
+scenarios. The proposed classifier consistently outperforms the           preamble. For NPA = 104 available preambles, the total
+others in terms of classification accuracy. This improvement              inference cost per random access occasion is approximately
+can be attributed to the more prominent peak observed in the              1.08 MFLOPs. This computation must complete within the
+ZCZ region under LoS-dominant channels, which makes the                   RAR window of 10 ms, translating to a required processing
+correlation value patterns around the peak more distinguish-              throughput of approximately 108 MFLOPS. As a represen-
+able when a collision occurs. Moreover, the performance gap               tative on-board reference, a radiation-hardened FPGA such
+widens as the number of antennas increases. This is because               as the Xilinx Kintex UltraScale XQRKU060 [44] provides
+DRA and DCRA average correlation values across antennas to                processing throughput on the order of TFLOPS for fixed-point
+enhance stability, whereas the proposed classifier uses all per-          inference, leaving an operational margin of approximately
+antenna correlation values, allowing it to exploit richer spatial         four orders of magnitude relative to the proposed framework's
+information.                                                              requirement. The subsequent P  computation in (14) involves
+                                                                          only a per-preamble quadratic-equation evaluation, whose cost
+   Table IV presents the number of parameters required by                 is negligible compared with the classifier inference. The corre-
+each preamble collision classifier for different numbers of               sponding computational requirements of DRA and DCRA are
+antennas and class settings (K). For DRA and DCRA, the                    summarized in Table V for comparison. Therefore, the per-
+number of parameters remains constant regardless of the                   preamble computational overhead of the proposed framework
+number of antennas, as the input data size does not vary with             is comfortably accommodated within the standard RAR timing
+antenna count. On the other hand, the proposed classifier's               budget on representative on-board hardware.
+parameter count increases with the number of antennas due to
+the expanded input size. However, while DRA and DCRA use                  B. Random Access Performance
+only fully connected layers with dense inter-node connections,
+the proposed classifier primarily employs convolutional filters.             This subsection presents the end-to-end random access
+This design drastically reduces the number of required param-             performance of the proposed framework. To ensure a fair
+                                                                          comparison across different schemes, all approaches were
+                                                                                                                                                12
+
+                                      TABLE V                                                        550
+COMPUTATIONAL COMPLEXITY COMPARISON FOR EACH CLASSIFIER.
+
+                                                                   Average Random Access Delay [ms]  500  3GPP Conventional
+
+                            DRA [9]    DCRA [35]      Proposed                                            Practical S-eCD [33]
+
+Per-preamble cost        355 kFLOPs  12.5 MFLOPs  10.4 kFLOPs                                        450  Ideal S-eCD [33]
+Per-occasion cost        37 MFLOPs    1.3 GFLOPs  1.08 MFLOPs
+Required throughput      3.7 GFLOPS  130 GFLOPS   108 MFLOPS                                         400  DRA [9]
+Operational margin [44]
+                             270×          8×        10,000×                                              MT-eCD [34]
+
+                                                                                                     350  Proposed
+
+                                                                                                          DCRA [35]
+
+                                                                                                     300
+
+                                                                                                     250
+
+configured with the same number of available preambles,                                              200
+thereby maintaining an equal number of scheduled PUSCH
+resources. However, in the case of DCRA, additional PUSCH                                            150
+resources are allocated to certain users when a preamble
+collision is detected. More specifically, if two users select the                                    100
+same preamble, DCRA assigns two separate PUSCH resources
+to that preamble to resolve the collision. As a result, even with                                    50
+the same number of available preambles, the total number of
+scheduled PUSCH resources in DCRA differs, since multiple                                            0
+grants may be allocated for a single preamble. For the S-eCD                                                  10 15 20 25 30 35 40 45 50
+scheme, both the ideal case with zero RTT uncertainty and the
+practical case with the same RTT uncertainty setting as other                                                           Number of Active Users
+methods were evaluated. Unless otherwise specified, all results
+are obtained under the configuration of 8 receive antennas,        Fig. 7. Average random access delay versus the number of active users.
+the TDL-D channel model and an SNR of 10 dB. Following             Random access delay is defined as the time elapsed from a user's initial
+the specification in [35], the DCRA scheme uses K = 3,             access attempt to a successful random access. The total number of available
+whereas the proposed framework adopts K = 6. The number            preambles is 104.
+of available preambles is given by NPA = NRNZC/NCS
+under the NTN configuration [8], [23], [34]. The number of            Fig. 8 shows the average number of successful random
+active users is set to a maximum of 52 by accounting for the       access users. In general, when the number of successful users
+LEO SatCom beam footprint size and the users' access-attempt       increases nearly linearly with the number of active users, it im-
+interval, which together determine the plausible number of         plies that most users successfully complete the random access
+simultaneous access attempts within a beam [4], [6], [45].         procedure, which is desirable. From this perspective, schemes
+                                                                   that rely on immediate backoff upon collision detection, with-
+   Fig. 7 illustrates the average random access delay for each     out additional contention-resolution actions, tend to suffer a
+scheme, defined as the time elapsed until a user success-          sharp performance degradation as the user density increases.
+fully completes the random access procedure or exhausts the        In contrast, both the proposed framework and DCRA sus-
+maximum number of retrials. This delay is averaged over            tain higher success performance by leveraging early collision
+mixed realizations that naturally include both collision-free      awareness and resolving contention beyond simple backoff
+and collision-present cases under the considered traffic and       decisions. In particular, the proposed framework tends to
+channel settings. The practical S-eCD yields the longest delay     achieve a higher number of successful accesses in the low-to-
+due to limited early collision detection capability, whereas the   high density regime, because its collision-aware opportunistic
+ideal S-eCD achieves shorter delay through earlier backoff         Step 3 transmission provides additional access opportunities
+decisions.                                                         for collided users without deterministically discarding all of
+                                                                   them.
+   DRA and MT-eCD exhibit short delays at low user densities
+because they enforce immediate backoff upon collision detec-          The superiority of the proposed framework over DCRA is
+tion, but the delay increases rapidly under heavy contention       also evident in terms of PUSCH utilization. PUSCH utilization
+due to repeated deferrals. Compared with DCRA, the proposed        is defined as the ratio of the Step 3 PUSCH resources that
+framework achieves lower delay in low-density regimes by           are successfully used without collision to the total PUSCH
+allowing collided users to probabilistically defer Step 3 after    resources allocated for Step 3. As shown in Fig. 9, the
+Step 2, while DCRA mandates Step 3 transmissions with              proposed framework achieves higher PUSCH utilization than
+additional PUSCH grants. As the user density increases,            DCRA. This is because, in DCRA, when two users select
+higher-order collisions become more frequent, and the two          the same preamble in Step 1, the base station allocates
+schemes exhibit different trade-offs between preserving ac-        additional Step 3 PUSCH resources, resulting in two PUSCH
+cess opportunities for collided users and suppressing repeated     resources being associated with a single preamble and enabling
+transmissions, which can lead to a crossing point in delay         contention-based transmissions in Step 3. If the two users
+performance. For reference, we also include the conventional       transmit on different PUSCH resources, no PUSCH resource
+3GPP random access baseline, confirming that early preamble        is wasted; however, if both users attempt Step 3 on the same
+collision detection does not incur a delay penalty in the          PUSCH resource, then the two allocated PUSCH resources are
+considered operating range.                                        effectively wasted due to the collision. In contrast, the pro-
+                                                                   posed framework does not allocate additional Step 3 PUSCH
+                                                                   resources. Instead, users attempt Step 3 opportunistically
+                                                                   based on the collision information, which reduces unnecessary
+                                                                   PUSCH allocations and yields higher resource efficiency.
+                                                                                                                                                                                           13
+
+                                    60                                                                                                (a) Average Number of Successful Users
+
+                                                                                                                   60
+
+                                         Proposed                                        Number of Users           50   K=7
+
+Average Number of Successful Users                                                                                      K=6
+
+                                         DCRA [35]                                                                 40   K=5
+
+                                    50   Ideal S-eCD [33]                                                               K=4
+
+                                                                                                                   30   K=3
+
+                                         DRA [9]                                                                   20
+
+                                         MT-eCD [34]                                                               10
+
+                                    40   Practical S-eCD [33]
+
+                                                                                                                   0
+
+                                                                                                                        10        20  30  40  50                  60               70  80
+
+                                                                                                                                          Number of Active Users
+
+                                    30                                                   Random Access Delay [ms]                     (b) Average Random Access Delay
+
+                                                                                                                   200
+
+                                                                                                                        K=3
+
+                                                                                                                        K=4
+
+                                                                                                                   150  K=5
+
+                                    20                                                                                  K=6
+
+                                                                                                                             K=7
+
+                                                                                                                   100
+
+                                    10                                                                             50
+
+                                                                                                                        10        20  30  40  50                  60               70  80
+
+                                                                                                                                          Number of Active Users
+
+             0                                                                           Fig. 10. Performance of the proposed framework versus the number of active
+                       10 15 20 25 30 35 40 45 50                                        users under different K: (a) average number of successful users and (b)
+                                                                                         average random access delay.
+                             Number of Active Users
+                                                                                                                                           (a) Average Number of Successful Users
+Fig. 8. Average number of successful random access users versus the number
+of active users. Successful random access is defined as the case where the                                         60
+BS decodes Step 3 signals without collision. The total number of available
+preambles is 104.                                                                        Number of Users           50   SNR = -13 dB
+
+             1                                                                                                          SNR = -15 dB
+
+                                                                              Proposed                             40   SNR = -17 dB
+                                                                              DCRA [35]
+                                                                                                                   30
+         0.95
+                                                                                                                   20
+
+                                                                                                                   10
+
+                                                                                                                   0
+
+PUSCH Utilization                                                                                                       10        20  30  40  50                  60               70  80
+
+                                    0.9                                                                                                   Number of Active Users
+
+                                                                                         Random Access Delay [ms]                              (b) Average Random Access Delay
+
+                                                                                                                   200
+
+                                                                                                                        SNR = -17 dB
+
+                   0.85                                                                                            150  SNR = -15 dB
+
+                                                                                                                        SNR = -13 dB
+
+                                                                                                                   100
+
+                    0.8                                                                                            50
+
+                                 8% improvement                                                                    0
+
+                   0.75                                                                                                 10        20  30  40  50                  60               70  80
+
+                                                                                                                                          Number of Active Users
+
+                                    0.7                                                  Fig. 11. Performance of the proposed framework versus the number of active
+                                                10 15 20 25 30 35 40 45 50               users under different SNRs: (a) average number of successful users and (b)
+                                                                                         average random access delay.
+                                                         Number of Active Users
+
+Fig. 9. PUSCH utilization versus the number of active users. PUSCH                       since collision signatures in the correlation sequence become
+utilization is defined as the fraction of Step 3 PUSCH resources successfully            less distinguishable and misclassification becomes more likely.
+used without collision. The total number of available preambles is 104.                  Nevertheless, the proposed framework shows consistent trends
+                                                                                         with respect to user density across SNRs, indicating robust
+   Fig. 10 investigates the impact of K (the maximum collision                           behavior rather than unstable performance. These results also
+multiplicity considered by the classifier) on the proposed                               serve as a proxy for large-scale attenuation effects (e.g., rain
+framework. As K increases, the framework can differentiate                               attenuation and shadowing), which mainly shift the effective
+a wider range of collision multiplicities and apply more fine-                           operating SNR without fundamentally changing the collision-
+grained Step 3 attempt control, which increases the number of                            induced correlation structures.
+successful users and delays the onset of performance saturation
+as the user density grows. Consistently, the random access                                  Fig. 12 examines the sensitivity of the proposed framework
+delay is reduced over a wider user-density range because more                            to residual Doppler (residual frequency offset) after Doppler
+collision cases can be handled without immediately forcing re-                           compensation/tracking. According to 3GPP assumptions for
+transmission/backoff. However, the performance gain from in-                             frequency error after compensation, the residual offset can
+creasing K eventually saturates, indicating diminishing returns                          be on the order of 10 Hz [38] however, to stress-test the
+beyond a certain K while the classification task becomes more                            proposed classifier and avoid optimistic conclusions, we ad-
+complex due to the increased number of collision scenarios.                              ditionally consider a much harsher case with a maximum
+                                                                                         residual Doppler of 250 Hz. Increased residual Doppler intro-
+   Fig. 11 evaluates the proposed framework in a lower-SNR                               duces phase rotation across the correlation processing interval,
+regime, SNR  [-17, -15, -13] dB, to assess robustness. As                                which blurs the collision-dependent structures and reduces
+the SNR decreases, the average number of successful users                                the reliability of collision-multiplicity estimation. As a result,
+decreases and the average random access delay increases,
+                                                                                                                                                                                    14
+
+                                       (a) Average Number of Successful Users                                                       (a) Average Number of Successful Users
+
+                          60                                                                                     60
+
+Number of Users           50   Perfect Doppler shift pre-compensation                  Number of Users           50   Genie-aided
+
+                               Residual Doppler shift maximum 250 Hz                                                  Proposed
+
+                          40                                                                                     40
+
+                          30                                                                                     30
+
+                          20                                                                                     20
+
+                          10                                                                                     10
+
+                          0                                                                                      0
+
+                               10  20  30  40                          50  60  70  80                                 10        20  30  40  50                  60          70  80
+
+                                           Number of Active Users                                                                       Number of Active Users
+
+Random Access Delay [ms]               (b) Average Random Access Delay                 Random Access Delay [ms]                     (b) Average Random Access Delay
+
+                          160  Residual Doppler shift maximum 250 Hz                                             160  Proposed
+
+                          140 Perfect Doppler shift pre-compensation                                             140  Genie-aided
+
+                          120                                                                                    120
+
+                          100                                                                                    100
+
+                          80                                                                                     80
+
+                          60                                                                                     60
+
+                          40                                                                                     40
+
+                               10  20  30  40                          50  60  70  80                                 10        20  30  40  50                  60          70  80
+
+                                           Number of Active Users                                                                       Number of Active Users
+
+Fig. 12. Performance of the proposed framework versus the number of active             Fig. 13. Performance of the proposed framework versus its genie-aided variant
+users under residual Doppler: (a) average number of successful users and (b)           in terms of (a) average number of successful users and (b) average random
+average random access delay.                                                           access delay.
+
+fewer users complete random access successfully and the                                compared with the considered baselines, while maintaining
+access delay increases due to additional contention-resolution                         robust performance trends under different design and impair-
+and retransmission events. Despite this stress-test setting, the                       ment conditions, including the choice of K, low-SNR regimes,
+degradation remains limited and the user-density-dependent                             residual Doppler, and the approximations introduced in the
+trends are preserved, supporting the robustness of the proposed                        derivation of P .
+framework against residual Doppler.
+                                                                                       C. Design Guidelines for NTN Deployment
+   To quantify the combined effect of the approximations
+introduced in the derivation of P  (Sec. IV.C), we additionally                           The evaluation results in Sec. V.B yield concrete design
+evaluate a genie-aided variant of the proposed framework, in                           rules for configuring the proposed framework under given
+which P  is computed from the true collision multiplicity k                            deployment expectations. We extract three guidelines covering
+and the true number of active users D, thereby removing the                            the choice of the classifier parameter K, the operating SNR
+confusion-matrix-based posterior approximation and the D^ -                            range, and the residual Doppler tolerance.
+based binomial approximation. Rev-Fig. 13(a) compares the
+average number of successful random access users, and Rev-                             Guideline 1 (Selection of K). The maximum collision mul-
+Fig. 13(b) compares the average random access delay, between                           tiplicity K controls how many distinct collision cases the
+the practical framework and the genie-aided variant. The gap                           classifier can resolve, and thus directly affects the active-
+in the average number of successful users is negligible in                             user load at which the random access performance begins to
+the low-to-moderate user-density range and remains within                              saturate. From the saturation behavior in Fig. 10, the proposed
+approximately 3 users (corresponding to about 10% relative                             framework sustains successful operation up to approximately
+degradation) even in the high-density regime above 60 active                           49, 55, 57, 58, and 59 active users for K = 3, 4, 5, 6, 7,
+users. A similar pattern is observed for the average random                            respectively. The marginal gain in supported load diminishes
+access delay, where the gap is negligible up to about 60 active                        rapidly beyond K = 5, while the classification task becomes
+users and remains within approximately 15 ms in the high-                              more complex and the parameter count grows. A practical
+density regime. We note that the high-density regime above                             design rule is therefore to choose the smallest K such that
+60 users lies beyond the saturation point of the proposed                              the saturation point exceeds the expected peak active-user load
+framework at the configured K = 6, so the gap there reflects                           with a small safety margin. For the operating range considered
+the behavior near the framework's intrinsic capacity limit                             in this work (peak load  50), K = 6 provides full coverage
+rather than the operating regime targeted by the proposed                              with negligible marginal cost, while values of K  7 yield
+design. These results indicate that the practical framework                            diminishing marginal returns.
+operates close to the oracle upper bound within its targeted
+operating regime, confirming that the combined impact of the                           Guideline 2 (Operating SNR range). Fig. 11 evaluates the
+approximations introduced in Sec. IV.C is marginal at the                              framework under SNRs from -17 to -13 dB. The framework
+system level.                                                                          maintains consistent user-density-dependent trends across this
+                                                                                       range, but the absolute number of successful users gradually
+   Overall, these results demonstrate that the proposed frame-                         decreases as the operating SNR drops below the 3GPP-
+work effectively improves end-to-end random access perfor-                             recommended regime of -13 dB [8]. Accordingly, the recom-
+mance by leveraging early collision awareness and collision-                           mended deployment configuration is to leverage the standard
+multiplicity-guided Step 3 control. Across a wide range of                             3GPP open-loop power control [41] so that the effective op-
+user densities, it provides a favorable success­delay trade-off                        erating SNR remains at or above -13 dB, where the classifier
+                                                                                       satisfies the 3GPP misdetection and false-alarm requirements
+                                                                               15
+
+(Fig. 6). For coverage-edge or heavily attenuated conditions                    [4] 3rd Generation Partnership Project (3GPP), "Study on Narrowband
+where the effective SNR may fall below this regime, additional                       Internet of Things (NB-IoT)/enhanced Machine Type Communication
+coverage-enhancement features such as message-1 repetition                           (eMTC) support for Non-Terrestrial Networks (NTN)," 3GPP, Technical
+supported in 3GPP Rel-18 [39] can be applied to restore the                          Report (TR) 3GPP TR 36.763, 2021, V17.0.0.
+operating SNR within the recommended range.
+                                                                                [5] ----, "Study on New Radio (NR) to support non-terrestrial networks,"
+Guideline 3 (Residual Doppler tolerance). Fig. 12 shows that                         3GPP, Technical Report (TR) 3GPP TR 38.811, 2020, V15.4.0.
+the framework maintains stable performance under residual
+Doppler up to 250 Hz, which is approximately 25× larger                         [6] ----, "Solutions for NR to support Non-Terrestrial Networks (NTN),"
+than the typical post-compensation residual of 10 Hz reported                        3GPP, Technical Report (TR) 3GPP TR 38.821, 2021, V16.1.0.
+in [38]. This indicates that the framework provides a substan-
+tial operational margin under residual frequency offset, and                    [7] J. S. Erik Dahlman, Stefan Parkvall, 5G NR: The Next Generation
+that conservative Doppler-tracking configurations at the user                        Wireless Access Technology . Academic Press, 2021.
+side are sufficient for stable operation. Designers therefore do
+not need to push Doppler estimation accuracy beyond what is                     [8] 3rd Generation Partnership Project (3GPP), "NR; Physical channels
+required by 3GPP NTN [5]; the framework remains robust                               and modulation," 3GPP, Technical Specification (TS) 3GPP TS 38.211,
+under significantly larger residual Doppler than the typical                         2024, Release 18, V18.6.0.
+post-compensation level.
+                                                                                [9] H. S. Jang, H. Lee, T. Q. S. Quek, and H. Shin, "Deep Learning-Based
+                          VI. CONCLUSION                                             Cellular Random Access Framework," IEEE Transactions on Wireless
+                                                                                     Communications, vol. 20, no. 11, pp. 7503­7518, 2021.
+   This paper proposed a deep learning-based random access
+framework tailored for LEO SatCom systems. The framework                       [10] Y. Liang, X. Li, J. Zhang, and Z. Ding, "Non-Orthogonal Random Ac-
+incorporates an early preamble collision classifier that ex-                         cess for 5G Networks," IEEE Transactions on Wireless Communications,
+ploits antenna-wise correlation features to estimate the number                      vol. 16, no. 7, pp. 4817­4831, 2017.
+of collided users at the initial stage of random access. A
+lightweight 1D convolutional neural network architecture en-                   [11] J. Heo, S. Sung, H. Lee, I. Hwang, and D. Hong, "MIMO Satellite
+ables efficient extraction of spatial and temporal features, even                    Communication Systems: A Survey From the PHY Layer Perspective,"
+under constrained ZCZ. Based on the classifier's output, an                          IEEE Communications Surveys & Tutorials, vol. 25, no. 3, pp. 1543­
+opportunistic transmission scheme was designed, where each                           1570, 2023.
+user probabilistically attempts Step 3 transmission according
+to a quasi-optimal access probability. This probability reflects               [12] R. De Gaudenzi, "Satellite networks: Past Present and Future Challenges
+the estimated severity of collisions and balances the trade-                         - Part 1: Mobile Systems," IEEE Aerospace and Electronic Systems
+off between collision risk and resource utilization. Simula-                         Magazine, pp. 1­8, 2025.
+tion results validated that the proposed framework signif-
+icantly improves access success probability, reduces delay,                    [13] L. Tello-Oquendo, I. Leyva-Mayorga, V. Pla, J. Martinez-Bauset, J.-
+and increases PUSCH utilization under 3GPP-compliant LEO                             R. Vidal, V. Casares-Giner, and L. Guijarro, "Performance Analysis
+settings. Compared to conventional schemes, the proposed                             and Optimal Access Class Barring Parameter Configuration in LTE-A
+scheme achieves better performance with lower computational                          Networks With Massive M2M Traffic," IEEE Transactions on Vehicular
+complexity, making it suitable for practical LEO SatCom                              Technology, vol. 67, no. 4, pp. 3505­3520, 2018.
+deployments.
+                                                                               [14] M. Llobet, M. Cabrera-Bean, J. Vidal, and A. Agustin, "Optimizing
+   Future research may extend this work by incorporating inter-                      Access Demand for mMTC Traffic Using Neural Networks," IEEE
+satellite interference under more aggressive random access                           Transactions on Vehicular Technology, vol. 72, no. 12, pp. 16 834­
+resource reuse across satellites/beams. Another promising di-                        16 838, 2023.
+rection is to integrate PHY-layer collision-type estimation with
+learning-based (e.g., RL) access-control policies for cross-                   [15] W. Fan, P. Fan, and Y. Long, "Joint Delay-Energy Optimization for
+layer contention management under dynamic traffic and cov-                           Multi-Priority Random Access in Machine-Type Communications,"
+erage conditions.                                                                    IEEE Transactions on Wireless Communications, vol. 23, no. 2, pp.
+                                                                                     1416­1431, 2024.
+                             REFERENCES
+                                                                               [16] G.-Y. Lin, S.-R. Chang, and H.-Y. Wei, "Estimation and Adaptation
+ [1] M. Harounabadi and T. Heyn, "Toward Integration of 6G-NTN to                    for Bursty LTE Random Access," IEEE Transactions on Vehicular
+      Terrestrial Mobile Networks: Research and Standardization Aspects,"            Technology, vol. 65, no. 4, pp. 2560­2577, 2016.
+      IEEE Wireless Communications, vol. 30, no. 6, pp. 20­26, 2023.
+                                                                               [17] L. Barletta, F. Borgonovo, and I. Filippini, "The Throughput and
+ [2] Z. Xiao, J. Yang, T. Mao, C. Xu, R. Zhang, Z. Han, and X.-G. Xia,               Access Delay of Slotted-Aloha With Exponential Backoff," IEEE/ACM
+      "LEO Satellite Access Network (LEO-SAN) Toward 6G: Challenges                  Transactions on Networking, vol. 26, no. 1, pp. 451­464, 2018.
+      and Approaches," IEEE Wireless Communications, vol. 31, no. 2, pp.
+      89­96, 2024.                                                             [18] P. Mollahosseini, S. Asvadi, and F. Ashtiani, "Effect of Variable Backoff
+                                                                                     Algorithms on Age of Information in Slotted ALOHA Networks," IEEE
+ [3] H. Lee, I. P. Roberts, J. Heo, J. Son, H. Kim, Y. Lee, and D. Hong, "Can        Transactions on Mobile Computing, vol. 23, no. 9, pp. 8620­8633, 2024.
+      TDD Be Employed in LEO SatCom Systems? Challenges and Potential
+      Approaches," IEEE Communications Magazine, pp. 1­8, 2026.                [19] H. S. Jang, S. M. Kim, H.-S. Park, and D. K. Sung, "A Preamble Col-
+                                                                                     lision Resolution Scheme via Tagged Preambles for Cellular IoT/M2M
+                                                                                     Communications," IEEE Transactions on Vehicular Technology, vol. 67,
+                                                                                     no. 2, pp. 1825­1829, 2018.
+
+                                                                               [20] A. E. Mostafa, V. W. Wong, Y. Zhou, R. Schober, Z. Luo, S. Liao,
+                                                                                     and M. Ding, "Aggregate Preamble Sequence Design and Detection
+                                                                                     for Massive IoT With Deep Learning," IEEE Transactions on Vehicular
+                                                                                     Technology, vol. 70, no. 4, pp. 3800­3816, 2021.
+
+                                                                               [21] S. Kim, J. Kim, and D. Hong, "A New Non-Orthogonal Transceiver for
+                                                                                     Asynchronous Grant-Free Transmission Systems," IEEE Transactions
+                                                                                     on Wireless Communications, vol. 20, no. 3, pp. 1889­1902, 2021.
+
+                                                                               [22] T. Kim, I. Bang, and D. K. Sung, "An Enhanced PRACH Preamble
+                                                                                     Detector for Cellular IoT Communications," IEEE Communications
+                                                                                     Letters, vol. 21, no. 12, pp. 2678­2681, 2017.
+
+                                                                               [23] J. Jeong and D. Hong, "Two-Stage Preamble Detector for LEO Satellite-
+                                                                                     Based NTN IoT Random Access," IEEE Transactions on Vehicular
+                                                                                     Technology, vol. 72, no. 11, pp. 14 443­14 455, 2023.
+
+                                                                               [24] J.-H. Lee, H. Seo, J. Park, M. Bennis, and Y.-C. Ko, "Learning
+                                                                                     Emergent Random Access Protocol for LEO Satellite Networks," IEEE
+                                                                                     Transactions on Wireless Communications, vol. 22, no. 1, pp. 257­269,
+                                                                                     2023.
+
+                                                                               [25] B. Zhang, Y. Gu, Y. Wang, and Z. Yang, "Long-Term Decision-Optimal
+                                                                                     Access Mechanism in the Large-Scale Satellite Network: A Multiagent
+                                                                                     Reinforcement Learning Approach," IEEE Internet of Things Journal,
+                                                                                     vol. 12, no. 9, pp. 12 686­12 699, 2025.
+
+                                                                               [26] J. Gui, Z. Li, J. Zhang, X. Deng, and G. Min, "Multi-Heterogeneous-
+                                                                                     Agent DRL for Efficient Congestion Control With Reward Redistribu-
+                                                                                     tion in Space­Air­Ground Integrated Networks," IEEE Transactions on
+                                                                                     Network Science and Engineering, vol. 13, pp. 3035­3052, 2026.
+                                                                                                                                                                                                                            16
+
+[27] M. Vilgelm, S. R. Linares, and W. Kellerer, "Enhancing cellular M2M
+      random access with binary countdown contention resolution," in 2017
+      IEEE 28th Annual International Symposium on Personal, Indoor, and
+      Mobile Radio Communications (PIMRC), 2017, pp. 1­6.
+
+[28] R. F. Sari, R. Harwahyu, and R.-G. Cheng, "Load Estimation and
+      Connection Request Barring for Random Access in Massive C-IoT,"
+      IEEE Internet of Things Journal, vol. 7, no. 7, pp. 6539­6549, 2020.
+
+[29] Z. Shi and J. Liu, "Massive Access in 5G and Beyond Ultra-Dense
+      Networks: An MARL-Based NORA Scheme," IEEE Transactions on
+      Communications, vol. 71, no. 4, pp. 2170­2183, 2023.
+
+[30] J.-B. Seo, S. De, and H. Jin, "Real-Time Transmission Control for Mul-
+      tichannel NOMA Random Access Systems," IEEE Internet of Things
+      Journal, vol. 10, no. 10, pp. 8984­8995, 2023.
+
+[31] K. M. Kim and T.-J. Lee, "Random Access and Uplink Shared Channel
+      Resource Allocation With NOMA," IEEE Transactions on Mobile
+      Computing, vol. 23, no. 6, pp. 6896­6907, 2024.
+
+[32] Z. Alavikia and A. Ghasemi, "Collision-Aware Resource Access Scheme
+      for LTE-Based Machine-to-Machine Communications," IEEE Transac-
+      tions on Vehicular Technology, vol. 67, no. 5, pp. 4683­4688, 2018.
+
+[33] L. Zhen, Y. Zhang, K. Yu, N. Kumar, A. Barnawi, and Y. Xie, "Early
+      Collision Detection for Massive Random Access in Satellite-Based
+      Internet of Things," IEEE Transactions on Vehicular Technology, vol. 70,
+      no. 5, pp. 5184­5189, 2021.
+
+[34] J. Jeong, H. Lee, and D. Hong, "Enhanced Early Preamble Collision
+      Detector for LEO Satellite-Based NTN IoT Random Access," IEEE
+      Transactions on Vehicular Technology, pp. 1­16, 2025.
+
+[35] C. Zhang, X. Sun, W. Xia, J. Zhang, H. Zhu, and X. Wang, "Deep Learn-
+      ing Based Double-Contention Random Access for Massive Machine-
+      Type Communication," IEEE Transactions on Wireless Communications,
+      vol. 22, no. 3, pp. 1794­1807, 2023.
+
+[36] J. Son, J. Heo, H. Lee, S. Sung, M. Hong, H. Kim, G. Ahn, and D. Hong,
+      "Frequency Asynchronous NOMA In LEO Satellite Communication
+      Systems," in 2023 IEEE International Conference on Acoustics, Speech,
+      and Signal Processing Workshops (ICASSPW), 2023, pp. 1­5.
+
+[37] 3rd Generation Partnership Project (3GPP), "NR; Requirements for
+      support of radio resource management," 3GPP, Technical Specification
+      (TS) 3GPP TS 38.133, 2024, Release 18, V18.7.0.
+
+[38] ----, "UE Time and Frequency Synchronization for IoT NTN," 3GPP
+      TSG RAN WG1 contribution, Jan. 2021, Document R1-2100601, TSG
+      RAN WG1 #104e.
+
+[39] 3GPP, "NR; Medium Access Control (MAC) protocol specification,"
+      3GPP, Tech. Rep. 3GPP TS 38.321, 2024, Release 18.
+
+[40] ----, "NR; Radio Resource Control (RRC); Protocol specification,"
+      3GPP, Tech. Rep. 3GPP TS 38.331, 2024, Release 18.
+
+[41] ----, "NR; Physical layer procedures for control," 3GPP, Tech. Rep.
+      3GPP TS 38.213, 2024, Release 18.
+
+[42] 3rd Generation Partnership Project (3GPP), "Evolved Universal Ter-
+      restrial Radio Access (E-UTRA); Physical layer procedures," 3GPP,
+      Technical Specification (TS) 3GPP TS 36.213, 2014, V12.4.0.
+
+[43] B.-H. Lee, H.-S. Lee, S. Moon, and J.-W. Lee, "Enhanced Random
+      Access for Massive-Machine-Type Communications," IEEE Internet of
+      Things Journal, vol. 8, no. 8, pp. 7046­7064, 2021.
+
+[44] Xilinx Inc., "Radiation Tolerant Kintex UltraScale XQRKU060 FPGA
+      Data Sheet," DS882, Product Specification, 2022.
+
+[45] T. Kim, I. Bang, and D. K. Sung, "An Enhanced PRACH Preamble
+      Detector for Cellular IoT Communications," IEEE Communications
+      Letters, vol. 21, no. 12, pp. 2678­2681, 2017.
+
