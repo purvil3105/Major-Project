@@ -36,7 +36,9 @@ def load_config(path: str = None) -> dict:
     float_keys = [
         "carrier_hz", "scs_hz", "altitude_km", "elev_mask_deg", "earth_radius_km",
         "ground_lat_deg", "ground_lon_deg", "ground_elev_m", "snr_edge_db", "snr_zenith_db",
-        "activation_window_s", "alpha", "gamma", "eps0", "eps_min", "eps_decay",
+        "p_tx_dbm", "g_tx_dbi", "g_rx_zenith_dbi", "antenna_3db_beamwidth_deg",
+        "noise_figure_db", "temperature_k", "gamma_th_db", "k_slope",
+        "activation_window_s", "access_deadline_s", "alpha", "gamma", "eps0", "eps_min", "eps_decay",
         "w_s", "w_c", "w_m", "w_t", "w_d", "d_ref_ms", "doppler_threshold"
     ]
     for k in float_keys:
@@ -47,7 +49,7 @@ def load_config(path: str = None) -> dict:
         "n_preambles", "preamble_trans_max", "rar_window_ms", "rar_window_ntn_ms",
         "processing_time_ms", "beta_a", "beta_b", "load_bins", "elev_bins",
         "doppler_bins", "pass_phase_bins", "default_n_devices", "default_residual_doppler_hz",
-        "default_rao_period_ms", "default_seed", "warmstart_terrestrial_raos"
+        "default_rao_period_ms", "default_seed", "pretrain_seed", "warmstart_terrestrial_raos"
     ]
     for k in int_keys:
         if k in cfg:
@@ -56,6 +58,7 @@ def load_config(path: str = None) -> dict:
     cfg["acb_levels"] = [float(x) for x in cfg["acb_levels"]]
     cfg["bi_levels_ms"] = [int(x) for x in cfg["bi_levels_ms"]]
     cfg["nrep_levels"] = [int(x) for x in cfg["nrep_levels"]]
+    cfg["seeds"] = [int(x) for x in cfg.get("seeds", [200])]
     cfg["load_thresholds"] = [float(x) for x in cfg["load_thresholds"]]
     cfg["elev_thresholds"] = [float(x) for x in cfg["elev_thresholds"]]
     cfg["pass_phase_thresholds"] = [float(x) for x in cfg["pass_phase_thresholds"]]

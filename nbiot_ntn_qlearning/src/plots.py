@@ -2,11 +2,11 @@
 plots.py — Publication-grade plotting module generating the six required research figures.
 
 Figure 1: Orbit & pass geometry (elevation, range, delay, raw Doppler vs time).
-Figure 2: Access success probability P_s vs elevation (headline U-shape across policies).
-Figure 3: Access delay distribution (CDF & percentiles, Proposed vs B1, B3).
+Figure 2: Access success probability P_s vs elevation (true U-shape across policies).
+Figure 3: Access delay distribution (CDF & percentiles, Proposed vs B1, B2, B3).
 Figure 4: Failure-cause breakdown across pass (Proposed vs Lumped-Reward Ablation).
-Figure 5: Convergence within one pass (Cold-start vs Warm-start).
-Figure 6: Sensitivity heatmap: P_s gain over device load N x residual Doppler.
+Figure 5: Convergence within active RAOs (Cold-start vs Warm-start).
+Figure 6: Sensitivity gain heatmap/bars: Gain vs Rel-17 Standard Preset (B2).
 """
 
 import os
@@ -35,19 +35,18 @@ plt.rcParams.update({
     'savefig.bbox': 'tight'
 })
 
-# Distinct, accessible color palette
 PALETTE = {
-    'Proposed_Warm': '#1f77b4',       # Blue
-    'Proposed_Cold': '#ff7f0e',       # Orange
-    'B1_Fixed_Terrestrial': '#d62728', # Red
-    'B2_Rel17_NTN_Default': '#9467bd', # Purple
-    'B3_Terrestrial_Frozen': '#8c564b',# Brown
-    'B4_Oracle': '#2ca02c',           # Green
-    'Ablation_Lumped': '#e377c2',     # Pink
-    'collision': '#d62728',           # Red
-    'miss': '#ff7f0e',                # Orange
-    'timeout': '#9467bd',             # Purple
-    'success': '#2ca02c'              # Green
+    'Proposed_Warm': '#1f77b4',
+    'Proposed_Cold': '#ff7f0e',
+    'B1_Fixed_Terrestrial': '#d62728',
+    'B2_Rel17_NTN_Default': '#9467bd',
+    'B3_Terrestrial_Frozen': '#8c564b',
+    'B4_Heuristic_Benchmark': '#2ca02c',
+    'Ablation_Lumped': '#e377c2',
+    'collision': '#d62728',
+    'miss': '#ff7f0e',
+    'timeout': '#9467bd',
+    'success': '#2ca02c'
 }
 
 
@@ -73,7 +72,7 @@ def plot_fig1_orbit_geometry(cfg: dict, out_dir: str = "figs"):
     # Slant Range
     axes[0, 1].plot(t_min, traj['slant_range_km'], color='#2ca02c', lw=2.2)
     axes[0, 1].set_ylabel('Slant Range $d(t)$ [km]')
-    axes[0, 1].set_title('(b) Slant Range to AMI Gateway')
+    axes[0, 1].set_title('(b) Slant Range to Ground Site')
     axes[0, 1].grid(True)
 
     # One-Way Delay
@@ -101,7 +100,7 @@ def plot_fig1_orbit_geometry(cfg: dict, out_dir: str = "figs"):
 def plot_fig2_elevation_success(results_dir: str = "results", out_dir: str = "figs"):
     """
     Fig. 2: Access success probability P_s vs elevation across policies.
-    Displays the signature U-shape and highlights the horizon tail lift.
+    Displays the signature U-shape across pass-spanning traffic.
     """
     csv_path = os.path.join(results_dir, "elevation_bins.csv")
     if not os.path.exists(csv_path):
@@ -109,12 +108,12 @@ def plot_fig2_elevation_success(results_dir: str = "results", out_dir: str = "fi
         return
 
     df = pd.read_csv(csv_path)
-    grouped = df.groupby(['policy', 'elev_center'])['p_s'].agg(['mean', 'std']).reset_index()
+    grouped = df.groupby(['policy', 'elev_center'])['p_s'].agg(['mean', 'std', 'count']).reset_index()
 
     fig, ax = plt.subplots(figsize=(8.5, 6))
 
     policy_order = [
-        ('B4_Oracle', 'B4: Oracle (Upper Bound)', 'o-', '#2ca02c'),
+        ('B4_Heuristic_Benchmark', 'B4: Heuristic Channel-Aware', 'o-', '#2ca02c'),
         ('Proposed_Warm', 'Proposed (Warm Q-Learning)', 's-', '#1f77b4'),
         ('B2_Rel17_NTN_Default', 'B2: Rel-17 NTN Default', '^-', '#9467bd'),
         ('B3_Terrestrial_Frozen', 'B3: Terrestrial-Frozen Q', 'v--', '#8c564b'),
@@ -125,8 +124,9 @@ def plot_fig2_elevation_success(results_dir: str = "results", out_dir: str = "fi
         sub = grouped[grouped['policy'] == pol_key]
         if not sub.empty:
             sub = sub.sort_values('elev_center')
+            ci95 = 1.96 * sub['std'] / np.sqrt(np.maximum(1, sub['count']))
             ax.errorbar(
-                sub['elev_center'], sub['mean'], yerr=sub['std'],
+                sub['elev_center'], sub['mean'], yerr=ci95,
                 fmt=fmt, color=col, label=label, capsize=4, markersize=7, lw=2
             )
 
@@ -147,7 +147,6 @@ def plot_fig2_elevation_success(results_dir: str = "results", out_dir: str = "fi
 def plot_fig3_delay_cdf(results_dir: str = "results", out_dir: str = "figs"):
     """
     Fig. 3: Empirical Cumulative Distribution Function (CDF) of Access Delay.
-    Proposed vs B1 and B3.
     """
     csv_path = os.path.join(results_dir, "delays.csv")
     if not os.path.exists(csv_path):
@@ -169,14 +168,15 @@ def plot_fig3_delay_cdf(results_dir: str = "results", out_dir: str = "figs"):
         if len(sub) > 0:
             sorted_delays = np.sort(sub.values)
             cdf = np.arange(1, len(sorted_delays) + 1) / len(sorted_delays)
+            mean_d = np.mean(sorted_delays)
             p95 = np.percentile(sorted_delays, 95)
             ax.plot(sorted_delays, cdf, color=col, linestyle=ls, lw=2.2,
-                    label=f'{label} (95%={p95:.0f} ms)')
+                    label=f'{label} (mean={mean_d/1000:.1f}s, 95%={p95/1000:.1f}s)')
 
     ax.set_xlabel('End-to-End Access Delay [ms]')
     ax.set_ylabel('Empirical CDF')
     ax.set_title('Fig. 3: Access Delay Cumulative Distribution Function')
-    ax.set_xlim(0, 30000)
+    ax.set_xlim(0, 35000)
     ax.set_ylim(0, 1.02)
     ax.grid(True)
     ax.legend(loc='lower right', framealpha=0.95)
@@ -190,7 +190,7 @@ def plot_fig3_delay_cdf(results_dir: str = "results", out_dir: str = "figs"):
 
 def plot_fig4_failure_breakdown(results_dir: str = "results", out_dir: str = "figs"):
     """
-    Fig. 4: Failure-cause breakdown across pass.
+    Fig. 4: Failure-cause breakdown across pass under matched stress Doppler (250 Hz).
     Compares Proposed (cause-separated) vs Lumped-Reward Ablation to demonstrate
     prevention of the false-barring loop.
     """
@@ -204,8 +204,8 @@ def plot_fig4_failure_breakdown(results_dir: str = "results", out_dir: str = "fi
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
     for ax, pol_name, title in [
-        (ax1, "Proposed_Warm", "(a) Proposed Controller (Cause-Separated Reward)"),
-        (ax2, "Ablation_Lumped", "(b) Ablation Policy (Lumped Failure Penalty)")
+        (ax1, "Proposed_Warm", "(a) Proposed Controller (Cause-Separated Reward, 250 Hz)"),
+        (ax2, "Ablation_Lumped", "(b) Ablation Policy (Lumped Failure Penalty, 250 Hz)")
     ]:
         sub = df[df['policy'] == pol_name].groupby('step').agg({
             't_s': 'mean',
@@ -224,13 +224,12 @@ def plot_fig4_failure_breakdown(results_dir: str = "results", out_dir: str = "fi
             ax.plot(t_min, sub['n_timeout'], color='#9467bd', label='Timeouts', lw=1.8)
             ax.plot(t_min, sub['n_success'], color='#2ca02c', label='Successes', lw=1.8)
 
-            # Secondary axis for ACB factor
             ax_sec = ax.twinx()
             ax_sec.plot(t_min, sub['acb_p'], color='black', linestyle='--', alpha=0.7, label='ACB factor $p$')
-            ax_sec.set_ylabel('ACB $p$', color='black')
+            ax_sec.set_ylabel('ACB factor $p$', color='black')
             ax_sec.set_ylim(0.0, 1.05)
 
-            ax.set_ylabel('Event Count per RAO')
+            ax.set_ylabel('Events per RAO')
             ax.set_title(title)
             ax.grid(True)
             if ax == ax1:
@@ -246,7 +245,7 @@ def plot_fig4_failure_breakdown(results_dir: str = "results", out_dir: str = "fi
 
 def plot_fig5_convergence(results_dir: str = "results", out_dir: str = "figs"):
     """
-    Fig. 5: Convergence within one pass — Cold-Start vs Warm-Start.
+    Fig. 5: Convergence within active RAOs — Cold-Start vs Warm-Start (no 0/0 artifacts).
     """
     csv_path = os.path.join(results_dir, "convergence.csv")
     if not os.path.exists(csv_path):
@@ -283,11 +282,11 @@ def plot_fig5_convergence(results_dir: str = "results", out_dir: str = "figs"):
             ax2.fill_between(t_min, s_mean - 0.5 * s_std, s_mean + 0.5 * s_std, color=col, alpha=0.18)
 
     ax1.set_ylabel('RAO Immediate Reward $r$')
-    ax1.set_title('(a) Immediate Reward Trajectory across Pass')
+    ax1.set_title('(a) Immediate Reward Trajectory across Active RAOs')
     ax1.grid(True)
     ax1.legend(loc='lower right', framealpha=0.9)
 
-    ax2.set_ylabel('Windowed Success Rate')
+    ax2.set_ylabel('Rolling Success Rate')
     ax2.set_xlabel('Pass Time [minutes]')
     ax2.set_title('(b) Rolling Access Success Rate within Pass Visibility')
     ax2.set_ylim(-0.05, 1.05)
@@ -303,8 +302,9 @@ def plot_fig5_convergence(results_dir: str = "results", out_dir: str = "figs"):
 
 def plot_fig6_sensitivity_heatmap(results_dir: str = "results", out_dir: str = "figs"):
     """
-    Fig. 6: Sensitivity Heatmap / Bar chart:
-    Access success gain (Proposed - B1) across device load N x residual Doppler.
+    Fig. 6: Sensitivity Gain Analysis:
+    (a) Access success gain vs Fixed Terrestrial Baseline (B1).
+    (b) Transmission overhead reduction vs 3GPP Rel-17 NTN Default (B2).
     """
     csv_path = os.path.join(results_dir, "sensitivity.csv")
     if not os.path.exists(csv_path):
@@ -312,38 +312,57 @@ def plot_fig6_sensitivity_heatmap(results_dir: str = "results", out_dir: str = "
         return
 
     df = pd.read_csv(csv_path)
-    grouped = df.groupby(['n_devices', 'residual_doppler_hz'])[['gain_vs_b1', 'p_s_proposed', 'p_s_b1']].mean().reset_index()
+    cols = ['gain_vs_b1', 'energy_reduction_pct', 'p_s_proposed', 'p_s_b2', 'p_s_b1']
+    available_cols = [c for c in cols if c in df.columns]
+    grouped = df.groupby(['n_devices', 'residual_doppler_hz'])[available_cols].mean().reset_index()
 
-    fig, ax = plt.subplots(figsize=(8.5, 5.5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
 
     devices = sorted(grouped['n_devices'].unique())
     x = np.arange(len(devices))
     width = 0.35
 
-    # Nominal 10 Hz
     sub_10 = grouped[grouped['residual_doppler_hz'] == 10.0].sort_values('n_devices')
-    # Stress 250 Hz
     sub_250 = grouped[grouped['residual_doppler_hz'] == 250.0].sort_values('n_devices')
 
-    rects1 = ax.bar(x - width/2, sub_10['gain_vs_b1'] * 100.0, width, label='Nominal Doppler $\\delta f = 10$ Hz', color='#1f77b4')
-    rects2 = ax.bar(x + width/2, sub_250['gain_vs_b1'] * 100.0, width, label='Stress Doppler $\\delta f = 250$ Hz', color='#ff7f0e')
+    # Panel (a): Gain vs B1
+    rects1 = ax1.bar(x - width/2, sub_10['gain_vs_b1'] * 100.0, width, label='Nominal CFO $\\delta f = 10$ Hz', color='#1f77b4')
+    rects2 = ax1.bar(x + width/2, sub_250['gain_vs_b1'] * 100.0, width, label='Stress CFO $\\delta f = 250$ Hz', color='#ff7f0e')
+    ax1.set_ylabel('Access Success Gain $\\Delta P_s$ vs Terrestrial (B1) [%]')
+    ax1.set_xlabel('Offered Device Load ($N$ Meters)')
+    ax1.set_title('(a) Gain over Fixed Terrestrial Default (B1)')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels([f'N = {d}' for d in devices])
+    ax1.grid(True, axis='y')
+    ax1.legend(loc='upper left', framealpha=0.95)
 
-    ax.set_ylabel('Success Probability Gain $\\Delta P_s$ vs B1 [%]')
-    ax.set_xlabel('Offered Device Load ($N$ NB-IoT Meters)')
-    ax.set_title('Fig. 6: Access Success Rate Improvement over Terrestrial Baseline (B1)')
-    ax.set_xticks(x)
-    ax.set_xticklabels([f'N = {d}' for d in devices])
-    ax.grid(True, axis='y')
-    ax.legend(framealpha=0.95)
-
-    # Add data labels
     for rects in [rects1, rects2]:
         for rect in rects:
             height = rect.get_height()
-            ax.annotate(f'+{height:.1f}%',
-                        xy=(rect.get_x() + rect.get_width() / 2, height),
-                        xytext=(0, 3), textcoords="offset points",
-                        ha='center', va='bottom', fontsize=9, fontweight='bold')
+            ax1.annotate(f'+{height:.1f}%' if height > 0 else f'{height:.1f}%',
+                         xy=(rect.get_x() + rect.get_width() / 2, max(0, height)),
+                         xytext=(0, 3), textcoords="offset points",
+                         ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+    # Panel (b): Energy / Transmission Reduction vs B2
+    if 'energy_reduction_pct' in grouped.columns:
+        rects3 = ax2.bar(x - width/2, sub_10['energy_reduction_pct'], width, label='Nominal CFO $\\delta f = 10$ Hz', color='#1f77b4')
+        rects4 = ax2.bar(x + width/2, sub_250['energy_reduction_pct'], width, label='Stress CFO $\\delta f = 250$ Hz', color='#ff7f0e')
+        ax2.set_ylabel('Transmission Overhead Reduction vs Rel-17 (B2) [%]')
+        ax2.set_xlabel('Offered Device Load ($N$ Meters)')
+        ax2.set_title('(b) Transmission Saving vs Rel-17 NTN Default (B2)')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels([f'N = {d}' for d in devices])
+        ax2.grid(True, axis='y')
+        ax2.legend(loc='upper left', framealpha=0.95)
+
+        for rects in [rects3, rects4]:
+            for rect in rects:
+                height = rect.get_height()
+                ax2.annotate(f'+{height:.1f}%' if height > 0 else f'{height:.1f}%',
+                             xy=(rect.get_x() + rect.get_width() / 2, max(0, height)),
+                             xytext=(0, 3), textcoords="offset points",
+                             ha='center', va='bottom', fontsize=9, fontweight='bold')
 
     plt.tight_layout()
     save_path = os.path.join(out_dir, "fig6_sensitivity_gain.png")
@@ -363,13 +382,13 @@ def generate_all_plots(cfg: dict, results_dir: str = "results", out_dir: str = "
     print("Generating Figure 3: Delay CDF...")
     plot_fig3_delay_cdf(results_dir=results_dir, out_dir=out_dir)
 
-    print("Generating Figure 4: Failure cause breakdown...")
+    print("Generating Figure 4: Failure cause breakdown (250 Hz stress)...")
     plot_fig4_failure_breakdown(results_dir=results_dir, out_dir=out_dir)
 
     print("Generating Figure 5: Cold vs warm convergence...")
     plot_fig5_convergence(results_dir=results_dir, out_dir=out_dir)
 
-    print("Generating Figure 6: Sensitivity gain...")
+    print("Generating Figure 6: Sensitivity gain vs Rel-17 Default (B2)...")
     plot_fig6_sensitivity_heatmap(results_dir=results_dir, out_dir=out_dir)
     print("All six figures generated successfully in", out_dir)
 

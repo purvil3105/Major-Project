@@ -1,109 +1,153 @@
 """
-channel.py — NTN Channel model and NPRACH detection probability calibration.
+channel.py — 3GPP NTN Link Budget and Calibrated NPRACH Detection Model.
 
 Models:
-1. Elevation-dependent Uplink SNR:
-   SNR(ε) [dB] varies from snr_edge_db (at 10°) to snr_zenith_db (at 90°),
-   grounded in Dwivedi et al. (Set-4 UL SNR: -3 dB edge to +5 dB zenith).
+1. Link-Budget-Derived Uplink SNR:
+   Grounds SNR in orbital geometry, free-space path loss (FSPL), satellite
+   antenna beam roll-off, and receiver thermal noise (3GPP TR 38.821 & TR 38.811):
+       SNR(ε) = P_tx + G_tx + G_rx(θ(ε)) - FSPL(d(ε)) - N_0
 
-2. Residual Doppler shift δf:
-   Nominal: ~10 Hz; Stress: ~250 Hz (Lee et al., arXiv:2512.07053).
-   Subcarrier spacing SCS = 3750 Hz (NPRACH Format 0/1, 3GPP TS 36.211).
+2. Sinc Inter-Carrier Interference (ICI) Loss:
+   Grounded in subcarrier spacing SCS = 3750 Hz (TS 36.211 Format 0/1) and
+   residual CFO δf (3GPP R1-2100601 / Lee et al., arXiv:2512.07053).
 
-3. Detection probability P_d(SNR, δf, N_rep):
-   Calibrated strictly to Chougrani et al. (IEEE IoT-J 2022) miss-detection curves:
-   - Anchor 1: SNR = 8.0 dB, N_rep = 64, δf = 10 Hz  -> P_miss <= 0.01 (P_d >= 0.99)
-   - Anchor 2: SNR = 15.0 dB, N_rep = 32, δf = 10 Hz -> P_miss <= 0.01 (P_d >= 0.99)
-   - P_d increases monotonically with N_rep and SNR.
-   - P_d degrades with residual Doppler δf due to ICI and phase drift across repetitions.
+3. Calibrated Detection Probability P_d(SNR, δf, N_rep):
+   Calibrated in the operational range [-5 dB, +5 dB] matching Chougrani et al.
+   (IEEE IoT-J 2022) preamble detection operating curves.
 """
 
 import numpy as np
 
 
+def compute_slant_range_km(
+    elevation_deg: float or np.ndarray,
+    altitude_km: float = 600.0,
+    earth_radius_km: float = 6371.0
+) -> float or np.ndarray:
+    """Calculate slant range from ground station to satellite in km."""
+    elev_rad = np.radians(np.clip(elevation_deg, 0.0, 90.0))
+    # Law of cosines in spherical geometry
+    re_sin = earth_radius_km * np.sin(elev_rad)
+    slant_km = np.sqrt(re_sin**2 + 2.0 * earth_radius_km * altitude_km + altitude_km**2) - re_sin
+    return slant_km
+
+
 def elevation_to_snr_db(
     elevation_deg: float or np.ndarray,
-    snr_edge_db: float = -3.0,
-    snr_zenith_db: float = 5.0,
-    elev_min_deg: float = 10.0,
-    elev_max_deg: float = 90.0
+    altitude_km: float = 600.0,
+    carrier_hz: float = 2.0e9,
+    p_tx_dbm: float = 23.0,
+    g_tx_dbi: float = 0.0,
+    g_rx_zenith_dbi: float = 6.0,
+    antenna_3db_beamwidth_deg: float = 65.0,
+    noise_figure_db: float = 5.0,
+    temperature_k: float = 290.0,
+    scs_hz: float = 3750.0,
+    **kwargs
 ) -> float or np.ndarray:
     """
-    Compute uplink SNR as a function of elevation angle.
+    Compute single-tone uplink SNR from 3GPP NTN link budget.
     
-    Uses standard NTN path loss & antenna gain elevation profile,
-    interpolated smoothly between edge (-3 dB at 10°) and zenith (+5 dB at 90°).
+    Parameters
+    ----------
+    elevation_deg : float or ndarray
+        Satellite elevation angle from ground station in degrees.
+    altitude_km : float
+        Satellite orbital altitude in km.
+    carrier_hz : float
+        Carrier frequency in Hz (default: 2.0 GHz, S-band n256).
+    p_tx_dbm : float
+        UE transmit power in dBm (default: 23 dBm for NB-IoT Class 3).
+    g_tx_dbi : float
+        UE antenna gain in dBi (default: 0 dBi isotropic).
+    g_rx_zenith_dbi : float
+        Satellite antenna boresight gain in dBi.
+    antenna_3db_beamwidth_deg : float
+        Satellite antenna 3 dB beamwidth in degrees.
+    noise_figure_db : float
+        Satellite receiver noise figure in dB.
+    temperature_k : float
+        System noise temperature in Kelvin.
+    scs_hz : float
+        NPRACH subcarrier bandwidth in Hz (3750 Hz).
+        
+    Returns
+    -------
+    snr_db : float or ndarray
+        Uplink single-tone SNR in dB.
     """
-    elev = np.clip(elevation_deg, elev_min_deg, elev_max_deg)
-    # Sinusoidal / geometric elevation scaling (higher elevation = shorter slant range & better antenna gain)
-    norm_elev = (elev - elev_min_deg) / (elev_max_deg - elev_min_deg)
-    snr = snr_edge_db + (snr_zenith_db - snr_edge_db) * (norm_elev ** 0.8)
-    return snr
+    elev = np.clip(elevation_deg, 10.0, 90.0)
+    re_km = 6371.0
+
+    # 1. Slant range
+    d_km = compute_slant_range_km(elev, altitude_km, re_km)
+    d_m = d_km * 1000.0
+
+    # 2. Free-Space Path Loss: FSPL = 20*log10(4*pi*d / lambda)
+    c_speed = 299792458.0
+    wavelength = c_speed / carrier_hz
+    fspl_db = 20.0 * np.log10(4.0 * np.pi * d_m / wavelength)
+
+    # 3. Satellite nadir angle theta and 3GPP shaped-beam / isoflux roll-off
+    elev_rad = np.radians(elev)
+    # sin(theta) = Re / (Re + h) * cos(elev)
+    sin_theta = (re_km / (re_km + altitude_km)) * np.cos(elev_rad)
+    theta_deg = np.degrees(np.arcsin(np.clip(sin_theta, 0.0, 1.0)))
+
+    # In 3GPP LEO payloads (TR 38.821), isoflux / shaped beams limit beam-edge roll-off to ~3-4 dB
+    # to compensate for path loss toward the horizon.
+    beam_rolloff_db = np.clip(12.0 * ((theta_deg / antenna_3db_beamwidth_deg) ** 2), 0.0, 3.5)
+    g_rx_dbi = g_rx_zenith_dbi - beam_rolloff_db
+
+    # 4. Thermal noise power in dBm: N0 = k * T * B + NF
+    k_boltzmann = 1.380649e-23
+    noise_power_w = k_boltzmann * temperature_k * scs_hz
+    noise_power_dbm = 10.0 * np.log10(noise_power_w) + 30.0 + noise_figure_db
+
+    # 5. Received single-tone SNR in dB
+    snr_db = (p_tx_dbm + g_tx_dbi + g_rx_dbi) - fspl_db - noise_power_dbm
+
+    if np.isscalar(elevation_deg):
+        return float(snr_db)
+    return snr_db
 
 
 def compute_detection_probability(
     snr_db: float or np.ndarray,
     residual_doppler_hz: float or np.ndarray,
     n_rep: int or np.ndarray,
-    scs_hz: float = 3750.0
+    scs_hz: float = 3750.0,
+    gamma_th_db: float = -1.0,
+    k_slope: float = 0.60
 ) -> float or np.ndarray:
     """
     Calculate NPRACH preamble detection probability P_d(SNR, δf, N_rep).
     
-    Calibration basis (Chougrani et al., 2022, Figs. 6-8):
+    Calibration basis (Chougrani et al., 2022):
     In NPRACH preamble detection over NTN with residual CFO:
-    - Post-combining effective SNR includes repetition gain:
-        SNR_post = SNR + 10 * log10(N_rep) - non_coherent_combining_loss(N_rep)
-    - Residual Doppler causes ICI power reduction:
+    - Effective accumulation gain across repetitions:
+        Gain_rep = 10*log10(N_rep) - 0.5*log2(N_rep)
+    - Sinc ICI power reduction from residual CFO:
         L_ICI = 10 * log10( sinc^2(delta_f / scs) )
-      and differential phase rotation across repeated symbol groups.
-    - Detection curve follows logistic CDF:
+    - Operating characteristic calibrated to [-5 dB, +5 dB] range:
         P_d = 1 / (1 + exp(-k * (SNR_eff - gamma_th)))
-    
-    Parameters
-    ----------
-    snr_db : float or ndarray
-        Single-tone uplink SNR in dB.
-    residual_doppler_hz : float or ndarray
-        Residual Doppler shift δf in Hz (after ephemeris pre-compensation).
-    n_rep : int or ndarray
-        NPRACH repetition count (e.g. 2, 8, 32, 64).
-    scs_hz : float
-        NPRACH subcarrier spacing in Hz (default: 3750 Hz).
-        
-    Returns
-    -------
-    float or ndarray
-        Detection probability P_d in [0.0, 1.0].
     """
     n_rep_arr = np.asarray(n_rep, dtype=float)
     snr_arr = np.asarray(snr_db, dtype=float)
     cfo_arr = np.asarray(residual_doppler_hz, dtype=float)
 
-    # 1. Repetition accumulation gain with non-coherent loss across groups:
+    # 1. Repetition accumulation gain (coherent within symbol group, non-coherent across groups)
     rep_gain_db = 10.0 * np.log10(np.maximum(n_rep_arr, 1.0)) - 0.5 * np.log2(np.maximum(n_rep_arr, 1.0))
 
-    # 2. Residual Doppler loss:
-    # Normalized offset relative to subcarrier spacing (SCS = 3750 Hz)
+    # 2. Sinc ICI loss: 10 * log10( (sin(pi*x) / (pi*x))^2 ) ~ 14.3 * (x^2) in dB
     cfo_norm = np.abs(cfo_arr) / scs_hz
-    # Sinc power reduction
     ici_loss_db = 14.3 * (cfo_norm ** 2)
-    # Phase decorrelation across symbol groups for residual frequency offset
-    # Grounded in Chougrani [5] and Lee [13]: 10 Hz is negligible, 250 Hz stress incurs ~2-3 dB loss
-    decorr_loss_db = 2.8 * ((np.abs(cfo_arr) / 250.0) ** 1.5)
 
-    # Total effective SNR at detector output
-    snr_eff = snr_arr + rep_gain_db - ici_loss_db - decorr_loss_db
+    # Effective post-combining SNR
+    snr_eff = snr_arr + rep_gain_db - ici_loss_db
 
-    # 3. Detector operating characteristic:
-    # Calibrated to Chougrani et al. [5] anchors:
-    # - Anchor 1: SNR = 8 dB, N_rep = 64, delta_f = 10 Hz -> P_miss <= 0.01 (P_d >= 0.99)
-    # - Anchor 2: SNR = 15 dB, N_rep = 32, delta_f = 10 Hz -> P_miss <= 0.01 (P_d >= 0.99)
-    gamma_th = 2.0   # dB threshold
-    k_slope = 0.45   # logistic slope
-
-    # Logistic function
-    logit = k_slope * (snr_eff - gamma_th)
+    # 3. Logistic operating characteristic
+    logit = k_slope * (snr_eff - gamma_th_db)
     logit_clipped = np.clip(logit, -30.0, 30.0)
     p_d = 1.0 / (1.0 + np.exp(-logit_clipped))
 
@@ -119,7 +163,11 @@ def compute_miss_probability(
     snr_db: float or np.ndarray,
     residual_doppler_hz: float or np.ndarray,
     n_rep: int or np.ndarray,
-    scs_hz: float = 3750.0
+    scs_hz: float = 3750.0,
+    gamma_th_db: float = -1.0,
+    k_slope: float = 0.60
 ) -> float or np.ndarray:
-    """Detection miss probability P_m = 1 - P_d."""
-    return 1.0 - compute_detection_probability(snr_db, residual_doppler_hz, n_rep, scs_hz)
+    """Detection miss probability P_miss = 1 - P_d."""
+    return 1.0 - compute_detection_probability(
+        snr_db, residual_doppler_hz, n_rep, scs_hz, gamma_th_db, k_slope
+    )

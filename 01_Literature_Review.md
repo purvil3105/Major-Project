@@ -102,17 +102,17 @@ The proposed controller is the only entry that is simultaneously NB-IoT-NPRACH-s
 **Journal / conference**
 
 [1] L. Tello-Oquendo *et al.*, "Performance Analysis and Optimal Access Class Barring Parameter Configuration in LTE-A Networks With Massive M2M Traffic," *IEEE Trans. Veh. Technol.*, vol. 67, no. 4, pp. 3505–3520, 2018, doi:10.1109/TVT.2017.2776868.
-[2] A.-T. H. Bui and A. T. Pham, "Deep Reinforcement Learning-Based Access Class Barring for Energy-Efficient mMTC Random Access in LTE Networks," *IEEE Access*, 2020.
+[2] A.-T. H. Bui and A. T. Pham, "Deep Reinforcement Learning-Based Access Class Barring for Energy-Efficient mMTC Random Access in LTE Networks," *IEEE Access*, vol. 8, pp. 227657–227666, 2020, doi:10.1109/ACCESS.2020.3045811.
 [3] W. G. Abera, T. O. Olwal, Y. W. Marye, "Deep reinforcement learning-based access class barring for mMTC access control in cellular networks," *Array (Elsevier)*, vol. 28, 100533, 2025, doi:10.1016/j.array.2025.100533.
 [4] A. Daraseliya *et al.*, "Performance of the Novel Reactive Access-Barring Scheme for NB-IoT Systems Based on the Machine Learning Inference," *Sensors*, vol. 26, no. 2, art. 636, 2026, doi:10.3390/s26020636.
 [5] H. Chougrani, S. Kisseleff, W. A. Martins, S. Chatzinotas, "NB-IoT Random Access for Nonterrestrial Networks: Preamble Detection and Uplink Synchronization," *IEEE Internet Things J.*, vol. 9, no. 16, pp. 14913–14927, 2022, doi:10.1109/JIOT.2021.3123376.
 [6] J.-C. Lin, "A Unified Random Access Procedure for an NB-IoT Protocol in Nonterrestrial and Terrestrial Networks," *IEEE Internet Things J.*, vol. 12, no. 3, pp. 3424–3440, 2025, doi:10.1109/JIOT.2024.3481064.
 [7] O. Kodheli *et al.*, "Random Access Procedure Over Non-Terrestrial Networks: From Theory to Practice," *IEEE Access*, vol. 9, pp. 109130–109143, 2021, doi:10.1109/ACCESS.2021.3101291.
 [8] T. T. T. Le, N. Ul Hassan, X. Chen, M.-S. Alouini, Z. Han, C. Yuen, "A Survey on Random Access Protocols in Direct-Access LEO Satellite-Based IoT Communication," *IEEE Commun. Surveys Tuts.*, 2024, doi:10.1109/COMST.2024.3385347.
-[9] "SCMA-Q-Learning with Overload Control for Random Access in LEO Satellite mMTC Networks," *Physical Communication*, vol. 69, art. 102611, 2025.
+[9] Z. Wu, G. Jing, J. Ding, and X. Zhao, "SCMA-Q-Learning with Overload Control for Random Access in LEO Satellite mMTC Networks," *Phys. Commun.*, vol. 69, art. 102584, 2024, doi:10.1016/j.phycom.2024.102584.
 [10] A. K. Dwivedi, H. Chougrani, S. Chaudhari, N. Varshney, S. Chatzinotas, "Efficient Transmission Scheme for LEO Satellite-Based NB-IoT: A Data-Driven Perspective," *arXiv:2406.14107*, 2024.
 [11] B. Shen, Y. Wu, W. Zhang, S. Chatzinotas, B. Ottersten, "LEO Satellite-Enabled Random Access With Large Differential Delay and Doppler Shift," *IEEE Trans. Wireless Commun.*, vol. 24, no. 4, pp. 2876–2893, 2025, doi:10.1109/TWC.2025.3525738.
-[12] N. Jiang, Y. Deng, A. Nallanathan, J. A. Chambers, "Reinforcement Learning for Real-Time Optimization in NB-IoT Networks," *IEEE J. Sel. Areas Commun.*, vol. 37, no. 6, 2019, doi:10.1109/JSAC.2019.2904366.
+[12] N. Jiang, Y. Deng, A. Nallanathan, and J. A. Chambers, "Reinforcement Learning for Real-Time Optimization in NB-IoT Networks," *IEEE J. Sel. Areas Commun.*, vol. 37, no. 6, pp. 1424–1440, 2019, doi:10.1109/JSAC.2019.2904366.
 [13] H. Lee, I. P. Roberts, J. Jeong, D. Hong, "Random Access for LEO Satellite Communication Systems via Deep Learning," *arXiv:2512.07053*, 2026.
 [14] X. Liu, H. Zhang, K. Long, A. Nallanathan, V. C. M. Leung, "Deep Dyna-Reinforcement Learning Based on Random Access Control in LEO Satellite IoT Networks," *IEEE Internet Things J.*, vol. 9, no. 16, pp. 14818–14827, 2022, doi:10.1109/JIOT.2021.3112907.
 [15] J.-H. Lee, H. Seo, J. Park, M. Bennis, Y.-C. Ko, "Learning Emergent Random Access Protocol for LEO Satellite Networks," *IEEE Trans. Wireless Commun.*, vol. 22, no. 1, pp. 257–269, 2023, doi:10.1109/TWC.2022.3192365.
@@ -123,9 +123,9 @@ The proposed controller is the only entry that is simultaneously NB-IoT-NPRACH-s
 
 **Standards**
 
-[S1] 3GPP TR 38.811 — *Study on New Radio to support Non-Terrestrial Networks.*
-[S2] 3GPP TR 38.821 — *Solutions for NR to support Non-Terrestrial Networks.*
-[S3] 3GPP TS 36.211 — *E-UTRA Physical channels and modulation* (NPRACH).
-[S4] 3GPP TS 36.321 — *E-UTRA MAC protocol* (Backoff Indicator, Table 7.2-2).
-[S5] 3GPP TS 36.331 — *E-UTRA RRC* (Access Class Barring).
-[S6] 3GPP TR 37.868 — *Study on RAN improvements for machine-type communications* (Beta(3,4) traffic).
+[S1] 3GPP TR 38.811 V16.1.0 (2020-09) — *Study on New Radio (NR) to support Non-Terrestrial Networks (NTN).*
+[S2] 3GPP TR 38.821 V16.1.0 (2021-04) — *Solutions for NR to support Non-Terrestrial Networks (NTN).*
+[S3] 3GPP TS 36.211 V16.6.0 (2021-06) — *E-UTRA Physical channels and modulation (Release 16).*
+[S4] 3GPP TS 36.321 V16.6.0 (2021-06) — *E-UTRA Medium Access Control (MAC) protocol specification (Release 16).*
+[S5] 3GPP TS 36.331 V16.6.0 (2021-06) — *E-UTRA Radio Resource Control (RRC) protocol specification (Release 16).*
+[S6] 3GPP TR 37.868 V11.0.0 (2011-09) — *Study on RAN improvements for machine-type communications.*

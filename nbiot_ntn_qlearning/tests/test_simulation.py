@@ -30,8 +30,10 @@ from src.agent import TabularQLearningAgent
 from src.baselines import (
     FixedTerrestrialController,
     Rel17NTNDefaultController,
+    HeuristicBenchmarkController,
     OracleController
 )
+from src.experiment import run_single_pass_simulation
 
 
 @pytest.fixture
@@ -138,3 +140,94 @@ def test_qlearning_agent_update(cfg):
     assert agent.q_table[5, 10] > 0.0, "Q-value was not updated"
     assert agent.eps < initial_eps, "Epsilon did not decay"
     assert np.isfinite(td_error), "TD error is non-finite"
+
+
+def test_link_budget_snr_bounds(cfg):
+    """Audit Verification: SNR derived from link budget spans ~[-5.5, +8.2] dB."""
+    snr_edge = elevation_to_snr_db(
+        10.0,
+        altitude_km=cfg.get('altitude_km', 600.0),
+        carrier_hz=cfg.get('carrier_hz', 2.0e9),
+        p_tx_dbm=cfg.get('p_tx_dbm', 23.0),
+        g_tx_dbi=cfg.get('g_tx_dbi', 0.0),
+        g_rx_zenith_dbi=cfg.get('g_rx_zenith_dbi', 6.0),
+        antenna_3db_beamwidth_deg=cfg.get('antenna_3db_beamwidth_deg', 65.0),
+        noise_figure_db=cfg.get('noise_figure_db', 5.0),
+        temperature_k=cfg.get('temperature_k', 290.0)
+    )
+    snr_zenith = elevation_to_snr_db(
+        90.0,
+        altitude_km=cfg.get('altitude_km', 600.0),
+        carrier_hz=cfg.get('carrier_hz', 2.0e9),
+        p_tx_dbm=cfg.get('p_tx_dbm', 23.0),
+        g_tx_dbi=cfg.get('g_tx_dbi', 0.0),
+        g_rx_zenith_dbi=cfg.get('g_rx_zenith_dbi', 6.0),
+        antenna_3db_beamwidth_deg=cfg.get('antenna_3db_beamwidth_deg', 65.0),
+        noise_figure_db=cfg.get('noise_figure_db', 5.0),
+        temperature_k=cfg.get('temperature_k', 290.0)
+    )
+
+    # Edge SNR should be around -5.5 dB (in [-7.0, -4.0])
+    assert -7.0 <= snr_edge <= -4.0, f"Edge SNR out of expected range: {snr_edge:.2f} dB"
+    # Zenith SNR should be around +8.2 dB (in [+6.5, +10.0])
+    assert 6.5 <= snr_zenith <= 10.0, f"Zenith SNR out of expected range: {snr_zenith:.2f} dB"
+    # Dynamic range should be in [11.0, 16.0] dB
+    dyn_range = snr_zenith - snr_edge
+    assert 11.0 <= dyn_range <= 16.0, f"Dynamic range unexpected: {dyn_range:.2f} dB"
+
+
+def test_repetition_timing_feasibility(cfg):
+    """Audit Verification: Max repetition transmission time fits within RAO period."""
+    # 32 repetitions * 5.6 ms per preamble symbol group = 179.2 ms
+    max_nrep = max(cfg['nrep_levels'])
+    symbol_group_dur_ms = 5.6
+    tx_time_ms = max_nrep * symbol_group_dur_ms
+
+    rao_period_ms = cfg.get('default_rao_period_ms', 320)
+    assert rao_period_ms >= tx_time_ms, (
+        f"Timing infeasible: Max repetition {max_nrep} takes {tx_time_ms} ms, "
+        f"exceeding RAO period {rao_period_ms} ms"
+    )
+    assert rao_period_ms == 320, f"Expected calibrated RAO period 320 ms, got {rao_period_ms}"
+
+
+def test_multiphase_traffic_coverage(cfg, traj):
+    """Audit Verification: Multiphase traffic populates all 4 elevation bins."""
+    sim = NPRACHSimulator(cfg, traj, seed=555)
+    devices = sim.generate_traffic(1000, traffic_model="multiphase")
+
+    # Map arrivals to elevation at time of arrival
+    elev_bins = [(10, 25), (25, 45), (45, 70), (70, 90)]
+    counts = {b: 0 for b in elev_bins}
+
+    for d in devices:
+        elev, _, _ = sim.get_orbit_at_time(d.arrival_time_s)
+        for (emin, emax) in elev_bins:
+            if emin <= elev < emax:
+                counts[(emin, emax)] += 1
+                break
+
+    for b, cnt in counts.items():
+        assert cnt >= 150, f"Bin {b} has insufficient arrivals: {cnt} < 150"
+
+
+def test_byte_identical_reproducibility(cfg, traj):
+    """Audit Verification: Seed determinism produces byte-identical simulation outcomes."""
+    fixed_seed = 777
+    m1, _, _ = run_single_pass_simulation(
+        cfg=cfg, traj=traj, policy_name="B2_Rel17_NTN_Default",
+        n_devices=200, residual_doppler_hz=10.0, rao_period_ms=320,
+        seed=fixed_seed
+    )
+    m2, _, _ = run_single_pass_simulation(
+        cfg=cfg, traj=traj, policy_name="B2_Rel17_NTN_Default",
+        n_devices=200, residual_doppler_hz=10.0, rao_period_ms=320,
+        seed=fixed_seed
+    )
+
+    assert m1['total_success'] == m2['total_success']
+    assert m1['p_s'] == m2['p_s']
+    assert np.isclose(m1['mean_delay_ms'], m2['mean_delay_ms'], rtol=1e-12, atol=1e-12)
+    assert np.isclose(m1['p95_delay_ms'], m2['p95_delay_ms'], rtol=1e-12, atol=1e-12)
+    assert m1['total_collision'] == m2['total_collision']
+    assert m1['total_miss'] == m2['total_miss']

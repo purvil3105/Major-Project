@@ -33,17 +33,19 @@ class BaselineController:
 class FixedTerrestrialController(BaselineController):
     """
     B1: Fixed ACB+BI (Terrestrial Default)
-    p = 1.0 (no barring), BI = 256 ms, N_rep = 2, RAR window = 8 ms.
+    p = 1.0 (no barring), BI = 256 ms, N_rep = 2.
+    Uses realistic NB-IoT RAR window (24 ms) to allow honest evaluation of
+    contention/detection performance without artificial strawman timeouts.
     """
-    def __init__(self, mdp: RACH_MDP):
+    def __init__(self, mdp: RACH_MDP, rar_window_s: float = 0.024):
         super().__init__("B1_Fixed_Terrestrial", mdp)
+        self.rar_window_s = rar_window_s
 
     def get_action(self, state_dict: dict) -> Tuple[float, int, int]:
         return (1.0, 256, 2)
 
     def get_rar_window_s(self) -> float:
-        # Standard terrestrial RAR window (TS 36.321)
-        return 0.008
+        return self.rar_window_s
 
 
 class Rel17NTNDefaultController(BaselineController):
@@ -61,18 +63,17 @@ class Rel17NTNDefaultController(BaselineController):
         return 0.040
 
 
-class OracleController(BaselineController):
+class HeuristicBenchmarkController(BaselineController):
     """
-    B4: Oracle Controller
-    Has instantaneous ground-truth channel SNR, Doppler, and backlog state.
-    Selects optimal knobs without learning delay:
+    B4: Heuristic Channel-Aware Benchmark (Idealized Hand-Crafted Rules)
+    Dynamically switches parameters based on instantaneous geometry and backlog:
     - Low elevation -> high repetition (N_rep = 32)
     - Moderate elevation -> N_rep = 8
-    - Zenith elevation -> N_rep = 2 (saves transmission time)
+    - Zenith elevation -> N_rep = 2 (saves transmission airtime)
     - High backlog -> stronger barring and longer BI
     """
     def __init__(self, mdp: RACH_MDP):
-        super().__init__("B4_Oracle", mdp)
+        super().__init__("B4_Heuristic_Benchmark", mdp)
 
     def get_action(self, state_dict: dict) -> Tuple[float, int, int]:
         elev = state_dict['elevation_deg']
@@ -106,3 +107,7 @@ class OracleController(BaselineController):
 
     def get_rar_window_s(self) -> float:
         return 0.040
+
+
+# Backward-compatible alias for existing tests/scripts
+OracleController = HeuristicBenchmarkController

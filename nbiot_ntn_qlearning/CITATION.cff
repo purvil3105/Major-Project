@@ -3,7 +3,11 @@ message: "If you use this software in your research, please cite it as below."
 title: "Q-Learning-Based RACH Parameter Optimization for NB-IoT Non-Terrestrial Networks"
 version: 1.0.0
 date-released: 2026-10-10
-url: "https://github.com/your-username/nbiot-ntn-qlearning"
+authors:
+  - family-names: Patel
+    given-names: Purvil
+url: "https://github.com/purvil3105/Major-Project"
+repository-code: "https://github.com/purvil3105/Major-Project"
 keywords:
   - "NB-IoT"
   - "Non-Terrestrial Networks (NTN)"

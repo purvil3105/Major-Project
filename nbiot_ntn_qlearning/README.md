@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: Passing](https://img.shields.io/badge/pytest-5%2F5%20passed-brightgreen.svg)](tests/test_simulation.py)
+[![Tests: Passing](https://img.shields.io/badge/pytest-9%2F9%20passed-brightgreen.svg)](tests/test_simulation.py)
 [![3GPP: Rel-17 Compliant](https://img.shields.io/badge/3GPP-Rel--17%20NTN-orange.svg)](config/default.yaml)
 [![SGP4: Real Sateliot TLE](https://img.shields.io/badge/Orbit-SGP4%20Real%20TLE-blueviolet.svg)](data/tle/sateliot.tle)
 
@@ -24,15 +24,16 @@ Official implementation of the **satellite-aware tabular Q-learning controller**
 
 ## 📊 Benchmark Results Summary
 
-Evaluated across **10 independent Monte-Carlo seeds** (Seeds 200–209) under 3GPP TR 37.868 $\text{Beta}(3,4)$ synchronized burst traffic ($N = 1000$ meters, $T_{\text{pass}} \approx 8.17$ minutes):
+Evaluated across **20 independent Monte-Carlo seeds** (Seeds 200–219) under 3GPP-calibrated multi-phase traffic stimulating all elevation arcs ($N = 1000$ meters, $T_{\text{pass}} \approx 8.17$ minutes):
 
 | Scheme | Access Success $P_s$ | Mean Latency (ms) | 95th % Latency (ms) | Transmissions / Device | Collision Rate | Detection Miss Rate |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **B1: Fixed Terrestrial** | **0.00** *(collapsed)* | — | — | 10.00 ± 0.00 | 95.4% ± 0.1% | 3.5% ± 0.1% |
-| **B2: Rel-17 NTN Default** | 1.00 ± 0.00 | 4647 ± 141 | 14697 ± 459 | 2.17 ± 0.08 | 40.0% ± 2.2% | 13.8% ± 0.9% |
-| **B3: Terrestrial-Frozen Q** | 1.00 ± 0.00 | 10551 ± 858 | 32248 ± 1735 | 2.09 ± 0.11 | 29.9% ± 2.1% | 22.3% ± 2.2% |
-| **B4: Oracle (Upper Bound)** | 1.00 ± 0.00 | 10507 ± 345 | 34479 ± 1235 | **1.17 ± 0.02** | **12.6% ± 1.5%** | **2.5% ± 0.4%** |
-| **Proposed Warm-Start Q** | **1.00 ± 0.00** | **6498 ± 287** | **21033 ± 1008** | **1.38 ± 0.03** | **21.8% ± 1.3%** | **5.8% ± 1.6%** |
+| **B1: Fixed Terrestrial** | 0.99 ± 0.00 | 381 ± 14 | 1471 ± 131 | 1.78 ± 0.07 | 19.1% ± 2.1% | 24.7% ± 1.1% |
+| **B2: Rel-17 NTN Default** | **1.00 ± 0.00** | 2189 ± 81 | 9332 ± 334 | 1.11 ± 0.02 | 7.7% ± 1.4% | 2.1% ± 0.6% |
+| **B3: Terrestrial-Frozen Q** | 1.00 ± 0.00 | 4306 ± 670 | 20985 ± 2750 | 1.19 ± 0.02 | 9.4% ± 1.6% | 6.5% ± 1.6% |
+| **B4: Heuristic Benchmark** | **1.00 ± 0.00** | **245 ± 86** | **571 ± 128** | **1.11 ± 0.02** | 9.3% ± 1.4% | **0.5% ± 0.2%** |
+| **Proposed Warm-Start Q** | 0.99 ± 0.01 | 4599 ± 1740 | 21228 ± 7615 | 1.21 ± 0.07 | **8.8% ± 1.6%** | 8.1% ± 4.0% |
+| **Ablation Lumped-Reward** | 0.99 ± 0.02 | 4350 ± 2014 | 21351 ± 9739 | 1.14 ± 0.02 | 9.9% ± 1.3% | 2.0% ± 0.8% |
 
 ---
 
@@ -83,8 +84,8 @@ nbiot_ntn_qlearning/
 ### 1. Installation
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/your-username/nbiot-ntn-qlearning.git
-cd nbiot-ntn-qlearning
+git clone https://github.com/purvil3105/Major-Project.git
+cd nbiot_ntn_qlearning
 python -m pip install -r requirements.txt
 ```
 

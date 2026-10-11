@@ -130,10 +130,18 @@ class RACH_MDP:
         if n_trans == 0:
             return 0.0
 
-        n_s = rao_stats['n_success']
-        n_c = rao_stats['n_collision']
-        n_m = rao_stats['n_miss']
-        n_t = rao_stats['n_timeout']
+        n_s = float(rao_stats.get('n_success', 0))
+        n_c = float(rao_stats.get('n_collision', 0))
+        n_t = float(rao_stats.get('n_timeout', 0))
+
+        # Miss count: either observable estimator or ground truth benchmark
+        use_estimated = self.cfg.get('use_estimated_misses', True)
+        if use_estimated and 'p_d' in rao_stats:
+            p_d = max(0.01, min(0.999, rao_stats['p_d']))
+            # Observable estimator: n_m_est = n_s * (1 - P_d) / P_d
+            n_m = float(n_s) * (1.0 - p_d) / p_d
+        else:
+            n_m = float(rao_stats.get('n_miss', 0))
 
         # Average delay term for successfully served devices in this RAO
         recent_delays = rao_stats.get('recent_delays', [])

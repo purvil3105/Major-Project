@@ -1,25 +1,14 @@
 """
-experiment.py — Experiment runner executing R1–R6 matrices across seeds.
+experiment.py — Experiment runner executing R1–R6 matrices across 20 seeds.
 
 Implements:
-1. Pre-training routines:
-   - Warm-start Q-table: trained on mixed conditions to cover state bins.
-   - Terrestrial-frozen Q-table (B3): trained on terrestrial conditions only.
-2. Single-pass simulation engine supporting:
-   - Proposed (Cause-Separated Tabular Q-Learning)
-   - B1 (Fixed Terrestrial)
-   - B2 (Rel-17 NTN Default)
-   - B3 (Terrestrial-Frozen Q-table)
-   - B4 (Oracle)
-   - Ablation (Lumped-Reward Q-Learning)
-   - Proposed Cold-Start vs Warm-Start
-3. Comprehensive logging:
-   - results/metrics.csv (headline comparison table)
-   - results/elevation_bins.csv (data for Fig. 2 U-shape)
-   - results/delays.csv (data for Fig. 3 delay CDF)
-   - results/failures.csv (data for Fig. 4 failure cause breakdown)
-   - results/convergence.csv (data for Fig. 5 cold vs warm convergence)
-   - results/sensitivity.csv (data for Fig. 6 N x delta_f sensitivity)
+1. Strict deterministic seeding across all RNG instances (ensuring byte-identical runs).
+2. Clean separation of warm-start pre-training from evaluation pass.
+3. Dedicated pre-trained table for Lumped-Reward Ablation.
+4. Evaluation across 20 independent seeds with 95% Confidence Intervals and
+   paired significance tests against B2 (Rel-17 NTN default).
+5. Pass-spanning multi-phase traffic ensuring all elevation bins are populated (U-shape).
+6. Success-within-deadline and transmissions-per-success (energy) metrics.
 """
 
 import os
@@ -27,6 +16,7 @@ import time
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional
+from scipy import stats
 from tqdm import tqdm
 
 from src.config_loader import load_config
@@ -37,28 +27,64 @@ from src.agent import TabularQLearningAgent
 from src.baselines import (
     FixedTerrestrialController,
     Rel17NTNDefaultController,
-    OracleController
+    HeuristicBenchmarkController
 )
 
 
-def train_warmstart_table(cfg: dict, traj: dict, n_episodes: int = 15, save_path: str = "results/warmstart_qtable.npy") -> np.ndarray:
+def create_synthetic_training_trajectory(cfg: dict, duration_s: float = 480.0) -> dict:
     """
-    Pre-train warm-start Q-table across varied load and channel conditions
-    to ensure all state bins are well-visited before pass deployment.
+    Generate an independent synthetic orbital pass for offline pre-training.
+    Separates pre-training from the test pass (preventing test-pass data leakage).
     """
-    mdp = RACH_MDP(cfg)
-    agent = TabularQLearningAgent(mdp=mdp, alpha=cfg['alpha'], gamma=cfg['gamma'],
-                                  eps0=1.0, eps_min=0.05, eps_decay=0.99, seed=101)
+    t_arr = np.linspace(0.0, duration_s, int(duration_s) + 1)
+    # Synthetic elevation trajectory rising from 10° to 80° and setting to 10°
+    elev_arr = 10.0 + 70.0 * np.sin(np.pi * t_arr / duration_s)
+    # Synthetic delay from 6.3 ms at 10° to 2.0 ms at zenith
+    delay_ms = 6.3 - 4.3 * np.sin(np.pi * t_arr / duration_s)
+    delay_s = delay_ms / 1000.0
+    # Synthetic Doppler
+    doppler_hz = 45000.0 * np.cos(np.pi * t_arr / duration_s)
 
-    rao_step_s = float(cfg.get('default_rao_period_ms', 160)) / 1000.0
-    pass_dur_s = float(traj['duration_s'])
+    return {
+        'time_s': t_arr,
+        'elevation_deg': elev_arr,
+        'delay_s': delay_s,
+        'delay_ms': delay_ms,
+        'raw_doppler_hz': doppler_hz,
+        'duration_s': duration_s,
+        'max_elevation_deg': 80.0
+    }
+
+
+def train_warmstart_table(
+    cfg: dict,
+    n_episodes: int = 25,
+    save_path: str = "results/warmstart_qtable.npy",
+    use_lumped_ablation: bool = False
+) -> np.ndarray:
+    """
+    Pre-train Q-table on independent multi-condition training scenarios.
+    Uses an explicit, fixed seed to guarantee byte-identical reproducibility.
+    """
+    pretrain_seed = int(cfg.get('pretrain_seed', 42))
+    rng = np.random.default_rng(pretrain_seed)
+    train_traj = create_synthetic_training_trajectory(cfg, duration_s=480.0)
+
+    mdp = RACH_MDP(cfg)
+    agent = TabularQLearningAgent(
+        mdp=mdp, alpha=cfg['alpha'], gamma=cfg['gamma'],
+        eps0=1.0, eps_min=0.05, eps_decay=0.99, seed=pretrain_seed
+    )
+
+    rao_step_s = float(cfg.get('default_rao_period_ms', 320)) / 1000.0
+    pass_dur_s = float(train_traj['duration_s'])
 
     for ep in range(n_episodes):
-        # Vary device load and Doppler across episodes for diversity
-        n_dev = int(np.random.choice([300, 800, 1500, 2500]))
-        d_hz = float(np.random.choice([10.0, 100.0, 250.0]))
-        sim = NPRACHSimulator(cfg, traj, seed=1000 + ep)
-        devices = sim.generate_traffic(n_dev, traffic_model="beta")
+        n_dev = int(rng.choice([300, 800, 1500, 2500]))
+        d_hz = float(rng.choice([10.0, 100.0, 250.0]))
+        sim_seed = int(pretrain_seed * 100 + ep)
+        sim = NPRACHSimulator(cfg, train_traj, seed=sim_seed)
+        devices = sim.generate_traffic(n_dev, traffic_model="multiphase")
 
         t = 0.0
         prev_s_idx = None
@@ -66,7 +92,6 @@ def train_warmstart_table(cfg: dict, traj: dict, n_episodes: int = 15, save_path
 
         while t < pass_dur_s:
             elev, _, _ = sim.get_orbit_at_time(t)
-            # Count backlogged devices
             n_backlogged = sum(1 for d in devices if not d.is_served and not d.is_dropped and d.arrival_time_s <= t)
             load_ratio = float(n_backlogged) / float(sim.n_preambles)
             pass_prog = t / max(1.0, pass_dur_s)
@@ -89,31 +114,43 @@ def train_warmstart_table(cfg: dict, traj: dict, n_episodes: int = 15, save_path
                 rar_window_s=0.040
             )
 
-            reward = mdp.compute_reward(rao_res, use_lumped_ablation=False)
+            reward = mdp.compute_reward(rao_res, use_lumped_ablation=use_lumped_ablation)
             prev_s_idx = s_idx
             prev_a_idx = a_idx
             t += rao_step_s
 
+    os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
     agent.save_q_table(save_path)
     return agent.q_table
 
 
-def train_terrestrial_frozen_table(cfg: dict, traj: dict, n_episodes: int = 15, save_path: str = "results/terrestrial_frozen_qtable.npy") -> np.ndarray:
+def train_terrestrial_frozen_table(
+    cfg: dict,
+    n_episodes: int = 25,
+    save_path: str = "results/terrestrial_frozen_qtable.npy"
+) -> np.ndarray:
     """
-    Train B3 baseline table: trained strictly under terrestrial conditions
-    (constant high SNR = 15 dB, zero propagation delay, zero Doppler).
+    Train B3 baseline: trained across terrestrial load levels with constant high SNR,
+    then deployed on NTN without adaptation.
     """
-    mdp = RACH_MDP(cfg)
-    agent = TabularQLearningAgent(mdp=mdp, alpha=cfg['alpha'], gamma=cfg['gamma'],
-                                  eps0=1.0, eps_min=0.05, eps_decay=0.99, seed=202)
+    pretrain_seed = int(cfg.get('pretrain_seed', 42)) + 999
+    rng = np.random.default_rng(pretrain_seed)
+    train_traj = create_synthetic_training_trajectory(cfg, duration_s=480.0)
 
-    rao_step_s = float(cfg.get('default_rao_period_ms', 160)) / 1000.0
-    pass_dur_s = float(traj['duration_s'])
+    mdp = RACH_MDP(cfg)
+    agent = TabularQLearningAgent(
+        mdp=mdp, alpha=cfg['alpha'], gamma=cfg['gamma'],
+        eps0=1.0, eps_min=0.05, eps_decay=0.99, seed=pretrain_seed
+    )
+
+    rao_step_s = float(cfg.get('default_rao_period_ms', 320)) / 1000.0
+    pass_dur_s = float(train_traj['duration_s'])
 
     for ep in range(n_episodes):
-        n_dev = int(np.random.choice([300, 800, 1500, 2500]))
-        sim = NPRACHSimulator(cfg, traj, seed=2000 + ep)
-        devices = sim.generate_traffic(n_dev, traffic_model="beta")
+        n_dev = int(rng.choice([300, 800, 1500, 2500]))
+        sim_seed = int(pretrain_seed * 100 + ep)
+        sim = NPRACHSimulator(cfg, train_traj, seed=sim_seed)
+        devices = sim.generate_traffic(n_dev, traffic_model="multiphase")
 
         t = 0.0
         prev_s_idx = None
@@ -122,8 +159,9 @@ def train_terrestrial_frozen_table(cfg: dict, traj: dict, n_episodes: int = 15, 
         while t < pass_dur_s:
             n_backlogged = sum(1 for d in devices if not d.is_served and not d.is_dropped and d.arrival_time_s <= t)
             load_ratio = float(n_backlogged) / float(sim.n_preambles)
-            # Under terrestrial conditions: elevation is nominally zenith (90°), doppler is 0 Hz
-            s_idx = mdp.encode_state(load_ratio, 85.0, 0.0, t / max(1.0, pass_dur_s))
+            # Terrestrial environment: constant high elevation / high SNR, 0 Doppler
+            elev_sim = float(rng.choice([45.0, 75.0, 85.0]))
+            s_idx = mdp.encode_state(load_ratio, elev_sim, 0.0, t / max(1.0, pass_dur_s))
 
             if prev_s_idx is not None and prev_a_idx is not None:
                 agent.update(prev_s_idx, prev_a_idx, reward, s_idx, done=False)
@@ -131,7 +169,6 @@ def train_terrestrial_frozen_table(cfg: dict, traj: dict, n_episodes: int = 15, 
             a_idx = agent.select_action(s_idx)
             acb_p, bi_ms, n_rep = mdp.decode_action(a_idx)
 
-            # Terrestrial channel: high SNR, short terrestrial RAR
             rao_res = sim.simulate_rao(
                 t_now_s=t,
                 devices=devices,
@@ -139,7 +176,7 @@ def train_terrestrial_frozen_table(cfg: dict, traj: dict, n_episodes: int = 15, 
                 bi_ms=bi_ms,
                 n_rep=n_rep,
                 residual_doppler_hz=0.0,
-                rar_window_s=0.040
+                rar_window_s=0.024
             )
 
             reward = mdp.compute_reward(rao_res, use_lumped_ablation=False)
@@ -147,6 +184,7 @@ def train_terrestrial_frozen_table(cfg: dict, traj: dict, n_episodes: int = 15, 
             prev_a_idx = a_idx
             t += rao_step_s
 
+    os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
     agent.save_q_table(save_path)
     return agent.q_table
 
@@ -162,22 +200,12 @@ def run_single_pass_simulation(
     warmstart_path: Optional[str] = None
 ) -> Tuple[Dict, List[Dict], List[float]]:
     """
-    Execute a full single-pass simulation.
-    
-    Returns
-    -------
-    summary : dict
-        Aggregated metrics (P_s, mean delay, 95th pct delay, failure split, etc.)
-    rao_logs : list of dict
-        Per-RAO metrics time-series
-    delays_ms : list of float
-        Individual served device access delays
+    Execute a full single-pass simulation with strict deterministic seeding.
     """
     sim = NPRACHSimulator(cfg, traj, seed=seed)
-    devices = sim.generate_traffic(n_devices, traffic_model=cfg.get('traffic_model', 'beta'))
+    devices = sim.generate_traffic(n_devices, traffic_model=cfg.get('traffic_model', 'multiphase'))
     mdp = RACH_MDP(cfg)
 
-    # Initialize controller based on policy_name
     agent = None
     baseline = None
     use_lumped = False
@@ -201,26 +229,27 @@ def run_single_pass_simulation(
     elif policy_name == "Ablation_Lumped":
         is_learning = True
         use_lumped = True
+        ablation_ws = warmstart_path.replace("warmstart_qtable", "ablation_lumped_qtable") if warmstart_path else None
         agent = TabularQLearningAgent(
             mdp=mdp, alpha=cfg['alpha'], gamma=cfg['gamma'],
             eps0=0.15, eps_min=cfg['eps_min'], eps_decay=cfg['eps_decay'],
-            seed=seed, is_warm_start=True, warmstart_path=warmstart_path
+            seed=seed, is_warm_start=True, warmstart_path=ablation_ws
         )
     elif policy_name == "B1_Fixed_Terrestrial":
-        baseline = FixedTerrestrialController(mdp)
+        rar_win_s = float(cfg.get('rar_window_ms', 24.0)) / 1000.0
+        baseline = FixedTerrestrialController(mdp, rar_window_s=rar_win_s)
         rar_window_s = baseline.get_rar_window_s()
     elif policy_name == "B2_Rel17_NTN_Default":
         baseline = Rel17NTNDefaultController(mdp)
         rar_window_s = baseline.get_rar_window_s()
     elif policy_name == "B3_Terrestrial_Frozen":
-        # Frozen policy: greedy on terrestrial table, no online updates
         b3_path = warmstart_path.replace("warmstart_qtable", "terrestrial_frozen_qtable") if warmstart_path else None
         agent = TabularQLearningAgent(
             mdp=mdp, is_warm_start=True, warmstart_path=b3_path, seed=seed
         )
         is_learning = False
-    elif policy_name == "B4_Oracle":
-        baseline = OracleController(mdp)
+    elif policy_name in ["B4_Oracle", "B4_Heuristic_Benchmark"]:
+        baseline = HeuristicBenchmarkController(mdp)
         rar_window_s = baseline.get_rar_window_s()
     else:
         raise ValueError(f"Unknown policy: {policy_name}")
@@ -250,11 +279,9 @@ def run_single_pass_simulation(
             })
             a_idx = mdp.encode_action(acb_p, bi_ms, n_rep)
         elif not is_learning:
-            # Frozen policy greedy evaluation
             a_idx = agent.select_action(s_idx, greedy_only=True)
             acb_p, bi_ms, n_rep = mdp.decode_action(a_idx)
         else:
-            # Active learning agent
             if prev_s_idx is not None and prev_a_idx is not None:
                 agent.update(prev_s_idx, prev_a_idx, reward, s_idx, done=False)
             a_idx = agent.select_action(s_idx, greedy_only=False)
@@ -274,7 +301,6 @@ def run_single_pass_simulation(
         prev_s_idx = s_idx
         prev_a_idx = a_idx
 
-        # Log RAO step
         rao_log_entry = {
             'step': step_idx,
             't_s': t,
@@ -303,19 +329,21 @@ def run_single_pass_simulation(
     n_served = len(served_devices)
     p_s = float(n_served) / float(n_total)
 
+    served_deadline = [d for d in devices if d.is_served_within_deadline]
+    p_s_deadline = float(len(served_deadline)) / float(n_total)
+
     delays = [d.access_delay_s * 1000.0 for d in served_devices if not np.isnan(d.access_delay_s)]
     mean_delay = float(np.mean(delays)) if delays else np.nan
     p95_delay = float(np.percentile(delays, 95)) if delays else np.nan
 
-    # Energy proxy: mean transmissions per device
+    # Energy: transmissions per successful device
     trans_counts = [d.trans_count for d in devices]
-    mean_trans = float(np.mean(trans_counts)) if trans_counts else 0.0
+    tot_trans = sum(r['n_trans'] for r in rao_logs)
+    trans_per_success = float(tot_trans) / float(max(1, n_served))
 
-    # Total failure counts
     tot_coll = sum(r['n_collision'] for r in rao_logs)
     tot_miss = sum(r['n_miss'] for r in rao_logs)
     tot_to = sum(r['n_timeout'] for r in rao_logs)
-    tot_trans = sum(r['n_trans'] for r in rao_logs)
 
     summary = {
         'policy': policy_name,
@@ -324,9 +352,10 @@ def run_single_pass_simulation(
         'residual_doppler_hz': residual_doppler_hz,
         'rao_period_ms': rao_period_ms,
         'p_s': p_s,
+        'p_s_deadline': p_s_deadline,
         'mean_delay_ms': mean_delay,
         'p95_delay_ms': p95_delay,
-        'mean_transmissions': mean_trans,
+        'trans_per_success': trans_per_success,
         'total_trans': tot_trans,
         'total_success': n_served,
         'total_collision': tot_coll,
@@ -342,19 +371,21 @@ def run_single_pass_simulation(
 
 def run_all_experiments(cfg: dict, output_dir: str = "results"):
     """
-    Run full experimental matrix R1–R6 across >=10 seeds.
-    Emits all CSVs needed for plotting and analysis.
+    Run full experimental matrix R1–R6 across 20 seeds.
     """
     os.makedirs(output_dir, exist_ok=True)
     traj = generate_pass_trajectory_from_config(cfg)
 
-    print("Step 1: Pre-training warm-start and terrestrial-frozen Q-tables...")
+    print("Step 1: Pre-training independent Q-tables (warm-start, lumped ablation, terrestrial)...")
     ws_path = os.path.join(output_dir, "warmstart_qtable.npy")
+    ab_path = os.path.join(output_dir, "ablation_lumped_qtable.npy")
     tf_path = os.path.join(output_dir, "terrestrial_frozen_qtable.npy")
-    train_warmstart_table(cfg, traj, n_episodes=20, save_path=ws_path)
-    train_terrestrial_frozen_table(cfg, traj, n_episodes=20, save_path=tf_path)
 
-    seeds = list(cfg.get('seeds', [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]))
+    train_warmstart_table(cfg, n_episodes=25, save_path=ws_path, use_lumped_ablation=False)
+    train_warmstart_table(cfg, n_episodes=25, save_path=ab_path, use_lumped_ablation=True)
+    train_terrestrial_frozen_table(cfg, n_episodes=25, save_path=tf_path)
+
+    seeds = list(cfg.get('seeds', [200 + i for i in range(20)]))
     print(f"Step 2: Running Main Comparison (R2, R3, R4, R5) across {len(seeds)} seeds...")
 
     policies = [
@@ -363,7 +394,7 @@ def run_all_experiments(cfg: dict, output_dir: str = "results"):
         "B1_Fixed_Terrestrial",
         "B2_Rel17_NTN_Default",
         "B3_Terrestrial_Frozen",
-        "B4_Oracle",
+        "B4_Heuristic_Benchmark",
         "Ablation_Lumped"
     ]
 
@@ -373,30 +404,27 @@ def run_all_experiments(cfg: dict, output_dir: str = "results"):
     failure_records = []
     all_delays = []
 
-    # Elevation bin definitions for Fig. 2
     elev_bins = [(10, 25), (25, 45), (45, 70), (70, 90)]
 
     for seed in tqdm(seeds, desc="Seeds"):
         for pol in policies:
-            # Default run conditions: N = 1000, delta_f = 10 Hz (nominal) or 250 Hz (stress for R4)
-            d_hz = 250.0 if pol == "Ablation_Lumped" else 10.0
+            # Unconfounded: all evaluated under matched nominal Doppler (10 Hz)
+            d_hz = 10.0
             summary, rao_logs, delays = run_single_pass_simulation(
                 cfg=cfg,
                 traj=traj,
                 policy_name=pol,
-                n_devices=1000,
+                n_devices=int(cfg.get('default_n_devices', 1000)),
                 residual_doppler_hz=d_hz,
-                rao_period_ms=160,
+                rao_period_ms=int(cfg.get('default_rao_period_ms', 320)),
                 seed=seed,
                 warmstart_path=ws_path
             )
             all_summaries.append(summary)
 
-            # Record delays for Fig. 3
             for d in delays:
                 all_delays.append({'policy': pol, 'seed': seed, 'delay_ms': d})
 
-            # Record elevation-binned performance for Fig. 2
             df_rao = pd.DataFrame(rao_logs)
             for (emin, emax) in elev_bins:
                 sub = df_rao[(df_rao['elevation_deg'] >= emin) & (df_rao['elevation_deg'] < emax)]
@@ -412,40 +440,53 @@ def run_all_experiments(cfg: dict, output_dir: str = "results"):
                     'p_s': sub_ps
                 })
 
-            # Record convergence time-series for Fig. 5 (Cold vs Warm)
+            # Convergence time-series (Fig. 5): only active RAOs to avoid 0/0 artifacts
             if pol in ["Proposed_Warm", "Proposed_Cold"]:
-                # Moving window success rate and cumulative reward
-                w_size = 20
-                roll_s = df_rao['n_success'].rolling(w_size, min_periods=1).sum()
-                roll_t = df_rao['n_trans'].rolling(w_size, min_periods=1).sum()
-                for idx, row in df_rao.iterrows():
-                    convergence_records.append({
-                        'policy': pol,
-                        'seed': seed,
-                        'step': row['step'],
-                        't_s': row['t_s'],
-                        'reward': row['reward'],
-                        'success_rate_win': roll_s.iloc[idx] / max(1, roll_t.iloc[idx])
-                    })
+                df_active = df_rao[df_rao['n_trans'] > 0].copy()
+                if len(df_active) > 0:
+                    roll_s = df_active['n_success'].rolling(15, min_periods=1).sum()
+                    roll_t = df_active['n_trans'].rolling(15, min_periods=1).sum()
+                    df_active['roll_success_rate'] = roll_s / roll_t
+                    for _, row in df_active.iterrows():
+                        convergence_records.append({
+                            'policy': pol,
+                            'seed': seed,
+                            'step': row['step'],
+                            't_s': row['t_s'],
+                            'reward': row['reward'],
+                            'success_rate_win': row['roll_success_rate']
+                        })
 
-            # Record failure breakdown for Fig. 4 (Proposed vs Ablation at 250 Hz)
-            if pol in ["Proposed_Warm", "Ablation_Lumped"]:
-                for idx, row in df_rao.iterrows():
-                    failure_records.append({
-                        'policy': pol,
-                        'seed': seed,
-                        'step': row['step'],
-                        't_s': row['t_s'],
-                        'elevation_deg': row['elevation_deg'],
-                        'acb_p': row['acb_p'],
-                        'n_rep': row['n_rep'],
-                        'n_collision': row['n_collision'],
-                        'n_miss': row['n_miss'],
-                        'n_timeout': row['n_timeout'],
-                        'n_success': row['n_success']
-                    })
+    # R4 Failure breakdown under matched stress Doppler (250 Hz) for Proposed vs Ablation
+    print("Step 2b: Running Unconfounded R4 Failure Breakdown (250 Hz stress)...")
+    for seed in seeds[:10]:
+        for pol in ["Proposed_Warm", "Ablation_Lumped"]:
+            _, rao_logs, _ = run_single_pass_simulation(
+                cfg=cfg,
+                traj=traj,
+                policy_name=pol,
+                n_devices=1000,
+                residual_doppler_hz=250.0,
+                rao_period_ms=int(cfg.get('default_rao_period_ms', 320)),
+                seed=seed,
+                warmstart_path=ws_path
+            )
+            df_rao = pd.DataFrame(rao_logs)
+            for _, row in df_rao.iterrows():
+                failure_records.append({
+                    'policy': pol,
+                    'seed': seed,
+                    'step': row['step'],
+                    't_s': row['t_s'],
+                    'elevation_deg': row['elevation_deg'],
+                    'acb_p': row['acb_p'],
+                    'n_rep': row['n_rep'],
+                    'n_collision': row['n_collision'],
+                    'n_miss': row['n_miss'],
+                    'n_timeout': row['n_timeout'],
+                    'n_success': row['n_success']
+                })
 
-    # Save dataframes
     pd.DataFrame(all_summaries).to_csv(os.path.join(output_dir, "metrics.csv"), index=False)
     pd.DataFrame(elevation_records).to_csv(os.path.join(output_dir, "elevation_bins.csv"), index=False)
     pd.DataFrame(convergence_records).to_csv(os.path.join(output_dir, "convergence.csv"), index=False)
@@ -459,34 +500,37 @@ def run_all_experiments(cfg: dict, output_dir: str = "results"):
 
     for n_dev in test_devices:
         for d_hz in test_dopplers:
-            for seed in seeds[:5]:  # 5 seeds for sensitivity sweep
-                # Run Proposed_Warm
+            for seed in seeds[:10]:
                 s_prop, _, _ = run_single_pass_simulation(
-                    cfg, traj, "Proposed_Warm", n_dev, d_hz, 160, seed, ws_path
+                    cfg, traj, "Proposed_Warm", n_dev, d_hz, 320, seed, ws_path
                 )
-                # Run B1_Fixed_Terrestrial
-                s_b1, _, _ = run_single_pass_simulation(
-                    cfg, traj, "B1_Fixed_Terrestrial", n_dev, d_hz, 160, seed, ws_path
-                )
-                # Run B2_Rel17_NTN_Default
                 s_b2, _, _ = run_single_pass_simulation(
-                    cfg, traj, "B2_Rel17_NTN_Default", n_dev, d_hz, 160, seed, ws_path
+                    cfg, traj, "B2_Rel17_NTN_Default", n_dev, d_hz, 320, seed, ws_path
+                )
+                s_b1, _, _ = run_single_pass_simulation(
+                    cfg, traj, "B1_Fixed_Terrestrial", n_dev, d_hz, 320, seed, ws_path
                 )
 
-                gain_vs_b1 = s_prop['p_s'] - s_b1['p_s']
-                gain_vs_b2 = s_prop['p_s'] - s_b2['p_s']
+                gain_vs_b2 = s_prop['p_s_deadline'] - s_b2['p_s_deadline']
+                gain_vs_b1 = s_prop['p_s_deadline'] - s_b1['p_s_deadline']
+                trans_prop = s_prop['trans_per_success']
+                trans_b2 = s_b2['trans_per_success']
+                energy_reduction_pct = (trans_b2 - trans_prop) / max(0.001, trans_b2) * 100.0
 
                 sens_records.append({
                     'n_devices': n_dev,
                     'residual_doppler_hz': d_hz,
                     'seed': seed,
-                    'p_s_proposed': s_prop['p_s'],
-                    'p_s_b1': s_b1['p_s'],
-                    'p_s_b2': s_b2['p_s'],
-                    'gain_vs_b1': gain_vs_b1,
+                    'p_s_proposed': s_prop['p_s_deadline'],
+                    'p_s_b2': s_b2['p_s_deadline'],
+                    'p_s_b1': s_b1['p_s_deadline'],
                     'gain_vs_b2': gain_vs_b2,
+                    'gain_vs_b1': gain_vs_b1,
+                    'trans_proposed': trans_prop,
+                    'trans_b2': trans_b2,
+                    'energy_reduction_pct': energy_reduction_pct,
                     'delay_proposed': s_prop['mean_delay_ms'],
-                    'delay_b1': s_b1['mean_delay_ms']
+                    'delay_b2': s_b2['mean_delay_ms']
                 })
 
     pd.DataFrame(sens_records).to_csv(os.path.join(output_dir, "sensitivity.csv"), index=False)
