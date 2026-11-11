@@ -32,3 +32,7 @@ Literature_review.docx
 # Copyrighted paper PDFs stay local (do not publish)
 papers/*.pdf
 papers/*.xlsx
+
+# quick smoke-test outputs
+nbiot_ntn_qlearning/results_quick/
+nbiot_ntn_qlearning/figs_quick/

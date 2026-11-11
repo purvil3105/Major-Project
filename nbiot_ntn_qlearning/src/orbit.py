@@ -1,234 +1,140 @@
 """
-orbit.py — SGP4 orbit propagation using Skyfield from real TLE data.
+orbit.py — SGP4 pass geometry from real TLEs (Skyfield).
 
-Calculates time-series of:
-- Elevation ε(t) [deg]
-- Slant range d(t) [km]
-- Range rate r_dot(t) [km/s]
-- One-way propagation delay τ(t) = d(t) / c [s]
-- Raw Doppler shift f_D(t) = - (r_dot(t) / c) * f_c [Hz]
+For every pass of a satellite over the ground site the module returns, on a 1-s grid,
+elevation eps(t), slant range d(t), range rate (from Skyfield's topocentric rates), one-way
+delay tau = d/c and raw Doppler f_D = -rdot * f_c / c.
 
-Acceptance criteria (Phase 1):
-- Pass duration: ~2–7 minutes (120–420 s) for elevation >= 10 deg mask.
-- One-way delay: ~2.0 ms (zenith) to ~6.4 ms (10° edge).
-- Peak raw Doppler: <= ~41–48 kHz for 2 GHz carrier.
+All qualifying passes (peak elevation >= min_pass_peak_deg) in the search window are
+returned, so experiments cover several orbital geometries rather than one hand-picked pass.
+Synthetic circular-orbit satellites at other altitudes are built for the altitude sweep.
 """
 
-import os
+import math
+from functools import lru_cache
+
 import numpy as np
-from skyfield.api import load, EarthSatellite, wgs84
-from skyfield.timelib import Time
-import datetime
+from sgp4.api import Satrec, WGS72
+from skyfield.api import EarthSatellite, load, wgs84
 
-# Speed of light in m/s and km/s
-SPEED_OF_LIGHT_M_S = 299792458.0
-SPEED_OF_LIGHT_KM_S = 299792.458
+from src.config_loader import resolve_path
+
+C_M_S = 299792458.0
+MU_EARTH_KM3_S2 = 398600.4418
+RE_EQ_KM = 6378.137
+
+_TS = None
 
 
-def load_satellite_from_tle(tle_path: str, sat_name: str = "SATELIOT_2") -> EarthSatellite:
-    """Load an EarthSatellite from a TLE file."""
-    if not os.path.isabs(tle_path):
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        tle_path = os.path.join(project_root, tle_path)
+def timescale():
+    global _TS
+    if _TS is None:
+        _TS = load.timescale(builtin=True)
+    return _TS
 
-    ts = load.timescale()
-    with open(tle_path, "r") as f:
-        lines = [line.strip() for line in f if line.strip()]
 
-    # Parse 3-line format (Name, Line 1, Line 2)
+def load_tle_file(tle_path: str) -> dict:
+    """Parse a 3-line TLE file into {name: EarthSatellite}."""
+    ts = timescale()
+    with open(resolve_path(tle_path), "r", encoding="utf-8") as f:
+        lines = [ln.rstrip() for ln in f if ln.strip()]
     sats = {}
-    i = 0
-    while i < len(lines):
-        if lines[i].startswith("1 ") and i > 0:
-            name = lines[i - 1].strip()
-            l1 = lines[i]
-            l2 = lines[i + 1]
-            sats[name] = EarthSatellite(l1, l2, name, ts)
-            i += 2
-        elif i + 2 < len(lines) and lines[i + 1].startswith("1 "):
+    for i in range(len(lines) - 2):
+        if lines[i + 1].startswith("1 ") and lines[i + 2].startswith("2 "):
             name = lines[i].strip()
-            l1 = lines[i + 1]
-            l2 = lines[i + 2]
-            sats[name] = EarthSatellite(l1, l2, name, ts)
-            i += 3
-        else:
-            i += 1
-
-    if sat_name in sats:
-        return sats[sat_name]
-    if len(sats) > 0:
-        # Fallback to first available satellite
-        first_key = list(sats.keys())[0]
-        return sats[first_key]
-    raise ValueError(f"Could not parse any satellites from {tle_path}")
+            sats[name] = EarthSatellite(lines[i + 1], lines[i + 2], name, ts)
+    if not sats:
+        raise ValueError(f"No satellites parsed from {tle_path}")
+    return sats
 
 
-def find_high_elevation_pass(
-    satellite: EarthSatellite,
-    ground_lat: float,
-    ground_lon: float,
-    ground_elev_m: float = 53.0,
-    min_elev_deg: float = 10.0,
-    search_days: float = 7.0,
-    min_culmination_deg: float = 40.0
-):
-    """
-    Find the best visible pass (highest culmination angle >= min_culmination_deg)
-    starting from satellite epoch over search_days.
-    """
-    ts = load.timescale()
-    ground_station = wgs84.latlon(ground_lat, ground_lon, elevation_m=ground_elev_m)
-    epoch_dt = satellite.epoch.utc_datetime()
-
-    # Search window: from epoch to epoch + search_days
-    t0 = ts.from_datetime(epoch_dt)
-    t1 = ts.from_datetime(epoch_dt + datetime.timedelta(days=search_days))
-
-    t, events = satellite.find_events(ground_station, t0, t1, altitude_degrees=min_elev_deg)
-
-    # Group events: 0 = rise, 1 = culminate, 2 = set
-    passes = []
-    current_pass = {}
-    for ti, event in zip(t, events):
-        if event == 0:  # Rise
-            current_pass = {'rise': ti}
-        elif event == 1 and 'rise' in current_pass:  # Culminate
-            current_pass['culminate'] = ti
-            # check elevation at culmination
-            diff = (satellite - ground_station).at(ti)
-            alt, az, dist = diff.altaz()
-            current_pass['max_alt_deg'] = alt.degrees
-        elif event == 2 and 'culminate' in current_pass:  # Set
-            current_pass['set'] = ti
-            passes.append(current_pass)
-            current_pass = {}
-
-    # Filter by culmination requirement and sort by highest elevation
-    good_passes = [p for p in passes if p.get('max_alt_deg', 0) >= min_culmination_deg]
-    if not good_passes:
-        # Fall back to best available pass
-        if passes:
-            passes.sort(key=lambda x: x.get('max_alt_deg', 0), reverse=True)
-            return passes[0]
-        raise RuntimeError("No pass found matching criteria.")
-
-    good_passes.sort(key=lambda x: x['max_alt_deg'], reverse=True)
-    return good_passes[0]
+def synthetic_satellite(reference: EarthSatellite, altitude_km: float, name: str) -> EarthSatellite:
+    """Circular orbit at `altitude_km` sharing the reference's epoch, inclination and RAAN."""
+    ref = reference.model
+    a_km = RE_EQ_KM + altitude_km
+    n_rad_min = math.sqrt(MU_EARTH_KM3_S2 / a_km ** 3) * 60.0
+    epoch_days = (ref.jdsatepoch + ref.jdsatepochF) - 2433281.5
+    sat = Satrec()
+    sat.sgp4init(WGS72, "i", 99000 + int(altitude_km) % 1000, epoch_days,
+                 0.0, 0.0, 0.0, 1e-4, ref.argpo, ref.inclo, ref.mo, n_rad_min, ref.nodeo)
+    return EarthSatellite.from_satrec(sat, timescale())
 
 
-def compute_pass_trajectory(
-    satellite: EarthSatellite,
-    pass_info: dict,
-    ground_lat: float,
-    ground_lon: float,
-    ground_elev_m: float = 53.0,
-    carrier_hz: float = 2.0e9,
-    time_step_s: float = 1.0,
-    elev_mask_deg: float = 10.0
-) -> dict:
-    """
-    Propagate the orbit along the selected pass at time_step_s increments.
-    
-    Returns
-    -------
-    dict with numpy arrays:
-        time_s: array of elapsed seconds from rise [0, 1, 2, ...]
-        timestamps: list of Skyfield Time objects
-        elevation_deg: array of elevation angles [deg]
-        slant_range_km: array of distance from ground to satellite [km]
-        range_rate_km_s: array of radial velocity dr/dt [km/s] (positive = moving away)
-        delay_s: one-way delay tau(t) = d(t)/c [s]
-        delay_ms: tau(t) [ms]
-        raw_doppler_hz: Doppler shift f_D(t) = - (r_dot / c) * f_c [Hz]
-        duration_s: total pass duration in seconds
-        max_elevation_deg: peak elevation during pass
-    """
-    ts = load.timescale()
-    ground_station = wgs84.latlon(ground_lat, ground_lon, elevation_m=ground_elev_m)
+def mean_altitude_km(sat: EarthSatellite) -> float:
+    n_rad_s = sat.model.no_kozai / 60.0
+    return (MU_EARTH_KM3_S2 / n_rad_s ** 2) ** (1.0 / 3.0) - RE_EQ_KM
 
-    t_rise = pass_info['rise']
-    t_set = pass_info['set']
-    duration_s = (t_set.utc_datetime() - t_rise.utc_datetime()).total_seconds()
 
-    dt_step = datetime.timedelta(seconds=time_step_s)
-    current_dt = t_rise.utc_datetime()
-    end_dt = t_set.utc_datetime()
+def find_passes(sat: EarthSatellite, cfg: dict, min_peak_deg: float = None) -> list:
+    """All passes above the mask whose culmination >= min_peak_deg, in time order."""
+    ts = timescale()
+    site = wgs84.latlon(cfg["ground_lat_deg"], cfg["ground_lon_deg"], elevation_m=cfg["ground_elev_m"])
+    t0 = sat.epoch
+    t1 = ts.tt_jd(t0.tt + float(cfg["pass_search_days"]))
+    times, events = sat.find_events(site, t0, t1, altitude_degrees=float(cfg["elev_mask_deg"]))
+    min_peak = float(cfg["min_pass_peak_deg"] if min_peak_deg is None else min_peak_deg)
+    passes, cur = [], {}
+    for ti, ev in zip(times, events):
+        if ev == 0:
+            cur = {"rise": ti}
+        elif ev == 1 and "rise" in cur:
+            alt = (sat - site).at(ti).altaz()[0].degrees
+            cur["peak_deg"] = max(cur.get("peak_deg", -90.0), float(alt))
+        elif ev == 2 and "peak_deg" in cur:
+            cur["set"] = ti
+            if cur["peak_deg"] >= min_peak:
+                passes.append(cur)
+            cur = {}
+    return passes
 
-    time_s = []
-    times = []
-    elevations = []
-    ranges = []
-    range_rates = []
 
-    elapsed = 0.0
-    while current_dt <= end_dt + datetime.timedelta(seconds=0.1):
-        ti = ts.from_datetime(current_dt)
-        times.append(ti)
-        time_s.append(elapsed)
-
-        diff = (satellite - ground_station).at(ti)
-        alt, az, dist = diff.altaz()
-        elevations.append(alt.degrees)
-        ranges.append(dist.km)
-
-        # Range rate dr/dt via central or forward/backward difference with +/- 0.05 s
-        dt_eps = datetime.timedelta(seconds=0.05)
-        ti_plus = ts.from_datetime(current_dt + dt_eps)
-        ti_minus = ts.from_datetime(current_dt - dt_eps)
-        dist_plus = (satellite - ground_station).at(ti_plus).altaz()[2].km
-        dist_minus = (satellite - ground_station).at(ti_minus).altaz()[2].km
-        r_dot = (dist_plus - dist_minus) / 0.1  # km/s
-        range_rates.append(r_dot)
-
-        current_dt += dt_step
-        elapsed += time_step_s
-
-    time_s = np.array(time_s)
-    elevations = np.array(elevations)
-    ranges = np.array(ranges)
-    range_rates = np.array(range_rates)
-
-    # Delay: tau(t) = range / c
-    delay_s = (ranges * 1000.0) / SPEED_OF_LIGHT_M_S
-    delay_ms = delay_s * 1000.0
-
-    # Doppler: f_D = - (range_rate / c) * f_c
-    # When satellite approaches, range_rate < 0, f_D > 0 (frequency increases)
-    raw_doppler_hz = - (range_rates / SPEED_OF_LIGHT_KM_S) * carrier_hz
-
+def pass_trajectory(sat: EarthSatellite, pass_info: dict, cfg: dict, step_s: float = 1.0) -> dict:
+    """Geometry time series for one pass on a `step_s` grid (vectorised)."""
+    ts = timescale()
+    site = wgs84.latlon(cfg["ground_lat_deg"], cfg["ground_lon_deg"], elevation_m=cfg["ground_elev_m"])
+    dur = (pass_info["set"].tt - pass_info["rise"].tt) * 86400.0
+    t_s = np.arange(0.0, dur + 1e-9, step_s)
+    t = ts.tt_jd(pass_info["rise"].tt + t_s / 86400.0)
+    alt, _, dist, _, _, range_rate = (sat - site).at(t).frame_latlon_and_rates(site)
+    rng_km = dist.km
+    rdot_km_s = range_rate.km_per_s
     return {
-        'time_s': time_s,
-        'elevation_deg': elevations,
-        'slant_range_km': ranges,
-        'range_rate_km_s': range_rates,
-        'delay_s': delay_s,
-        'delay_ms': delay_ms,
-        'raw_doppler_hz': raw_doppler_hz,
-        'duration_s': time_s[-1] if len(time_s) > 0 else 0.0,
-        'max_elevation_deg': float(np.max(elevations)) if len(elevations) > 0 else 0.0
+        "satellite": sat.name,
+        "rise_utc": pass_info["rise"].utc_strftime("%Y-%m-%d %H:%M:%S"),
+        "time_s": t_s,
+        "elevation_deg": alt.degrees,
+        "slant_range_km": rng_km,
+        "range_rate_km_s": rdot_km_s,
+        "delay_s": rng_km * 1e3 / C_M_S,
+        "delay_ms": rng_km * 1e6 / C_M_S,
+        "raw_doppler_hz": -rdot_km_s * 1e3 / C_M_S * float(cfg["carrier_hz"]),
+        "duration_s": float(t_s[-1]),
+        "max_elevation_deg": float(np.max(alt.degrees)),
+        "altitude_km": mean_altitude_km(sat),
     }
 
 
-def generate_pass_trajectory_from_config(cfg: dict) -> dict:
-    """Convenience helper to compute trajectory directly from config."""
-    sat = load_satellite_from_tle(cfg['tle_file'], cfg.get('tle_satellite_name', 'SATELIOT_2'))
-    best_pass = find_high_elevation_pass(
-        satellite=sat,
-        ground_lat=cfg['ground_lat_deg'],
-        ground_lon=cfg['ground_lon_deg'],
-        ground_elev_m=cfg.get('ground_elev_m', 53.0),
-        min_elev_deg=cfg['elev_mask_deg'],
-        search_days=7.0,
-        min_culmination_deg=35.0
-    )
-    traj = compute_pass_trajectory(
-        satellite=sat,
-        pass_info=best_pass,
-        ground_lat=cfg['ground_lat_deg'],
-        ground_lon=cfg['ground_lon_deg'],
-        ground_elev_m=cfg.get('ground_elev_m', 53.0),
-        carrier_hz=cfg['carrier_hz'],
-        time_step_s=1.0,
-        elev_mask_deg=cfg['elev_mask_deg']
-    )
-    return traj
+@lru_cache(maxsize=32)
+def _cached_passes(tle_file, sat_names, altitude_km, lat, lon, elev_m, days, peak, mask, fc, limit):
+    cfg = {"ground_lat_deg": lat, "ground_lon_deg": lon, "ground_elev_m": elev_m,
+           "pass_search_days": days, "min_pass_peak_deg": peak, "elev_mask_deg": mask, "carrier_hz": fc}
+    sats = load_tle_file(tle_file)
+    out = []
+    for name in sat_names:
+        sat = sats[name]
+        if altitude_km is not None:
+            sat = synthetic_satellite(sat, altitude_km, f"SYNTH_{int(altitude_km)}KM")
+        for p in find_passes(sat, cfg):
+            out.append(pass_trajectory(sat, p, cfg))
+    out.sort(key=lambda tr: tr["rise_utc"])
+    return tuple(out[:limit] if limit else out)
+
+
+def get_passes(cfg: dict, role: str = "test", altitude_km: float = None, limit: int = None) -> list:
+    """Pass trajectories for role 'test' (test satellite) or 'train' (training satellites)."""
+    names = (cfg["test_satellite"],) if role == "test" else tuple(cfg["train_satellites"])
+    if role == "test" and limit is None:
+        limit = int(cfg["max_test_passes"])
+    return list(_cached_passes(cfg["tle_file"], names, altitude_km, cfg["ground_lat_deg"],
+                               cfg["ground_lon_deg"], cfg["ground_elev_m"], cfg["pass_search_days"],
+                               cfg["min_pass_peak_deg"], cfg["elev_mask_deg"], cfg["carrier_hz"], limit))

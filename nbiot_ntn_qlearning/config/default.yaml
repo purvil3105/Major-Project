@@ -1,106 +1,127 @@
 # =============================================================================
-# NB-IoT NTN Q-Learning RACH Controller — Master Configuration
+# NB-IoT NTN Q-learning RACH controller: master configuration
 # =============================================================================
-# Every value is tagged by provenance:
-#   [3GPP]   = from a 3GPP specification
-#   [paper]  = from a cited research paper
-#   [design] = design choice justified in 02_Methodology.md
-#   [sweep]  = deliberately varied in experiments
+# Provenance tags:
+#   [3GPP]   3GPP specification       [paper] cited paper (see 01_Literature_Review.md)
+#   [design] design choice            [assump] modelling assumption (ASSUMPTIONS.md)
+#   [sweep]  varied in the experiments
 # =============================================================================
 
-# --- FIXED (3GPP) ---
-carrier_hz: 2.0e9              # S-band n256 UL 1980–2010 MHz   [3GPP TR 38.811 V16.1.0]
-scs_hz: 3750                   # NPRACH format 0/1 subcarrier    [3GPP TS 36.211 V16.6.0]
-n_preambles: 48                # 48 contention subcarriers       [3GPP TS 36.211 V16.6.0]
-preamble_trans_max: 10         # max attempts per CE level        [3GPP TS 36.321 V16.6.0]
-rar_window_ms: 24              # realistic NB-IoT NTN RAR window  [3GPP TS 36.321 V16.6.0]
-rar_window_ntn_ms: 40          # NTN-extended RAR window          [3GPP TR 38.821 V16.1.0]
-processing_time_ms: 3          # gNB processing before RAR        [3GPP TS 36.321 V16.6.0]
-
-# ACB barring factor levels from TS 36.331 ac-BarringFactor
-acb_levels: [0.1, 0.3, 0.5, 0.7, 1.0]
-
-# Backoff Indicator values (ms) from TS 36.321 Table 7.2-2
-bi_levels_ms: [256, 1024, 4096, 16384]
-
-# NPRACH repetition levels mapping to CE0/CE1/CE2
-nrep_levels: [2, 8, 32]
-
-# --- DERIVED (SGP4 / Physics & Link Budget) ---
-altitude_km: 600.0             # TLE-consistent LEO orbit         [3GPP TR 38.811]
-elev_mask_deg: 10.0            # minimum elevation angle           [3GPP TR 38.821]
-earth_radius_km: 6371.0        # WGS-84 mean radius
-
-# Link budget parameters (3GPP TR 38.811 / Sateliot 6U/12U payload)
-p_tx_dbm: 23.0                 # NB-IoT Class 3 UE Tx power (200 mW)
-g_tx_dbi: 0.0                  # UE isotropic antenna gain
-g_rx_zenith_dbi: 6.0           # LEO satellite antenna gain (6 dBi for small sat)
-antenna_3db_beamwidth_deg: 65.0 # Satellite beamwidth
-noise_figure_db: 5.0           # Satellite receiver noise figure
-temperature_k: 290.0           # System noise temperature
-
-# Ground station (AMI site) — Ahmedabad, India
-ground_lat_deg: 23.0225
+# --- Orbit / site -----------------------------------------------------------
+tle_file: "data/tle/sateliot.tle"
+test_satellite: "SATELIOT_2"                 # test passes are drawn from this satellite
+train_satellites: ["SATELIOT_1", "SATELIOT_3", "SATELIOT_4"]   # warm-start passes (disjoint)
+pass_search_days: 7.0                        # SGP4 accuracy window after TLE epoch
+min_pass_peak_deg: 20.0                      # passes with lower culmination are skipped [design]
+max_test_passes: 14                          # test geometries (all qualifying passes in 7 days)
+elev_mask_deg: 10.0                          # [3GPP TR 38.821 §6] minimum elevation
+ground_lat_deg: 23.0225                      # AMI site: Ahmedabad, India [design]
 ground_lon_deg: 72.5714
 ground_elev_m: 53.0
+synthetic_altitudes_km: [500, 600, 800]      # altitude sweep, synthetic circular orbits [assump A-9]
 
-# TLE file
-tle_file: "data/tle/sateliot.tle"
-tle_satellite_name: "SATELIOT_2"  # primary satellite for experiments
+# --- Link budget: 3GPP TR 38.821 Set-4 (as used by Dwivedi et al. [10], Table III)
+carrier_hz: 2.0e9                            # S-band (band 256 UL 1980-2010 MHz) [3GPP TS 36.102]
+ue_eirp_dbw: -7.0                            # 23 dBm, 0 dBi NB-IoT UE [3GPP; [10]]
+sat_gt_dbk: -18.6                            # Set-4 G/T at beam centre [[10] Table II]
+sat_beamwidth_deg: 104.7                     # Set-4 3-dB beamwidth [[10] Table II]
+atmospheric_loss_db: 0.1                     # [[10] Table III]
+shadow_margin_db: 3.0                        # [[10] Table III]
+scintillation_loss_db: 2.2                   # [[10] Table III]
+polarization_loss_db: 3.0                    # [[10] Table III]
+nprach_bw_hz: 3750.0                         # single-tone NPRACH bandwidth [3GPP TS 36.211]
 
-# Detection model calibration in operating range [-5 to +5 dB] (Chougrani et al.)
-gamma_th_db: -1.0              # Effective SNR threshold for 50% detection probability
-k_slope: 0.60                  # Operating slope
+# Per-meter extra coupling loss (building penetration / installation) ~ N(mean, std) [assump A-7]
+coupling_loss_mean_db: 0.0                   # [sweep] stress axis: 0 (outdoor) / 5 / 10 dB
+coupling_loss_std_db: 4.0
+coupling_loss_sweep_db: [0.0, 5.0, 10.0]
+rsrp_meas_std_db: 1.0                        # CE-level selection measurement error [assump]
 
-# --- SWEPT (the experiment) ---
-device_counts: [200, 1000, 3000]            # rural → congested → beyond-capacity
-residual_doppler_hz: [10, 250]              # nominal → stress [3GPP R1-2100601 / Lee 2026]
-rao_period_ms: [320, 640]                   # 320ms fits 32 reps (179.2ms) [3GPP TS 36.211]
-default_rao_period_ms: 320                  # repetition-feasible RAO period
+# --- NPRACH detection model -------------------------------------------------
+# Logistic P_d(SNR, N) with SNR99(N) = snr99_ref_db + snr99_slope_db * log2(N / ref_reps) + regime offset.
+# GNSS-assisted anchor: TS 36.104 Table 8.5.3.2.1-1 (AWGN, 1Tx/2Rx): 99 % detection at
+# -2.1 dB (8 reps) and -6.8 dB (32 reps); +3 dB for a single satellite Rx branch.
+snr99_ref_db: 0.9                            # 99 % detection SNR at ref_reps, 1 Rx [3GPP TS 36.104]
+snr99_ref_reps: 8
+snr99_slope_db: -2.35                        # dB per doubling of repetitions [3GPP TS 36.104]
+pd_logistic_k: 1.2                           # 1/dB; 10 %->1 % miss over 2 dB [assump A-18]
+# GNSS-free regime: least-squares offset to Chougrani et al. [5] (MD-RTD 800 us:
+# 99 % at 7.9 dB / 32 reps and 2.8 dB / 64 reps) -> +10.3 dB (residuals +/-1.4 dB).
+detection_regimes:
+  gnss_assisted: 0.0
+  gnss_free: 10.3
+detection_regime: "gnss_assisted"            # Rel-17 NB-IoT NTN assumes GNSS [3GPP TS 36.300]
 
-# 20 independent random seeds for statistical rigor
-seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219]
-pretrain_seed: 42                           # Fixed deterministic pre-training seed
+# --- NB-IoT NPRACH configuration -------------------------------------------
+preamble_format: 1                           # CP 266.7 us, symbol group 1.6 ms [3GPP TS 36.211]
+cp_us: 266.67
+preamble_rep_ms: 6.4                         # 4 symbol groups x 1.6 ms per repetition
+ce_subcarriers: [24, 12, 12]                 # 48 subcarriers split over CE0/CE1/CE2 [3GPP TS 36.331; assump A-6]
+max_attempts_per_ce: 4                       # maxNumPreambleAttemptCE [3GPP TS 36.331]
+preamble_trans_max: 10                       # preambleTransMax-CE [3GPP TS 36.321]
+rao_period_ms: 320                           # decision epoch / base NPRACH periodicity [3GPP TS 36.331]
+rao_period_sweep_ms: [160, 320, 640]
+period_multipliers: [1, 2, 4, 8]             # per-CE periodicity = m * rao_period >= preamble length
+processing_time_ms: 3.0                      # gNB/UE processing per message step [assump]
 
-# Traffic model: pass-spanning multi-phase traffic to stimulate full elevation arc
-traffic_model: "multiphase"                 # "multiphase" spans horizon -> zenith -> horizon
-activation_window_s: 10.0                   # duration per burst phase
-access_deadline_s: 45.0                     # access delay deadline for success-within-deadline
+# --- GNSS-degraded meters (timeout cause) [assump A-1] -----------------------
+gnss_degraded_frac: 0.10                     # [sweep] meters with a stale GNSS/ephemeris fix
+gnss_degraded_sweep: [0.0, 0.1, 0.3]
+gnss_refix_prob: 0.5                         # probability a degraded meter re-acquires GNSS after a timeout
+beam_equiv_diameter_km: 250.0                # differential-delay span, Chougrani [5] Table IV (Set-2, 30 deg)
 
-# --- LEARNING (Q-learning hyperparameters) ---
-alpha: 0.12                    # learning rate
-gamma: 0.9                     # discount factor
-eps0: 1.0                      # initial exploration rate
-eps_min: 0.05                  # minimum exploration rate
-eps_decay: 0.995               # exploration decay per RAO
+# --- Barring (NB-IoT access barring, AB bitmap over 10 ACs) [assump A-5] ------
+barring_time_s: 4.0                          # (0.7 + 0.6 U) x T_bar  [3GPP TS 36.331 formula]
 
-# Reward weights (cause-separated)
-w_s: 1.0                       # success reward
-w_c: 0.8                       # collision penalty (dominant)
-w_m: 0.2                       # miss penalty (prevents false barring)
-w_t: 0.5                       # timeout penalty
-w_d: 0.1                       # delay regulariser
-d_ref_ms: 2000.0               # reference delay for normalisation
-use_estimated_misses: true     # observable reward estimator (no ground-truth cheat)
+# --- Early collision detection observability [assump A-3] -------------------
+ecd_detect_prob: 0.95                        # P(collided subcarrier flagged | energy detected) [[18],[19]]
 
-# State discretisation
-load_bins: 4                   # low / moderate / high / overload
-elev_bins: 3                   # low (<20°) / mid / high (>60°)
-doppler_bins: 2                # nominal / degraded
-pass_phase_bins: 3             # early / mid / late
+# --- Traffic [assump A-11] ---------------------------------------------------
+n_devices: 1000                              # meters needing access during the pass [sweep]
+device_sweep: [200, 1000, 3000, 5000]
+burst_fraction: 0.3                          # share of meters in one Beta(3,4) alarm-storm burst [3GPP TR 37.868]
+burst_window_s: 10.0
+beta_a: 3.0
+beta_b: 4.0
+deadline_s: 10.0                             # access-success deadline [assump A-12]
 
-# State bin boundaries
-load_thresholds: [0.3, 0.6, 0.85]      # fraction of preambles used
-elev_thresholds: [20, 60]               # degrees
-doppler_threshold: 50                    # Hz — above this = degraded
-pass_phase_thresholds: [0.33, 0.66]     # fraction of pass elapsed
+# --- Action space [3GPP TS 36.331 / 36.321] ---------------------------------
+acb_levels: [0.1, 0.3, 0.5, 0.7, 1.0]        # fraction of ACs allowed by the AB bitmap
+bi_levels_ms: [256, 1024, 4096, 16384]       # NB-IoT backoff values [3GPP TS 36.321 Table 7.2-2]
+rep_profiles:                                # numRepetitionsPerPreambleAttempt for CE0/CE1/CE2
+  - [2, 8, 32]                               # low
+  - [4, 16, 64]                              # mid
+  - [8, 32, 128]                             # high
 
-# --- EXPERIMENT DEFAULTS ---
-default_n_devices: 1000
-default_residual_doppler_hz: 10
-default_rao_period_ms: 320
-default_seed: 200
+# --- State discretisation [design] -------------------------------------------
+load_thresholds: [0.3, 1.0]                  # estimated attempts per subcarrier
+elev_thresholds: [20.0, 50.0]                # deg
+phase_thresholds: [0.3333, 0.6667]           # fraction of pass elapsed
+cause_fail_threshold: 0.2                    # failure share below which the cause bin is "low"
+estimator_ewma: 0.5                          # smoothing of per-pool observations
 
-# Warm-start pre-training
-warmstart_terrestrial_raos: 500          # RAOs to pre-train on terrestrial
-warmstart_file: "results/warmstart_qtable.npy"
+# --- Reward [design] ---------------------------------------------------------
+w_s: 1.0                                     # success
+w_c: 1.0                                     # collision (per colliding device, estimated)
+w_m: 0.5                                     # detection miss (estimated)
+w_t: 0.5                                     # timeout (Msg3 failure after detected preamble)
+w_e: 0.1                                     # estimated preamble airtime (energy)
+
+# --- Q-learning [design; Jiang et al. [12]] ---------------------------------
+alpha: 0.12
+gamma: 0.9
+eps0: 1.0
+eps_min: 0.05
+eps_decay: 0.995
+eps_warm: 0.10                               # exploration while fine-tuning a warm-start table
+pretrain_passes: 30                          # warm-start training budget (passes of other satellites)
+pretrain_eps_decay: 0.9999                   # slower decay across the 30 training passes
+pretrain_seed: 42
+
+# --- Experiment --------------------------------------------------------------
+seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]
+sweep_seeds: [200, 201, 202, 203]
+sweep_passes: 4
+b5_search_seeds: [200, 201]
+terrestrial_snr_db: 4.93                     # B3 training channel = satellite zenith SNR, fixed [design]
+n_workers: 0                                 # 0 = use all CPU cores minus one
