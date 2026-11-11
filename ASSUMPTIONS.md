@@ -41,8 +41,24 @@ Each entry says what changes if the assumption is wrong.
 | A-13 | B2's static NTN values are kept (p = 0.7, BI = 1024 ms, mid-repetition profile) and renamed. They are not presented as a 3GPP default. | No 3GPP preset exists. | Only the wording changes. |
 | A-14 | Q-learning hyperparameters (α = 0.12, γ = 0.9, ε decay 0.995) stay fixed. There is no per-scenario tuning, to avoid cherry-picking. | Jiang [12] precedent. | A small, documented grid could be run if the results are unstable. |
 | A-15 | Statistics: 95 % CI = mean ± t₀.₉₇₅ × s / √n over (pass, seed) runs. Significance uses a paired Wilcoxon signed-rank test with Holm correction. | Standard. | None. |
-| A-16 | Reference [9] is Wu, Jing, Ding, Zhao, *Phys. Commun.* vol. 69, art. 102584 (2024/25), doi 10.1016/j.phycom.2024.102584. | The literature review and the earlier audit agree. To be confirmed online. | The citation is fixed after checking. |
+| A-16 | **Verified (Crossref, 11 Nov 2026).** Reference [9] is Z. Wu, G. Jing, J. Ding, X. Zhao, *Phys. Commun.* vol. 69, art. 102584, 2025, doi 10.1016/j.phycom.2024.102584. | Crossref record. | — |
 | A-17 | arXiv 2512.07053 (Lee et al.) is dated 2025. | The arXiv ID encodes Dec 2025. | Changes to 2026 if there is a later journal version. |
+| A-18 | The detection logistic slope is k = 1.2 dB⁻¹, so the miss rate falls from 10 % to 1 % over 2 dB. 3GPP gives only the 99 % points. | Typical steepness of AWGN detection curves. | Shifts how gradually detection degrades below the threshold. |
+
+## D. Results-gate iteration (declared 11 Nov 2026, before any v2 code or results)
+
+v1 result:
+- Proposed: P_s(≤10 s) = 0.49 vs B5 0.75. It had the lowest airtime and drop rate of the non-B3 schemes, at a high delay.
+- Warm start (0.49) was worse than cold start (0.56).
+
+Exactly two changes were declared for v2. Their values are fixed here and are **not tuned** afterwards. v1 stays reproducible with `config/v1.yaml`, and both v1 and v2 are reported in the paper.
+
+| ID | Change | Rationale |
+|---|---|---|
+| V2-1 | **Deferral-cost term** in the reward (both the proposed and the ablation variants): −w_d · min(d̂ / D, 3), with w_d = 0.5 and D = 10 s. Here d̂ = T̄_bar (1 − p)/p + f̂ · BI/2 is the expected extra wait per attempting meter caused by the chosen barring and backoff. T̄_bar = 4 s is the mean barring time, and f̂ is the estimated failure fraction from the observable estimator. Everything in it is known to the gNB. | The v1 reward had no delay term, so it was mis-aligned with the deadline metric. The original methodology had a delay regulariser w_d. |
+| V2-2 | **Pre-training budget and schedule**: 120 passes (the 40 training passes, cycled 3× with fresh random N, μ_L and f_deg), instead of 30. Exploration ε is set per pass, decaying geometrically from 1.0 to 0.05 at 80 % of the passes and held at 0.05 after that. | In v1, ε was still ≈ 0.2 at the end of pre-training, so the warm-start tables were under-trained. |
+
+Nothing else changes: simulator, estimator, state, actions, other weights, α, γ, baselines, seeds and passes all stay the same.
 
 ## C. Process assumptions
 
