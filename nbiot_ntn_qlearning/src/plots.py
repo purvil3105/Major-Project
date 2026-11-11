@@ -74,7 +74,7 @@ def fig1_geometry(cfg, out_dir):
     for a in ax[1]:
         a.set_xlabel("Time since rise [min]")
     for a, lab in zip(ax.flat, "abcd"):
-        a.text(0.02, 0.95, f"({lab})", transform=a.transAxes, va="top")
+        a.text(0.0, 1.02, f"({lab})", transform=a.transAxes, va="bottom", fontsize=7.5)
     ax[0, 0].text(0.98, 0.95, f"bold: peak {ref['max_elevation_deg']:.0f}$^\\circ$ pass\ngrey: other {len(passes)-1} test passes",
                   transform=ax[0, 0].transAxes, ha="right", va="top", fontsize=6.5, color=INK)
     fig.tight_layout()
@@ -100,7 +100,7 @@ def fig2_elevation(res, out_dir):
     ax.set_xlabel("Satellite elevation [deg]")
     ax.set_ylabel("Per-attempt success rate")
     ax.set_ylim(0, 1.0)
-    ax.legend(loc="lower right", ncol=2)
+    ax.legend(loc="lower center", ncol=2, bbox_to_anchor=(0.5, 1.0))
     _save(fig, out_dir, "fig2_success_vs_elevation")
 
 
@@ -120,7 +120,7 @@ def fig3_delay_cdf(res, out_dir, deadline):
     ax.set_xlabel("Access delay of served meters [s]")
     ax.set_ylabel("Empirical CDF")
     ax.set_ylim(0, 1.01)
-    ax.legend(loc="upper left")
+    ax.legend(loc="lower center", ncol=2, bbox_to_anchor=(0.5, 1.0))
     _save(fig, out_dir, "fig3_delay_cdf")
 
 
@@ -159,7 +159,8 @@ def fig4_failures(res, out_dir):
                 ax[row, j].set_ylabel(ylab)
         ax[2, j].set_xlabel("Pass progress (rise = 0, set = 1)")
     ax[0, 0].set_ylabel("Failed attempts per RAO")
-    ax[0, 0].legend(loc="upper right")
+    h, lab = ax[0, 0].get_legend_handles_labels()
+    fig.legend(h, lab, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.035))
     fig.tight_layout()
     _save(fig, out_dir, "fig4_failure_breakdown")
 
