@@ -1,179 +1,69 @@
-# Implementation Plan
-### Building & validating the NB-IoT NTN Q-learning RACH controller
+# Implementation Plan (as built)
+### NB-IoT NTN Q-learning RACH controller
 
-A phase-by-phase plan to implement the methodology in `02_Methodology.md`. Each phase has concrete tasks, a deliverable, and an **acceptance check** that must pass before moving on. The guiding principle: *fixed values come from 3GPP, derived values come from orbital mechanics, swept values are the experiment — and the channel comes from a real TLE via SGP4, never a closed-form stand-in.*
+This plan describes how the code is built and how each phase is checked. Every acceptance check is now an automated test in `nbiot_ntn_qlearning/tests/test_simulation.py` (17 tests). The earlier plan is in git history. Design details are in `02_Methodology.md`.
 
----
-
-## 1. Software stack & environment
-
-| Component | Library | Role | From |
-|---|---|---|---|
-| Orbit propagation | **Skyfield** (SGP4) | real TLE → elevation, range, range-rate | PS §6 |
-| Numerics / Monte-Carlo | **NumPy, SciPy** | contention sim + Q-update + stats | PS §6 |
-| Logging / aggregation | **pandas** | per-attempt (collision/miss/timeout) logs → figures | PS §6 |
-| Plotting | **Matplotlib** | the six figures | PS §6 |
-| Config | **PyYAML** (or dataclass) | one config file drives every run | reproducibility |
-
-No MATLAB, no deep-learning framework (tabular Q-learning needs none — and avoiding one answers the on-device-overhead objection). Pin versions in `requirements.txt`; set a global seed; log the config + seed with every result.
-
-```
-python>=3.10
-skyfield, sgp4, numpy, scipy, pandas, matplotlib, pyyaml, pytest
-```
-
----
+## 1. Software stack (pinned in `requirements.txt`)
+Python 3.12.10, with skyfield 1.55, sgp4 2.27, numpy 2.3.1, scipy 1.16.2, pandas 2.3.1, matplotlib 3.10.6, PyYAML 6.0.3, pytest 8.2.2 and tqdm 4.67.1. The project uses no deep-learning framework.
 
 ## 2. Repository layout
-
 ```
 nbiot_ntn_qlearning/
-├── config/
-│   └── default.yaml            # all parameters (§3) — single source of truth
-├── data/
-│   └── tle/                    # real TLE(s) for the chosen 600 km LEO sat
-├── src/
-│   ├── orbit.py                # SGP4 pass geometry  (Phase 1)
-│   ├── channel.py              # SNR(ε), Doppler, residual, P_d calibration (Phase 2)
-│   ├── nprach.py               # RAO contention engine + failure taxonomy (Phase 3)
-│   ├── mdp.py                  # state encode, action decode, reward (Phase 4)
-│   ├── agent.py                # tabular Q-learning; cold/warm start (Phase 4)
-│   ├── baselines.py            # B1–B4 + lumped-reward ablation (Phase 5)
-│   ├── experiment.py           # run matrix, seeds, CSV logging (Phase 6)
-│   └── plots.py                # six figures (Phase 7)
-├── results/                    # metrics.csv, sensitivity.csv, per-attempt logs
-├── figs/                       # fig1…fig6
-├── tests/                      # pytest sanity checks (Phase 8)
-└── README.md                   # how to reproduce every figure
+├── config/default.yaml      single source of truth, every value tagged [3GPP]/[paper]/[assump]/[design]/[sweep]
+├── data/tle/sateliot.tle    real TLEs (4 Sateliot satellites, epoch Oct 2026)
+├── src/orbit.py             SGP4 passes (all qualifying passes, vectorised); synthetic altitude orbits
+├── src/channel.py           Set-4 link budget; P_d fit (TS 36.104 / Chougrani); timing-error model
+├── src/nprach.py            vectorised NB-IoT RA simulator: CE levels, pools, barring, backoff, outcomes, observables
+├── src/mdp.py               observable ML estimator; state; action; cause-separated / lumped reward
+├── src/agent.py             tabular Q-learning
+├── src/baselines.py         B1, B2, B4 rules (B3 and B5 live in experiment.py)
+├── src/experiment.py        pre-training, B5 search, main evaluation, sweeps (multiprocessing, paired seeds)
+├── src/stats.py             95 % CIs, Wilcoxon + Holm, LaTeX table
+├── src/plots.py             six IEEE-format figures (PDF + PNG)
+├── tests/test_simulation.py acceptance tests
+├── results/                 CSVs, Q-tables, manifest.json (config hash, seeds, versions, TLE passes)
+├── results_archive_2026-10/ previous results and figures (kept for comparison)
+└── figs/                    figures
 ```
 
----
-
-## 3. Configuration (single source of truth)
-
-One YAML holds everything, tagged by provenance so a reviewer sees it at a glance:
-
-```yaml
-# --- FIXED (3GPP) ---
-carrier_hz: 2.0e9            # S-band n256         [TS/TR NTN]
-scs_hz: 3750                 # NPRACH format 0/1   [TS 36.211]
-n_preambles: 48              # 64 - 16 reserved    [TS 36.211]
-preamble_trans_max: 10       # CE                  [TS 36.321]
-acb_levels: [0.1,0.3,0.5,0.7,1.0]      # from p00..p95 [TS 36.331]
-bi_levels_ms: [256,1024,4096,16384]    #              [TS 36.321 T7.2-2]
-nrep_levels: [2,8,32]        # CE0/1/2 reps        [TS 36.211]
-# --- DERIVED (SGP4 / physics) ---
-altitude_km: 600             # TLE-consistent      [TR 38.811]
-elev_mask_deg: 10            #                     [TR 38.821]
-# calibration anchors for P_d from [5]: (snr_db, nrep) -> miss<=1e-2
-# --- SWEPT (the experiment) ---
-device_counts: [200,1000,3000]
-residual_doppler_hz: [10,250]          #            [arXiv 2512.07053]
-rao_period_ms: [160,640]
-seeds: [200,201,...,209]
-# --- LEARNING ---
-alpha: 0.12 ; gamma: 0.9 ; eps0: 1.0 ; eps_min: 0.05 ; eps_decay: 0.995
-```
-
----
-
-## 4. Phase plan
-
-### Phase 0 — Setup & reproducibility (0.5 wk)
-- Repo, venv, pinned `requirements.txt`, config loader, global RNG seeding.
-- **Acceptance:** `pytest` runs; config loads; seed makes two runs byte-identical.
-
-### Phase 1 — Orbit module (`orbit.py`) (1 wk)
-- Load a **real TLE** (CelesTrak/Space-Track) for a 600 km NB-IoT-NTN-class satellite + a ground AMI site; use Skyfield to compute, per 1 s step over one pass above the 10° mask: elevation `ε(t)`, slant range `d(t)`, range-rate `ṙ(t)`.
-- Derive one-way delay `τ(t)=d(t)/c` and Doppler `f_D(t)=ṙ(t)·f_c/c`.
-- **Acceptance (sanity vs literature):** pass length **2–7 min**; `τ` ∈ **~2 ms (zenith) … ~6.4 ms (edge)** [13]; peak `|f_D|` **≤ ~41–48 kHz** [5],[8],[11]. If any is off, the TLE/geometry is wrong — stop and fix. Produces **Fig. 1**.
-
-### Phase 2 — Channel & detection (`channel.py`) (1 wk)
-- Map elevation → UL SNR (edge ≈ −3 dB, zenith ≈ +5 dB single-tone [10]).
-- Model residual Doppler `δf` as a swept input (10 / 250 Hz [13]) — *not* raw Doppler (UE pre-compensates ephemeris).
-- Implement `P_d(SNR, δf, N_rep)` and **calibrate it to Chougrani's miss-detection curves** [5] (anchor points: miss ≤1e-2 at ~8 dB/64-rep and ~15 dB/32-rep; degrade with `δf/SCS`). Document the calibration in a docstring + a test.
-- **Acceptance:** at the anchor points `1−P_d` matches [5] within a stated tolerance; `P_d` rises with `N_rep`, falls with `δf`.
-
-### Phase 3 — NPRACH contention engine + failure taxonomy (`nprach.py`) (1.5 wk)
-- Event-driven loop over RAOs for a full pass. Beta(3,4) synchronized activation [S6] + optional Poisson; backlog with BI-derived re-tries; drop after `preambleTransMax`.
-- Per attempt, classify into **exactly one** of {success, collision, miss, timeout} per §2.3 (timeout when `2τ+t_proc > T_RAR`). Log every attempt to a pandas frame (`t, elev, cause, delay, N, δf, policy`).
-- **Acceptance:** with ACB off and `N` large, collisions dominate and `P_s` collapses toward the Tello-Oquendo regime (~0.3 under heavy sync load [1]); with `N` tiny, `P_s`→~1; miss-rate tracks `δf`/elevation; timeouts appear only when `2τ+t_proc > T_RAR`. Counts are mutually exclusive and sum to attempts.
-
-### Phase 4 — MDP + tabular agent (`mdp.py`, `agent.py`) (1.5 wk)
-- `encode_state(load, elev, δf, pass_phase)` → index over the compact `|S|` (§3.1); `decode_action(a)` → `(p, BI, N_rep)` over `|A|≈60`.
-- Cause-separated reward (§3.3) with configurable weights `w_s,w_c,w_m,w_t,w_d`.
-- Q-learning update, ε-greedy decay; **cold-start** (Q=0) and **warm-start** (load a pre-trained terrestrial/early-pass table) entry points.
-- **Acceptance:** on a fixed easy scenario the agent beats B1 after training; Q-values finite/stable; warm-start reaches B1-beating performance in fewer RAOs than cold-start.
-
-### Phase 5 — Baselines & ablation (`baselines.py`) (0.5 wk)
-- B1 fixed ACB+BI; B2 Rel-17 NPRACH-NTN default (extended RAR); **B3 terrestrial-frozen Q-table** (train terrestrially, apply unmodified); B4 oracle (perfect per-RAO channel → greedy best action); lumped-reward ablation (same agent, single failure penalty).
-- **Acceptance:** B4 ≥ proposed ≥ B1 on `P_s` (ordering sane); B3 underperforms proposed on the satellite channel (the adaptation claim); lumped-reward ablation shows more barring on miss-heavy states.
-
-### Phase 6 — Experiment runner (`experiment.py`) (1 wk)
-- Train the warm-start table on mixed conditions so all state bins are visited; then evaluate every policy over **≥10 seeds**; report mean ± std.
-- Sensitivity sweep over `N × δf` (and an altitude variant) with a short per-cell fine-tune for the proposed scheme (honest, pass-length-respecting).
-- Emit `results/metrics.csv`, `results/sensitivity.csv`, `results/attempts.parquet`.
-- **Acceptance:** CSVs populated; confidence intervals (not single runs); runtime acceptable.
-
-### Phase 7 — Figures (`plots.py`) (0.5 wk)
-- Generate Fig. 1–6 per the methodology table. **Fig. 2 and Fig. 4 must be measured from the simulator's own logged outcomes**, never from a closed-form shortcut.
-- **Acceptance:** all six render; Fig. 2 shows the U-shape with proposed lifting the horizon tails; Fig. 4 shows cause-correct responses vs the lumped ablation.
-
-### Phase 8 — Validation, tests & write-up (1 wk)
-- `pytest` sanity suite encoding every acceptance check above (orbit magnitudes, detection anchors, mutually-exclusive causes, baseline ordering).
-- Cross-check table: simulated Doppler/delay vs [5],[11],[13]; overload `P_s` vs [1].
-- README: one command per figure; record TLE epoch, seeds, config hash.
-- **Acceptance:** tests green; numbers reproduce; results map 1-to-1 onto the problem statement's six required graphs.
-
----
-
-## 5. Experiment matrix (runs → figures)
-
-| Run | Policies | `N` | `δf` | Seeds | Produces |
-|---|---|---|---|---|---|
-| R1 geometry | — | — | — | — | Fig. 1 |
-| R2 success vs elevation | proposed, B1–B4 | 1000 | 10 Hz | 10 | Fig. 2 |
-| R3 delay dist. | proposed, B1, B3 | 1000 | 10 Hz | 10 | Fig. 3 |
-| R4 failure breakdown | proposed, lumped-ablation | 1000 | 250 Hz | 10 | Fig. 4 |
-| R5 convergence | proposed cold, proposed warm | 1000 | 250 Hz | 10 | Fig. 5 |
-| R6 sensitivity | proposed, B1 | 200/1000/3000 | 10/250 Hz | 10 | Fig. 6 |
-
-Headline table: `P_s`, mean & 95th-pct delay, failure split, convergence RAOs — proposed vs B1–B4, mean ± std.
-
----
-
-## 6. Risk register
-
-| Risk | Impact | Mitigation |
+## 3. Phases and acceptance checks
+| Phase | Deliverable | Acceptance check (test) |
 |---|---|---|
-| Real TLE gives an atypical pass | geometry unrepresentative | pick a TLE whose pass sanity-checks against Phase-1 bounds; report epoch; test 2–3 TLEs |
-| Q-table too large to converge in a pass | core claim fails | keep `|S|` ~50–150; warm-start; treat bin count as a tested hypothesis (Fig. 5/6) |
-| Detection model un-grounded | reviewer rejects `P_d` | calibrate strictly to [5]; expose anchors in a test |
-| Reward weights look hand-tuned | "cherry-picked" critique | fix weights before final runs; justify ordering by cause→knob; include lumped ablation |
-| Single-run results | not falsifiable | ≥10 seeds, mean ± std everywhere |
-| Scope creep (power ramping, HARQ, beam size) | 10× action space, no convergence | explicitly out of scope; action stays the ACB/BI/NPRACH triple |
+| 0 Setup | pinned environment, git, config loader | byte-identical reruns (`test_byte_identical_reruns`); identical traffic across policies (`test_common_random_numbers_across_policies`) |
+| 1 Orbit | 14 test passes + 40 disjoint training passes | duration 300–540 s, delay 1.8–6.6 ms, Doppler ≤ 48 kHz (`test_pass_geometry_bounds`); training and test satellites disjoint |
+| 2 Channel | link budget and P_d | reproduces [10] Set-4 at 30°/90°; 99 % detection at the TS 36.104 points; GNSS-free fit within ±1.5 dB of [5]; P_d rises with N; timeout probability is 0 at zenith and grows toward the horizon |
+| 3 Access model | simulator | outcomes mutually exclusive and observables consistent; no timeouts when f_deg = 0; collisions dominate at N = 5 000 without barring; more repetitions give fewer misses |
+| 4 MDP / agent | estimator, state, reward, Q-learning | estimator load bias < 15 % and miss error < 1; the reward is unchanged when ground-truth fields are altered (`test_reward_uses_only_observables`); 108 states × 60 actions; Q-update correct |
+| 5 Baselines | B1–B5, ablations | B5 is the best fixed action by construction (exhaustive search) |
+| 6 Experiments | `python main.py` | 9 policies × 14 passes × 10 seeds; sweeps; manifest written |
+| 7 Figures / tables | `figs/`, `results/summary_table.csv`, `stats_tests.csv`, `table_main.tex` | rendered and inspected for overlaps; no figure shows numbers that aren't in the CSVs |
+| 8 Results gate | review with the student before any claim is written | see `RESOLUTION_PLAN.md` Phase 8 |
 
----
+## 4. Experiment matrix
+| Run | Policies | Passes × seeds | Varied |
+|---|---|---|---|
+| B5 search | 60 fixed actions | 14 × 2 | — |
+| Main | all 9 | 14 × 10 | — |
+| Load × coupling | Proposed, B2, B4, B5 | 4 × 4 | N ∈ {200, 1 000, 3 000, 5 000} × μ_L ∈ {0, 5, 10} dB |
+| Detection regime | Proposed, B2, B4, B5 | 4 × 4 | GNSS-free |
+| GNSS-degraded share | Proposed, No-cause ablation, B2, B5 | 4 × 4 | f_deg ∈ {0, 0.1, 0.3} |
+| RAO period | Proposed, B2, B4 | 4 × 4 | 160 / 320 / 640 ms |
+| Altitude | Proposed, B2, B4 | 4 × 4 (synthetic passes) | 500 / 600 / 800 km |
 
-## 7. Timeline (≈9 weeks, single student)
+Runtime: about 45 min on 4 CPU cores (about 1 s per pass simulation).
 
-| Wk | Phase |
-|---|---|
-| 1 | P0 + P1 (orbit, Fig. 1) |
-| 2 | P2 (channel/detection, calibrated to [5]) |
-| 3–4 | P3 (NPRACH engine + failure taxonomy) |
-| 5–6 | P4 (MDP + tabular agent, cold/warm) |
-| 6 | P5 (baselines + ablation) |
-| 7 | P6 (experiments, seeds, sensitivity) |
-| 8 | P7 (six figures) |
-| 9 | P8 (tests, cross-validation, write-up) |
+## 5. Commands
+```
+python -m pytest -q          # acceptance tests (~10 s)
+python main.py --quick       # reduced smoke run (~9 min) -> results_quick/, figs_quick/
+python main.py               # full reproduction -> results/, figs/
+python main.py --plots-only  # re-draw figures and tables from results/
+```
 
----
-
-## 8. Definition of done
-
-- Six figures reproduce from one command each, from logged simulator outputs.
-- Proposed scheme beats B1/B2, beats B3 on the satellite channel (adaptation proven), and sits below the B4 oracle.
-- Fig. 4 shows the controller responds to the *right* cause; the lumped-reward ablation shows the false-barring loop it avoids.
-- Warm-start converges within one pass where cold-start does not (Fig. 5).
-- Every parameter traces to a 3GPP spec, a cited paper, or an explicit sweep; simulated Doppler/delay cross-check against [5],[11],[13].
+## 6. Known limitations (to be stated in the paper)
+- One ground site and a single satellite visible at a time. There is no inter-satellite handover.
+- No capture effect. All meters on a collided subcarrier fail.
+- The detection curve is logistic, anchored to two 3GPP AWGN points. Its slope k is assumed.
+- The GNSS-degraded timing model is stylised (uniform error up to the beam's differential RTD).
+- The estimator ignores collisions where all colliding preambles go undetected, and it is biased at very low load.
+- B5 is a genie (tuned on the test passes). It is a reference, not a deployable scheme.

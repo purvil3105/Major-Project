@@ -1,188 +1,174 @@
 # Methodology
-### A satellite-aware tabular Q-learning controller for NB-IoT NTN random access
+### A satellite-aware, cause-aware tabular Q-learning controller for NB-IoT NTN random access
 
-This document defines **what to build and why each choice is defensible**. Every system value carries a source (a 3GPP specification or a cited paper). Values marked *(sweep)* are deliberately varied in the experiments rather than fixed. Nothing here depends on any earlier prototype code.
+This document describes exactly what the code in `nbiot_ntn_qlearning/` implements. Each parameter is tagged with its source: a 3GPP document, a cited paper ([n] numbering as in `01_Literature_Review.md`), a design choice, or an assumption listed in `ASSUMPTIONS.md`. The previous version of this document is in git history. `REVIEW_ISSUES.md` lists what changed and why.
 
 ---
 
-## 1. Design rationale — why this method
+## 1. Design rationale
 
 | Decision | Why | Grounded in |
 |---|---|---|
-| **Tabular Q-learning** (not deep RL) | A LEO pass gives only **~2–7 min** of learning. Deep schemes need hundreds–thousands of stationary episodes (eRACH ~200–500 [15]; Deep Dyna-Q ~400–600 steps [14]) and a pretrained deep policy *collapsed to ≈0 throughput* on a fresh cell [16]. A small Q-table converges in hundreds of updates and runs on a gateway/on-board with no GPU. | Jiang [12] (tabular-Q works for NB-IoT config); bounded-visibility gap G4 |
-| **Joint action over ACB + BI + NPRACH** | The three failure modes each need a *different* knob; tuning one in isolation (all prior work) cannot fix the other two. | Gap G5; TS 36.331 / 36.321 / 36.211 |
-| **Reward that isolates collision vs detection-miss vs timeout** | A terrestrial controller reads a Doppler/low-SNR *miss* as congestion and raises barring — a false-barring loop. Collisions and misses are physically distinguishable at the gNB. | Gap G3; collision detectors [18],[19]; classifier [13]; Daraseliya [4] |
-| **State includes satellite geometry + pass clock** | Only way the controller can anticipate delay/Doppler and stop learning before the satellite sets. | Problem statement §4; survey open problems [8] |
-| **Real-TLE SGP4 orbit** (not constant-delay or closed-form) | A reviewer must be able to sanity-check elevation/delay/Doppler against real orbital mechanics. | Problem statement §6; magnitudes cross-checked vs [5],[11],[13] |
+| **Tabular Q-learning** | A pass gives ~1 100–1 600 NPRACH opportunities. A 108 × 60 table (52 KB) can be updated per opportunity on a gateway or on board, with no GPU. Deep RL needs far more data [14],[15], and it is fragile under load shift [16]. | Jiang [12]; gap G4 |
+| **Joint action: barring + BI + repetition profile** | The three failure causes respond to different knobs: collisions to barring and backoff, misses to repetitions, timeouts to backoff spacing. | Gap G5; TS 36.321 / 36.331 |
+| **Cause information from observables** | A controller that sees only "failures" cannot tell congestion from coverage loss. The gNB can observe collided subcarriers [18],[19] and infer misses statistically. | Gap G3 |
+| **Satellite geometry and pass phase in the state** | Elevation (from ephemeris) predicts SNR and timing error. The pass phase tells the controller how much visibility is left. | Gap G1 |
+| **Real-TLE SGP4 geometry, several passes** | Results must hold across orbital geometries, not just one hand-picked pass. | Problem statement §4 |
 
 ---
 
 ## 2. System model
 
-### 2.1 Orbit & channel (built from a real TLE)
+### 2.1 Orbit and geometry
+- **Satellites and passes.** Real Sateliot TLEs (NORAD 60534 etc., epoch Oct 2026, ~577 km, 97.7° inclination) are propagated with SGP4 (Skyfield) for 7 days after the TLE epoch.
+- **Ground site.** Ahmedabad, India.
+- **Test geometry.** All 14 passes of SATELIOT_2 that rise above a 10° mask and peak at ≥ 20°. Peaks range from 20° to 86° and durations from 364 to 490 s.
+- **Warm-start training.** 40 passes of SATELIOT_1/3/4. These are disjoint from the test set.
+- **Per second along each pass:** elevation ε, slant range d, range rate (Skyfield topocentric rates), delay τ = d/c, and Doppler f_D = −ṙ f_c / c.
+- **Sanity check:** τ is 1.94–6.30 ms and |f_D| ≤ 46 kHz at 2 GHz, consistent with [5], [11] and [13].
+- **Altitude sweep:** synthetic circular orbits at 500 / 600 / 800 km with the same inclination and node (assumption A-9).
 
-Propagate a **real LEO TLE at ≈600 km** with SGP4 (Skyfield) over one visible pass; from the geometry derive, per time-step, the elevation `ε(t)`, slant range `d(t)`, range-rate `ṙ(t)`, one-way delay `τ(t)=d(t)/c`, and Doppler `f_D(t)=ṙ(t)·f_c/c`.
+### 2.2 Uplink link budget (TR 38.821 Set-4, as tabulated in [10] Table III)
 
-| Parameter | Value / range | Source |
-|---|---|---|
-| Orbit altitude | **600 km** LEO | TR 38.811 reference orbit [S1]; used by [5],[10],[13] |
-| TLE | Real element set for an NB-IoT-NTN-class LEO sat (e.g. Sateliot / a 600 km LEO), from CelesTrak/Space-Track | Problem statement §6 ("pull a real TLE") |
-| Carrier frequency `f_c` | **2 GHz**, S-band (n256 UL 1980–2010 MHz) | [5],[8],[11]; 3GPP NTN band |
-| Min elevation (mask) | **10°** | 3GPP NTN min elevation [S2]; survey [8] |
-| Pass duration `T_pass` | **~2–7 min** (follows from mask & altitude) | Dwivedi [10] (~4 min @30°, ~13 min @0°); problem statement §7 |
-| One-way delay `τ` | **~2 ms** (zenith) → **~6.4 ms** (10° edge) | computed; matches [13] (2–6.44 ms), [7] |
-| Raw Doppler `f_D` | up to **±41–48 kHz** | [5] (±41 kHz @30°), [8] (48 kHz), [11] (±41 kHz) |
-| **Residual Doppler** after ephemeris/GNSS pre-compensation `δf` | **~10 Hz** nominal; **up to ~250 Hz** stress *(sweep)* | [13] (10 Hz nominal, 250 Hz stress) |
-| Differential delay across beam | up to **~700 µs** | [11] (698.62 µs); [5] |
-| UL SNR vs elevation | **~−3 dB (edge) → ~+5 dB (zenith)** single-tone, lower with repetition | Dwivedi [10] (Set-4 UL SNR −3.13…4.93 dB) |
-
-> **Why residual Doppler, not raw, drives misses:** the UE pre-compensates raw Doppler from broadcast ephemeris; what degrades detection is the *residual* `δf` (tens–hundreds of Hz) relative to the 3.75 kHz NPRACH subcarrier spacing [5],[6],[13].
-
-### 2.2 NB-IoT NPRACH contention model
-
-A Monte-Carlo NPRACH engine advances in Random-Access Opportunities (RAOs). At each RAO, each backlogged meter: (i) draws an ACB check against barring factor `p`; (ii) if allowed, picks one of `R` preambles; (iii) the outcome is classified into exactly one cause (next section); (iv) failed meters back off by a BI-derived delay and retry up to `preambleTransMax`.
+SNR = EIRP_UE + G/T − k_B − FSPL(d) − L_atm − L_SM − L_scint − L_pol − L_beam(θ) − 10 log₁₀ B
 
 | Parameter | Value | Source |
 |---|---|---|
-| Contention preambles `R` | **48** (64 − 16 reserved) | TS 36.211 [S3]; [10] |
-| NPRACH subcarrier spacing | **3.75 kHz** (format 0/1) | TS 36.211 [S3]; [5] |
-| RAO periodicity | **160 ms** default *(sweep 160–640 ms)* | [10]; TS 36.211 [S3] |
-| `preambleTransMax` (CE) | **10** | TS 36.321 [S4] |
-| RAR window | **terrestrial 8 ms vs NTN-extended ≥20 ms** | TS 36.321 [S4]; NTN extension [S2] |
-| Detection probability `P_d(SNR, δf, N_rep)` | **calibrated to published miss-detection curves** (miss ≤1e-2 target at ~8 dB/64-rep, ~15 dB/32-rep) | [5] (Chougrani detection curves) |
+| Carrier | 2 GHz (S-band, band 256) | TS 36.102; [5], [10] |
+| UE EIRP | −7 dBW (23 dBm, 0 dBi) | [10]; NB-IoT power class 3 |
+| Satellite G/T | −18.6 dB/K | Set-4 [10] |
+| 3-dB beamwidth | 104.7° | Set-4 [10] |
+| L_beam | 12 (θ/104.7°)² dB, θ = off-nadir angle | 3 dB at beam edge, as in [10] |
+| Atmospheric / shadow margin / scintillation / polarisation | 0.1 / 3 / 2.2 / 3 dB | [10] Table III |
+| B | 3.75 kHz (single-tone NPRACH) | TS 36.211 |
 
-### 2.3 Failure taxonomy (the core instrumentation)
+This reproduces [10]: −3.14 dB at 30° and +4.93 dB at 90° for 600 km. Across a pass, the outdoor SNR runs from −9.7 dB (10°) to +5 dB.
 
-Every attempt is logged as exactly one of:
+**Per-meter coupling loss.** Each meter gets an extra loss L_i ~ N(μ_L, 4 dB), fixed for the pass. It represents installation, building penetration and shadowing beyond the margin. The mean μ_L ∈ {0, 5, 10} dB is the **stress axis** (A-7).
 
-- **Collision** — ≥2 allowed meters chose the same preamble. *Right response: raise ACB barring (and/or spread with BI).*
-- **Detection miss** — a cleanly-sent preamble not decoded, probability `1−P_d(SNR,δf,N_rep)`. *Right response: raise NPRACH repetitions / CE level — barring does nothing here.*
-- **Timeout** — reply could not arrive within the RAR window: `2τ + t_proc > T_RAR`. *Right response: NTN-extended RAR / BI spacing.*
-- **Success** — allowed, unique preamble, detected, in-window.
+### 2.3 NPRACH detection model
 
-That a collision (multi-peak) is separable from a miss (no peak) at the gNB is exactly what the early collision detectors [18],[19] and the DL classifier [13] establish — so this state is "something the network can plausibly know."
+P_d(SNR, N) = 1 / (1 + exp(−k (SNR − SNR₉₉(N)) − ln 99))
+
+SNR₉₉(N) = SNR₉₉,ref + s · log₂(N / 8) + Δ_regime
+
+| Symbol | Value | Source |
+|---|---|---|
+| SNR₉₉,ref (8 reps, 1 Rx) | 0.9 dB | TS 36.104 Table 8.5.3.2.1-1: −2.1 dB (2 Rx, AWGN), +3 dB for a single Rx branch |
+| s | −2.35 dB per doubling | same table: 32 reps → −6.8 dB (2 Rx) |
+| k | 1.2 dB⁻¹ (miss drops from 10 % to 1 % over 2 dB) | assumption A-18 |
+| Δ, GNSS-assisted (default) | 0 dB | Rel-17 NB-IoT NTN assumes GNSS |
+| Δ, GNSS-free | +10.3 dB, a least-squares fit to Chougrani [5] at MD-RTD 800 µs (99 % at 7.9 dB / 32 reps and 2.8 dB / 64 reps; residual ±1.4 dB) | [5] |
+
+Residual Doppler after ephemeris/GNSS pre-compensation (~10 Hz nominal, 3GPP R1-2100601; up to 250 Hz [13]) is below 7 % of the 3.75 kHz subcarrier spacing. Its ICI loss is under 0.1 dB, so it is **not** a stress axis.
+
+### 2.4 NB-IoT random-access procedure (per 320 ms decision epoch)
+
+| Element | Model | Source |
+|---|---|---|
+| Preamble | Format 1: CP 266.7 µs, 6.4 ms per repetition | TS 36.211 |
+| CE levels | 3 levels with 24 / 12 / 12 subcarriers (48 total) | TS 36.331 NPRACH-ConfigSIB-NB; A-6 |
+| CE selection | At RA initiation, the meter compares its measured SNR (σ = 1 dB error) with thresholds T_k = SNR₉₉(N_k) | TS 36.321 (RSRP thresholds); design |
+| Per-CE periodicity | m_k × 320 ms ≥ N_k × 6.4 ms, with m_k ∈ {1, 2, 4, 8} | TS 36.331 |
+| Barring | AB bitmap modelled as "pass with probability p". Checked **only at initiation**. A barred meter waits (0.7 + 0.6U) × 4 s | TS 36.331; A-5 |
+| Contention | Uniform choice of subcarrier within the CE pool. Two or more on the same subcarrier: all fail (no capture) | A-2 |
+| Retries | Wait U(0, BI) after a failure. After 4 failures at a CE level, move up one level. Drop after 10 attempts | TS 36.321 / 36.331 (`maxNumPreambleAttemptCE`, `preambleTransMax-CE`) |
+| GNSS-degraded meters (timeout cause) | A fraction f_deg (default 10 %) has a stale GNSS/ephemeris fix. Its residual RTT error ~ U(0, MD-RTD(ε)), with MD-RTD = 2 D cos ε / c and D = 250 km. If the error exceeds the CP, the detected preamble's Msg3 misses its grant: **timeout**. After a timeout, the meter re-acquires GNSS with probability 0.5 | [5] Table IV; [7]; A-1 |
+| Access delay | arrival → Msg4, including barring waits, backoffs, preamble airtime, 2 × RTT and processing | design |
+
+**Ground-truth outcomes** are mutually exclusive: success, collision, miss, or timeout. They are logged for evaluation only.
+
+**gNB observables** per CE pool:
+- idle-looking subcarriers;
+- successes;
+- collided subcarriers flagged by an early collision detector (P_cd = 0.95 [18],[19]; A-3);
+- Msg3 failures (timeouts plus unflagged collisions).
+
+### 2.5 Traffic
+Per pass, N meters need access (N ∈ {200, 1 000, 3 000, 5 000}; default 1 000):
+- 70 % are periodic reports, uniform over the pass (Poisson-like);
+- 30 % are an alarm-storm burst, Beta(3,4) over 10 s (TR 37.868 model 2), starting at a uniformly random time.
+
+All policies see the same arrivals, losses and GNSS flags for a given (pass, seed). This is a paired design.
 
 ---
 
 ## 3. MDP formulation
 
-**Agent:** the gNB/gateway RACH controller. **Decision epoch:** one RAO (or one SIB period). **Objective:** maximise access success and minimise delay across the pass while attributing each failure to its true cause.
+**Agent:** the gNB/gateway RACH controller. **Decision epoch:** 320 ms.
 
-### 3.1 State `s = (load, geometry, doppler, pass-phase)`
+### 3.1 Observable estimator
+A slotted-ALOHA model gives, per subcarrier, the probabilities of "idle-looking", "detected single" and "collided" as functions of the attempt rate λ and the mean detection probability P̄_d. A grid maximum-likelihood fit to the EWMA-smoothed counts (β = 0.5) yields λ̂. From λ̂:
+- attempts n̂ = Rλ̂;
+- colliding meters ĉ = Rλ̂(1 − e^{−λ̂});
+- misses m̂ = max(0, Rλ̂e^{−λ̂} − detected singles);
+- timeouts t̂ = Msg3 failures − unflagged collisions.
 
-| Component | Discretisation (design; *validated by sensitivity*) | Observable because |
+Monte Carlo check (unit test): the load bias is < 15 % and the miss error is < 1 meter per opportunity.
+
+### 3.2 State (108 states)
+| Component | Bins | Observable because |
 |---|---|---|
-| Load estimate `L̂` | 4 bins: low / moderate / high / overload (from backlog or recent attempts/RAO) | gNB counts attempts & detected preambles/RAO |
-| Elevation (⇔ delay) `ε` | 3 bins: low (<20°) / mid / high (>60°) | broadcast ephemeris |
-| Residual Doppler `δf` | 2 bins: nominal (≤~50 Hz) / degraded | from CFO estimate [5],[13] |
-| Pass phase `φ` | 2–3 bins by time-remaining (early / late) | pass clock from ephemeris |
+| Load λ̂ per subcarrier | 3: < 0.3 / 0.3–1 / > 1 | NPRACH observations (§3.1) |
+| Elevation | 3: < 20° / 20–50° / > 50° | broadcast ephemeris |
+| Pass phase | 3 thirds | ephemeris |
+| Dominant failure cause | 4: low (< 20 % failures) / collision / miss / timeout | §3.1 estimates |
 
-Keep `|S|` small (order **~50–150 states**) so the table is *visitable within one pass*. Adding a bin multiplies the table and risks non-convergence inside `T_pass` — a bin count is itself a hypothesis to test (§6, Fig. 5/6).
-
-### 3.2 Action `a = (ACB, BI, N_rep)`
-
-| Knob | Candidate levels (design) | Source |
+### 3.3 Action (60 actions)
+| Knob | Levels | Source |
 |---|---|---|
-| ACB barring factor `p` | subset of {0.1, 0.3, 0.5, 0.7, 1.0} from the TS 36.331 `ac-BarringFactor` grid (p00…p95) | TS 36.331 [S5] |
-| Backoff Indicator `BI` | log-spaced NB-IoT backoff values (e.g. {256, 1024, 4096, 16384} ms) | TS 36.321 Table 7.2-2 [S4] |
-| NPRACH repetition / CE level `N_rep` | 3 CE levels → representative {low, mid, high} repetitions (powers of 2, e.g. {2, 8, 32}) | TS 36.211 CE groups [S3] |
+| Barring factor p | {0.1, 0.3, 0.5, 0.7, 1.0} | AB bitmap fraction (TS 36.331) |
+| Backoff Indicator | {256, 1 024, 4 096, 16 384} ms | TS 36.321 Table 7.2-2 (NB-IoT) |
+| Repetition profile (CE0/1/2) | low {2, 8, 32}, mid {4, 16, 64}, high {8, 32, 128} | `numRepetitionsPerPreambleAttempt` (TS 36.331) |
 
-`|A| ≈ 5 × 4 × 3 = 60`. Table size `|S|·|A|` on the order of a few thousand entries — small enough to converge in hundreds of updates (cf. tabular-Q NB-IoT [12]).
+### 3.4 Reward (cause-separated)
 
-### 3.3 Reward — cause-separated (the novelty)
+r = [w_s n_s − w_c ĉ − w_m m̂ − w_t t̂] / R_active − w_e · (Σ_k n̂_k N_k) / (R_active N_max)
 
-Per RAO, with `n` attempts and counts `n_s, n_c, n_m, n_t` (success/collision/miss/timeout):
+with w = (1, 1, 0.5, 0.5, 0.1). The normalisation is per *active subcarrier*, not per transmission. In the earlier per-transmission version, heavy barring raised the reward by shrinking the denominator. The last term is the estimated preamble airtime, an energy proxy.
 
-```
-r = ( w_s·n_s − w_c·n_c − w_m·n_m − w_t·n_t ) / n   −   w_d · (d̄_recent / d_ref)
-```
+**Ablations:**
+1. *Lumped reward*: w_c = w_m = w_t = 0.667 (their mean), with the cause state kept.
+2. *No cause information*: lumped reward, and the cause bin removed from the state.
 
-The **separation of `n_c`, `n_m`, `n_t`** — not the exact weights — is the contribution. Rationale for the ordering of weights (to be tuned, then fixed):
+### 3.5 Learning
+- Q-learning with α = 0.12 and γ = 0.9.
+- ε-greedy exploration. Cold start: ε from 1.0 to 0.05 with decay 0.995 per update. Warm start: ε = 0.1.
+- Updates happen only on epochs with observable activity, with a terminal update at the end of the pass.
+- **Warm start:** pre-trained over 30 passes of the *training* satellites, with randomised N, μ_L and f_deg (decay 0.9999), and then fine-tuned online during the test pass.
+- **Cold start:** zero-initialised and learned within one pass.
 
-- `w_c` **largest** → collisions are the only cause barring can fix, so they must dominate the barring gradient.
-- `w_m` **small** → a miss must *not* trigger barring (that is the false-barring loop); it should instead push `N_rep` up. Keeping `w_m` light prevents the agent from barring away a channel problem.
-- `w_t` **middle** → timeouts call for RAR/BI spacing, not barring.
-- `w_d` delay regulariser so the agent does not over-bar.
-
-An ablation with a **single lumped failure penalty** (no separation) is run to show the separation is what prevents the false-barring loop (Fig. 4).
-
-### 3.4 Learning rule & schedule
-
-Standard Q-learning:
-`Q(s,a) ← Q(s,a) + α [ r + γ·max_{a'}Q(s',a') − Q(s,a) ]`, ε-greedy with decay.
-
-| Hyperparameter | Starting value | Source |
-|---|---|---|
-| Learning rate `α` | ~0.1–0.15 | tabular-Q NB-IoT precedent [12]; retune |
-| Discount `γ` | ~0.9 | [12]; retune |
-| Exploration `ε` | 1.0 → 0.05, decay ~0.995 | high-explore early pass, exploit late |
-
-**Convergence strategy (bounded-visibility, gap G4):**
-- **Cold-start** — Q initialised to zero at the start of each pass.
-- **Warm-start** — Q initialised from a table trained on terrestrial / early-pass conditions, then fine-tuned online during the pass.
-The experiments test whether warm-start converges inside `T_pass` where cold-start may not — the evidence for "satellite conditions genuinely require adaptation."
+Hyperparameters are fixed in advance, with no per-scenario tuning (A-14).
 
 ---
 
-## 4. Baselines (mandatory for a fair claim)
-
-| Baseline | Definition | Purpose |
+## 4. Baselines
+| ID | Definition | Purpose |
 |---|---|---|
-| **B1 Fixed ACB+BI** | terrestrial default `p`, `BI`, `N_rep`, no adaptation | today's deployment |
-| **B2 Rel-17 NPRACH-NTN default** | NTN-extended RAR + fixed NTN preset | standards-compliant non-learning |
-| **B3 Terrestrial-frozen Q-table** | Q-table trained terrestrially, applied to the satellite channel **unmodified** | **critical ablation** — proves adaptation is needed |
-| **B4 Oracle** | controller with perfect per-RAO channel knowledge | honest upper bound |
-| **Ablation** | proposed reward with **lumped** failure penalty | isolates the value of cause-separation |
+| B1 | Fixed p = 1, BI = 256 ms, low profile | terrestrial-style default |
+| B2 | Fixed p = 0.7, BI = 1 024 ms, mid profile | static NTN-aware configuration (not a 3GPP preset) |
+| B3 | Q-table trained on a **terrestrial** channel (fixed SNR 4.93 dB, no delay, no GNSS errors), with a load + cause state only; deployed frozen | does a transplanted terrestrial learner suffice? |
+| B4 | Rules: profile from elevation (< 25° high, < 50° mid); p and BI from λ̂ | hand-crafted channel-aware control |
+| B5 | Best single fixed action by exhaustive search over all 60 actions on the test passes (2 seeds) | **genie** best static configuration |
 
 ---
 
-## 5. Input / output parameters
+## 5. Metrics (mean ± 95 % CI over 14 passes × 10 seeds; paired Wilcoxon with Holm correction)
+- **P_s^{≤D}:** fraction of meters served within the deadline D = 10 s (primary metric).
+- **P_s:** fraction served within the pass. **Drop rate.**
+- **Delay:** mean and 95th percentile, over served meters.
+- **Preamble airtime per served meter** (energy).
+- **Ground-truth failure shares:** collision / miss / timeout.
+- **Convergence:** reward and per-attempt success over the pass, cold vs warm.
 
-**Inputs (independent variables / config)**
-
-| Input | Role | Default / sweep |
-|---|---|---|
-| Device count `N` | load | *(sweep)* 200 / 1000 / 3000 (rural → congested → beyond-capacity) |
-| Traffic model | arrival process | **Beta(3,4)** synchronized burst (TR 37.868 [S6]) + Poisson routine |
-| Orbit altitude | delay/Doppler/pass-length | 600 km *(sweep for sensitivity)* |
-| Residual Doppler `δf` | detection stress | *(sweep)* 10 / 250 Hz [13] |
-| RAO periodicity | decision cadence | 160 ms *(sweep 160–640)* |
-| Policy | which controller | {proposed, B1–B4, ablation} |
-| Random seed | variance | ≥10 independent seeds |
-
-**Outputs (dependent variables / metrics — all reported with mean ± std over seeds)**
-
-| Output | Definition |
+## 6. Figures
+| Fig. | Content |
 |---|---|
-| Access success probability `P_s` | served meters / total meters |
-| Mean & **95th-percentile** access delay | from first attempt to successful RAR |
-| **Failure-cause breakdown** | counts/fractions of collision / miss / timeout |
-| Convergence | RAOs (or passes) until reward/`P_s` stabilises; cold vs warm |
-| Energy proxy | mean preamble transmissions per success (battery-relevant) |
-| Fairness (optional) | Jain index across meters |
+| 1 | Pass geometry for all 14 test passes: elevation, delay, Doppler, outdoor SNR |
+| 2 | Per-attempt success rate vs elevation, all schemes |
+| 3 | Access-delay CDF (served meters) with the deadline marked |
+| 4 | Ground-truth failure causes and chosen barring and repetitions over the pass: Proposed vs both ablations |
+| 5 | Convergence within a pass: warm vs cold start (and B5 for reference) |
+| 6 | Heatmaps of the P_s^{≤D} gain of Proposed over B2 and over B5, across N × coupling loss |
 
----
-
-## 6. Graphs (the six the study must produce)
-
-| Fig | Content | Expected shape / what it proves | Source req. |
-|---|---|---|---|
-| **1** | Orbit & pass geometry: elevation, one-way delay, Doppler vs time | sanity-check the channel driving everything (from SGP4) | PS §5 |
-| **2** | `P_s` vs elevation across a pass — proposed vs B1–B4 | **U-shape** (poor near horizon, good near zenith); proposed lifts the horizon tails | PS §5 (headline) |
-| **3** | Access-delay distribution (CDF/box) — proposed vs B1, B3 | proposed shifts the tail left (esp. 95th pct) | PS §5 |
-| **4** | Failure-cause breakdown over the pass (stacked) — proposed vs lumped-reward ablation | proposed converts misses→repetitions & collisions→barring correctly; lumped reward shows false-barring | PS §5 (key) |
-| **5** | Convergence within one pass — reward/`P_s` vs RAO index, **cold vs warm start** overlaid | warm-start stabilises inside `T_pass`; cold may not | PS §5 |
-| **6** | Sensitivity heatmap: success gain (proposed − B1) over `N` × `δf` (and altitude) | where the advantage grows/shrinks | PS §5 |
-
----
-
-## 7. Where every reference comes from (summary)
-
-- **Method lineage (tabular-Q for NB-IoT, ACB foundations):** Jiang [12], Tello-Oquendo [1], Abera [3], Bui-Pham [2], Daraseliya [4].
-- **Channel magnitudes (delay, Doppler, residual, detection curves):** Chougrani [5], Shen [11], Lee-DL [13], Kodheli [7], Dwivedi [10], survey [8].
-- **Failure-cause observability at the gNB:** collision detectors [18],[19], DL classifier [13], Daraseliya [4].
-- **Bounded-visibility constraint & why deep RL struggles:** Dwivedi [10], eRACH [15], Deep Dyna-Q [14], Chen [16].
-- **Closest competitors to differentiate against:** Chen channel-aware ACB [16], Feng DDPG joint [17], SCMA-Q-learning [9].
-- **Protocol/parameter values:** 3GPP TS 36.211 [S3], TS 36.321 [S4], TS 36.331 [S5], TR 37.868 [S6], TR 38.811/38.821 [S1,S2].
-
-Full citations are in `01_Literature_Review.md` §5.
+Additional sweeps (table form): GNSS-free regime, f_deg ∈ {0, 0.1, 0.3}, RAO period ∈ {160, 320, 640} ms, altitude ∈ {500, 600, 800} km.
