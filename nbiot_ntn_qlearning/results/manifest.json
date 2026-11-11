@@ -1,0 +1,118 @@
+{
+  "config_hash": "8e28b24ecee9",
+  "b5_action": [
+    1.0,
+    1024,
+    2
+  ],
+  "seeds": [
+    200,
+    201,
+    202,
+    203,
+    204,
+    205,
+    206,
+    207,
+    208,
+    209
+  ],
+  "test_passes": [
+    {
+      "idx": 0,
+      "rise_utc": "2026-10-03 17:55:34",
+      "peak_deg": 29.09,
+      "duration_s": 429.0
+    },
+    {
+      "idx": 1,
+      "rise_utc": "2026-10-04 05:45:04",
+      "peak_deg": 83.0,
+      "duration_s": 490.0
+    },
+    {
+      "idx": 2,
+      "rise_utc": "2026-10-04 17:59:47",
+      "peak_deg": 25.67,
+      "duration_s": 410.0
+    },
+    {
+      "idx": 3,
+      "rise_utc": "2026-10-05 05:49:07",
+      "peak_deg": 85.88,
+      "duration_s": 490.0
+    },
+    {
+      "idx": 4,
+      "rise_utc": "2026-10-05 18:04:02",
+      "peak_deg": 22.69,
+      "duration_s": 389.0
+    },
+    {
+      "idx": 5,
+      "rise_utc": "2026-10-06 05:53:10",
+      "peak_deg": 75.05,
+      "duration_s": 489.0
+    },
+    {
+      "idx": 6,
+      "rise_utc": "2026-10-06 18:08:18",
+      "peak_deg": 20.07,
+      "duration_s": 364.0
+    },
+    {
+      "idx": 7,
+      "rise_utc": "2026-10-07 05:57:15",
+      "peak_deg": 65.12,
+      "duration_s": 485.0
+    },
+    {
+      "idx": 8,
+      "rise_utc": "2026-10-07 16:37:15",
+      "peak_deg": 20.73,
+      "duration_s": 367.0
+    },
+    {
+      "idx": 9,
+      "rise_utc": "2026-10-08 06:01:20",
+      "peak_deg": 56.39,
+      "duration_s": 480.0
+    },
+    {
+      "idx": 10,
+      "rise_utc": "2026-10-08 16:41:04",
+      "peak_deg": 23.34,
+      "duration_s": 391.0
+    },
+    {
+      "idx": 11,
+      "rise_utc": "2026-10-09 06:05:25",
+      "peak_deg": 48.94,
+      "duration_s": 473.0
+    },
+    {
+      "idx": 12,
+      "rise_utc": "2026-10-09 16:44:56",
+      "peak_deg": 26.3,
+      "duration_s": 411.0
+    },
+    {
+      "idx": 13,
+      "rise_utc": "2026-10-10 06:09:31",
+      "peak_deg": 42.65,
+      "duration_s": 464.0
+    }
+  ],
+  "n_train_passes": 40,
+  "python": "3.12.10",
+  "packages": {
+    "numpy": "2.3.1",
+    "scipy": "1.16.2",
+    "pandas": "2.3.1",
+    "skyfield": "1.55",
+    "sgp4": "2.27",
+    "matplotlib": "3.10.6"
+  },
+  "runtime_s": 1956.8,
+  "quick": false
+}
