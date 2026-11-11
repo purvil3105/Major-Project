@@ -123,9 +123,15 @@ Monte Carlo check (unit test): the load bias is < 15 % and the miss error is < 1
 
 ### 3.4 Reward (cause-separated)
 
-r = [w_s n_s − w_c ĉ − w_m m̂ − w_t t̂] / R_active − w_e · (Σ_k n̂_k N_k) / (R_active N_max)
+r = [w_s n_s − w_c ĉ − w_m m̂ − w_t t̂] / R_active − w_e · (Σ_k n̂_k N_k) / (R_active N_max) − w_d · min(d̂ / D, 3)
 
-with w = (1, 1, 0.5, 0.5, 0.1). The normalisation is per *active subcarrier*, not per transmission. In the earlier per-transmission version, heavy barring raised the reward by shrinking the denominator. The last term is the estimated preamble airtime, an energy proxy.
+d̂ = T̄_bar (1 − p) / p + f̂ · BI / 2
+
+with w = (w_s, w_c, w_m, w_t, w_e, w_d) = (1, 1, 0.5, 0.5, 0.1, 0.5), T̄_bar = 4 s and D = 10 s.
+- The normalisation is per *active subcarrier*, not per transmission. In the earlier per-transmission version, heavy barring raised the reward by shrinking the denominator.
+- The w_e term is the estimated preamble airtime, an energy proxy.
+- The w_d term (**v2**, ASSUMPTIONS V2-1) is the expected extra wait that the chosen barring and backoff impose on an attempting meter: a geometric number of barring periods, plus the estimated failed share f̂ times the mean backoff. It is normalised by the deadline. The gNB knows every quantity in it.
+- **v1** (the pre-declared design) had w_d = 0. It is reproducible with `config/v1.yaml`, and both versions are reported.
 
 **Ablations:**
 1. *Lumped reward*: w_c = w_m = w_t = 0.667 (their mean), with the cause state kept.
@@ -135,7 +141,9 @@ with w = (1, 1, 0.5, 0.5, 0.1). The normalisation is per *active subcarrier*, no
 - Q-learning with α = 0.12 and γ = 0.9.
 - ε-greedy exploration. Cold start: ε from 1.0 to 0.05 with decay 0.995 per update. Warm start: ε = 0.1.
 - Updates happen only on epochs with observable activity, with a terminal update at the end of the pass.
-- **Warm start:** pre-trained over 30 passes of the *training* satellites, with randomised N, μ_L and f_deg (decay 0.9999), and then fine-tuned online during the test pass.
+- **Warm start:** pre-trained on passes of the *training* satellites with randomised N, μ_L and f_deg, then fine-tuned online during the test pass (ε = 0.1).
+  - **v2** (V2-2): 120 passes (the 40 training passes cycled 3×). ε is set per pass, falling geometrically from 1.0 to 0.05 by 80 % of the passes and held there.
+  - v1: 30 passes, with per-update decay 0.9999. ε was still ≈ 0.2 at the end, so the tables were under-trained.
 - **Cold start:** zero-initialised and learned within one pass.
 
 Hyperparameters are fixed in advance, with no per-scenario tuning (A-14).

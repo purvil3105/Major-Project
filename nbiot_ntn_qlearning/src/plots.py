@@ -182,7 +182,11 @@ def fig5_convergence(res, out_dir):
     ax[0].set_ylabel("Per-RAO reward")
     ax[1].set_ylabel("Per-attempt success rate")
     ax[1].set_xlabel("Pass progress (rise = 0, set = 1)")
-    ax[1].legend(loc="lower center", ncol=3)
+    h, lab = ax[0].get_legend_handles_labels()
+    h2, lab2 = ax[1].get_legend_handles_labels()
+    extra = [(hh, ll) for hh, ll in zip(h2, lab2) if ll not in lab]
+    fig.legend(h + [e[0] for e in extra], lab + [e[1] for e in extra], loc="upper center", ncol=3,
+               bbox_to_anchor=(0.55, 1.04))
     fig.tight_layout()
     _save(fig, out_dir, "fig5_convergence")
 

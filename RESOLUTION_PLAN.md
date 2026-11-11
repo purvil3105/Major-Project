@@ -1,5 +1,7 @@
 # Resolution Plan
 
+> **Status (11 Nov 2026):** Phases 0–10 are complete. The Phase 8 gate led to one pre-declared iteration (v2, `ASSUMPTIONS.md` §D) and an agreed honest framing. The paper draft is in `paper/`. Still open for the author: the author block, the venue template and page limit, and a final Scholar check.
+
 This plan fixes every issue in `REVIEW_ISSUES.md` (IDs are in brackets) and gets the project to submission quality. Decisions are marked **[DECISION]**. Defaults I would apply are in `ASSUMPTIONS.md`.
 
 ## Decisions taken (11 Nov 2026)

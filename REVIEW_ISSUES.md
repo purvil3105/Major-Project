@@ -1,5 +1,36 @@
 # Project Review — Issues Found
 
+## Resolution status (updated 11 Nov 2026)
+
+Every issue below has been addressed. Git commits `5805bb6` (baseline) → `f7551ab` and later record each change.
+
+| Issues | Resolution |
+|---|---|
+| P-1…P-6 | `ProblemStatement_Errata.md`. The original `.docx` is left unchanged. |
+| L-1…L-11 | Applied in `01_Literature_Review.md`. [9] verified via Crossref. R1-2100601 and TS 36.104 added. Absolute novelty claims softened, with overlaps stated. The NB-IoT AB-bitmap note added. The four missing PDFs remain bibliographic-only (L-10). |
+| D-1 | Timeouts are now caused by GNSS-degraded meters (timing error > CP). They are elevation-dependent and observable as Msg3 failures. |
+| D-2 | The residual-Doppler axis and state bin were removed. The coupling-loss severity is the new stress axis. |
+| D-3, D-7 | NB-IoT subcarrier pools per CE level (24/12/12), RSRP-based CE selection and escalation, per-CE periodicity, and an action that is a repetition *profile*. |
+| D-4, C-1, I-2 | P_d now passes exactly through the TS 36.104 points (tested). The GNSS-free regime is fitted to Chougrani [5] within ±1.4 dB (tested). |
+| D-5, C-8 | Set-4 link budget from the SGP4 slant range; it reproduces [10] (tested). |
+| D-6, C-3 | Reward normalised per active subcarrier. It uses only observables (tested). The v2 deferral-cost term was pre-declared. |
+| L-6, C-7 | ML estimator from idle/single/collided counts. Load and cause come from observables only. B4 also uses the estimate. |
+| D-8…D-11, C-5, C-6 | B2 renamed. B3 is trained on a true terrestrial channel with a load + cause state. B5 is an exhaustive-search genie. Warm start is trained on other satellites' passes. |
+| D-12, D-13 | Docs rewritten to match the code. Energy is measured as preamble airtime. |
+| C-4 | Pass-agnostic traffic: uniform reports + a Beta(3,4) burst at a random time. |
+| C-9, C-10 | Delay includes airtime, RTT and processing. Barring is checked only at initiation. |
+| C-11, C-12 | 14 real passes × 10 seeds, 95 % CIs, paired Wilcoxon + Holm, sweep tests. |
+| C-13…C-17 | Agent and config fixes. Consistent bins and citations. |
+| I-1…I-5 | All acceptance checks automated (18 tests). Sweeps over N, coupling loss, GNSS share, regime, RAO period and altitude. Per-RAO log as `rao_log.csv.gz` (no pyarrow, so no parquet). |
+| E-1, E-2, E-10 | READMEs rewritten with current numbers only. Q-table size stated correctly (52 KB). Placeholders and badges removed. Versions pinned. |
+| E-3…E-7 | Figures redrawn: IEEE sizes, no embedded titles, validated palette, CIs, heatmap, no dual axes. |
+| E-8, E-9 | Import-time scripts removed. Tests rewritten. |
+| E-11 | Git initialised. Caches removed. PDFs and zip are git-ignored. Old outputs archived. |
+
+**Results outcome.** The headline claims of the original README did not survive. The rebuilt evaluation gives a more modest result, reported honestly in `paper/main.tex` and `nbiot_ntn_qlearning/README.md`: Pareto-efficient and load-robust, but not better than the best static configuration at nominal load.
+
+---
+
 Review date: 11 Nov 2026. Scope: problem statement, `01_Literature_Review.md`, `02_Methodology.md`, `03_Implementation_Plan.md`, the code in `nbiot_ntn_qlearning/`, the stored results (`results/*.csv`), the figures, the READMEs, and the earlier `Project_Audit.pdf` (11 Oct 2026).
 
 How it was checked:

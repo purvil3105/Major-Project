@@ -37,7 +37,7 @@ nbiot_ntn_qlearning/
 | 5 Baselines | B1–B5, ablations | B5 is the best fixed action by construction (exhaustive search) |
 | 6 Experiments | `python main.py` | 9 policies × 14 passes × 10 seeds; sweeps; manifest written |
 | 7 Figures / tables | `figs/`, `results/summary_table.csv`, `stats_tests.csv`, `table_main.tex` | rendered and inspected for overlaps; no figure shows numbers that aren't in the CSVs |
-| 8 Results gate | review with the student before any claim is written | see `RESOLUTION_PLAN.md` Phase 8 |
+| 8 Results gate | review with the student before any claim is written | done: v1 reviewed, one pre-declared iteration (v2, ASSUMPTIONS §D), framing agreed |
 
 ## 4. Experiment matrix
 | Run | Policies | Passes × seeds | Varied |
@@ -50,7 +50,7 @@ nbiot_ntn_qlearning/
 | RAO period | Proposed, B2, B4 | 4 × 4 | 160 / 320 / 640 ms |
 | Altitude | Proposed, B2, B4 | 4 × 4 (synthetic passes) | 500 / 600 / 800 km |
 
-Runtime: about 45 min on 4 CPU cores (about 1 s per pass simulation).
+Runtime on 4 CPU cores (about 1 s per pass simulation): about 38 min for v1 and about 50 min for v2, whose pre-training is 4× longer. v1 is reproduced with `python main.py --config config/v1.yaml --results-dir results_v1 --figs-dir figs_v1`. `python compare_versions.py` builds the side-by-side table.
 
 ## 5. Commands
 ```

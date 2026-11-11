@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software in your research, please cite it as below."
-title: "Q-Learning-Based RACH Parameter Optimization for NB-IoT Non-Terrestrial Networks"
-version: 1.0.0
-date-released: 2026-10-10
+title: "Cause-Aware Tabular Q-Learning for NB-IoT NTN Random Access (simulation code)"
+version: 2.0.0
+date-released: 2026-11-11
 authors:
   - family-names: Patel
     given-names: Purvil

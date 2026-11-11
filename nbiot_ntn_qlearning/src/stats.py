@@ -90,6 +90,24 @@ def paired_tests(df, reference="Proposed"):
     return pd.DataFrame(rows)
 
 
+def sweep_tests(sens, reference="Proposed", others=("B2_StaticNTN", "B4_Heuristic", "B5_BestFixed")):
+    """Load x coupling sweep: per N (pooled over coupling losses), paired test of P_s(<=D)."""
+    df = sens[sens["experiment"] == "load_x_coupling"]
+    key = ["n_devices", "coupling_loss_mean_db", "pass_idx", "seed"]
+    piv = df.pivot_table(index=key, columns="policy", values="p_s_deadline").reset_index()
+    rows = []
+    for n, g in piv.groupby("n_devices"):
+        tmp = []
+        for o in others:
+            d = (g[reference] - g[o]).dropna()
+            p = 1.0 if np.allclose(d, 0) else float(stats.wilcoxon(g[reference], g[o]).pvalue)
+            tmp.append({"n_devices": n, "vs": o, "n_pairs": len(d), "mean_diff": float(d.mean()), "p_value": p})
+        for t, a in zip(tmp, holm([t["p_value"] for t in tmp])):
+            t["p_holm"] = float(a)
+            rows.append(t)
+    return pd.DataFrame(rows)
+
+
 def latex_table(summ):
     cols = [("p_s_deadline", "$P_s^{\\le D}$", 3), ("p_drop", "Drop", 3), ("mean_delay_s", "$\\bar d$ [s]", 2),
             ("p95_delay_s", "$d_{95}$ [s]", 1), ("airtime_per_success_ms", "Airtime [ms]", 0)]
@@ -116,5 +134,10 @@ def write_tables(results_dir="results"):
     tests.to_csv(os.path.join(results_dir, "stats_tests.csv"), index=False)
     with open(os.path.join(results_dir, "table_main.tex"), "w", encoding="utf-8") as f:
         f.write(latex_table(summ))
+    sens_path = os.path.join(results_dir, "sensitivity.csv")
+    if os.path.exists(sens_path):
+        sw = sweep_tests(pd.read_csv(sens_path))
+        sw.to_csv(os.path.join(results_dir, "sweep_tests.csv"), index=False)
+        print(sw.round(4).to_string(index=False))
     print(summ[["policy", "p_s_deadline", "p_s_deadline_ci", "p_drop", "mean_delay_s",
                 "p95_delay_s", "airtime_per_success_ms"]].round(3).to_string(index=False))
