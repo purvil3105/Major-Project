@@ -1,0 +1,1288 @@
+24806                                                                                     IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+Channel-Aware Access and RACH Enhancement for
+               Efficient LEO Satellite IoT
+
+         Yu-Wei Chen , Kuang-Hsun Lin , Member, IEEE, and Hung-Yu Wei , Fellow, IEEE
+
+   Abstract--Low Earth orbit (LEO) satellite communication                  ti            Optimal ACB start time for UE i.
+is critical for widespread Internet of Things (IoT), especially
+for small data transmissions. Conventional access class barring             pk            Packet arrival rate.
+(ACB) and random access procedure (RAP) schemes, originally
+designed for stochastic terrestrial channels, are ill-suited for LEO        S             Packet size.
+networks as they fail to exploit the deterministic nature of satellite
+trajectories. To address this critical gap, we propose channel and          Sb            UE buffer size.
+timing-predicted (CTP) ACB that dynamically prioritizes user
+equipment (UE) by exploiting the high predictability of LEO                 Rgi           Mean data rate for group i.
+satellite channels, thereby optimizing resource allocation and
+improving energy efficiency. We introduce an optimized random               pgi           Proportion of group i.
+access channel (RACH) period to balance system throughput
+with individual UE service rates. Through comprehensive sim-                Xta,i         Class of UE i at time t.
+ulations, we demonstrate that CTP ACB substantially improves
+throughput, resource utilization, and energy efficiency. Regarding          Mka,t         Number of active UEs of class k at time
+information freshness, while CTP ACB introduces a marginal
+scheduling delay in low-density scenarios, it significantly reduces                       t.
+the mean AoI by approximately 30% in high-density massive
+IoT networks by effectively mitigating access congestion. These             s             Expected system throughput.
+findings highlight the necessity of trajectory-aware designs in
+next-generation NTN-IoT standards.                                          hL            LEO altitude.
+
+   Index Terms--Access class barring (ACB), nonterrestrial net-             fc            Carrier frequency.
+work (NTN), random access procedure (RAP).
+                                                                                          Signal-to-noise ratio (SNR).
+
+                                                                            A             Mean UE time-averaged AoI.
+
+                                                                            NNMcsMt ,,tt  Number of contending UEs at time slot t.
+                                                                                          Expected number of successful UEs.
+
+                                                                            NNMMµb ,t     Number of backlogged UEs.
+                                                                                          Number of serviceable UEs.
+
+                                                                            T             Overflight duration.
+
+                                                                            NT            Number of allowed retransmission
+
+                                                                            Mkp,t         attempts.
+
+           NOMENCLATURE                                                                   Expected number of UEs passing the ACB
+
+u1, u2   Uniform random variables,  U[0, 1].                                              in the multiclass scheme.
+         Base barring time configured by gNB.
+T  base  Maximum backoff window size.                                                                 I. INTRODUCTION
+   bar   Total number of UEs.
+   max   Number of RA opportunities (ROs).                                  T HE IMT-2030 framework has driven the evolution toward
+T  bo    RA opportunity (RO) period.                                              6G networks [1]. Among the six usage scenarios, the
+         Number of available preambles.                                     vision of ubiquitous connectivity and massive communication
+NM       Preamble success probability.                                      provides a clear direction for Internet of Things (IoT) applica-
+         Uniform ACB factor.                                                tions. Thus, researchers and industry emphasized supporting
+NR       Optimal ACB factor for class k.                                    a remarkable density of IoT devices, seamlessly integrating
+                                                                            sensors and machines into the global network. To achieve these
+TR                                                                          6G goals, especially in remote or underserved areas lacking
+                                                                            comprehensive terrestrial network (TN) coverage, satellite
+Np                                                                          communication (Satcom) has emerged as an essential and
+                                                                            rapidly evolving research field. For example, low Earth orbit
+Ps                                                                          (LEO) Satcom systems can enable wide area sensor networks
+                                                                            by extending coverage to unserved areas [2].
+PA
+pA ,k                                                                          However, the massive deployment of IoT devices introduces
+                                                                            significant challenges to Satcom systems [3]. Typically, user
+   Received 18 December 2025; revised 24 February 2026; accepted 11 March   equipment (UE) must perform the random access proce-
+2026. Date of publication 17 March 2026; date of current version 25 May     dure (RAP) to establish a network connection prior to data
+2026. This work was supported in part by Qualcomm Technologies, Inc.,       transmission [4]. This raises several issues, including beam
+under Grant NAT-435534; and in part by the National Science and Technology  management, particularly in direct-to-cell scenarios [5]. When
+Council (NSTC), Taiwan, under Grant 114-2628-E-002-029-. (Corresponding     a large number of UEs attempt simultaneous access, the RAP
+author: Hung-Yu Wei.)                                                       is highly susceptible to collisions and signaling failures. To
+
+   Yu-Wei Chen was with the Graduate Institute of Communication Engineer-
+ing (GICE), National Taiwan University (NTU), Taipei 106319, Taiwan. He is
+now with Jim Quant Capital, Taipei 105404, Taiwan.
+
+   Kuang-Hsun Lin was with the Graduate Institute of Communication Engi-
+neering (GICE), National Taiwan University (NTU), Taipei 106319, Taiwan.
+He is now with the Institute of Communications Engineering, National Yang
+Ming Chiao Tung University, Hsinchu 300093, Taiwan.
+
+   Hung-Yu Wei is with the Graduate Institute of Communication Engineering
+(GICE) and the Department of Electrical Engineering, National Taiwan
+University (NTU), Taipei 106319, Taiwan (e-mail: hywei@ntu.edu.tw).
+
+   Digital Object Identifier 10.1109/JIOT.2026.3674729
+
+                    2327-4662 © 2026 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence and
+                                   similar technologies. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                                     See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT             24807
+
+mitigate this, the 3rd Generation Partnership Project (3GPP)       Fig. 1. Message flow and components of the ACB mechanism and RACH
+introduced access class barring (ACB), a mechanism that            procedure.
+stochastically restricts access for specific UE classes to reduce
+contention.                                                        QoS maintenance. The gNB broadcasts an ACB factor (pA) to
+                                                                   indicate the probability with which a UE may attempt access.
+   A critical observation in LEO Satcom systems is that            If the UE does not pass the ACB, it has to defer its access
+while these systems serve many UEs, the channel conditions         to the next random access (RA) opportunity. This technique
+and satellite trajectories are significantly more predictable      effectively alleviates network congestion, enhancing overall
+than those in traditional terrestrial cellular networks. This      stability and reliability.
+inherent predictability, however, is not exploited by con-
+ventional RAP and ACB mechanisms. This mismatch is                 B. RA Procedure
+further highlighted by 3GPP's requirement that, without pre-
+compensation derived from known trajectory data, the existing         The RAP is essential in modern 3GPP systems, facilitating
+RAP design is insufficient and requires substantial enhance-       initial access, handovers, and synchronization for UEs. The
+ments for uplink transmission [6, Sec. 6.3.3]. As current          gNB periodically broadcasts RACH information, enabling UEs
+access control methods are static and rely on randomness,          within its coverage area to initiate RA. When a UE intends
+they are inherently inefficient for the dynamic, yet predictable,  to perform RA, it uniformly selects a preamble and transmits
+LEO satellite environment, consequently leading to suboptimal      it within the preconfigured RACH resource. If multiple UEs
+system throughput, reduced resource utilization, and compro-       select the same preamble, a collision occurs, resulting in failed
+mised fairness when UEs with good channel conditions are           RA attempts. As the number of contending UEs increases,
+unnecessarily barred from access. Furthermore, while energy        the collision probability rises sharply, leading to a significant
+efficiency is a critical concern in satellite communication [7],   degradation in RA success rate and resource utility. Thus, the
+it often involves a tradeoff with transmission tasks [8]. By       gNB should carefully determine its RACH period1 to ensure
+enabling access only when predicted channel conditions are         that resources are not wasted.
+favorable, we ensure that successful UEs transmit at the high-
+est possible rates, minimizing transmission time and enhancing     C. ACB and RA in 3GPP NR
+energy efficiency without significantly compromising quality
+of service (QoS).                                                     Fig. 1 depicts an example of a UE attempting to connect to
+                                                                   a satellite and transmit uplink data. Initially, the UE performs
+   To address this fundamental mismatch and leverage LEO           the ACB procedure to determine whether it can start the RAP.
+satellite channel characteristics, we propose a novel solution     If the UE fails the ACB check, it is barred for a specified
+for RAP and ACB. Our primary contributions are as follows.         duration2 (Tbbaarse) before attempting the procedure again.
+
+   1) We propose channel and timing-predicted (CTP) ACB,              13GPP defines the RACH period in [9] with predefined values of {10, 20,
+       a dynamic access control mechanism tailored for LEO         40, 80, 160} ms.
+       satellite IoT. Unlike static legacy schemes, CTP ACB
+       exploits the deterministic satellite trajectory to dynam-      2The possible barring times as specified by 3GPP in [10] can range from
+       ically prioritize UE access, significantly enhancing        4 to 512 s.
+       system capacity.
+
+   2) We formulate an optimized random access channel
+       (RACH) period to balance the tradeoff between system
+       throughput and individual UE fairness. Additionally,
+       we provide a comprehensive analysis of critical MAC
+       parameters, including the physical PRACH period and
+       contention resolution timers, to identify the optimal
+       configuration for high-density LEO IoT scenarios.
+
+   3) Through comprehensive simulations, we validate that
+       CTP ACB yields substantial improvements in throughput
+       and resource utilization compared to 3GPP benchmarks.
+       Crucially, our results demonstrate that these gains are
+       achieved while preserving the information freshness,
+       as evidenced by the minimal impact on the age of
+       information (AoI).
+
+                          II. BACKGROUND
+
+A. Access Class Barring
+
+   The ACB mechanism mitigates network congestion by reg-
+ulating simultaneous access attempts from UEs. It distributes
+access requests over time, preventing congestion when numer-
+ous UEs attempt to connect concurrently, thereby ensuring
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24808                                                                    IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+   If the UE passes the ACB procedure, it starts the four-step           tradeoffs. A decoupled learning strategy [25] dynamically
+RAP to establish a connection with the satellite. During the             adapts the access control factors.
+RAP, the UE first transmits a randomly selected preamble, also
+known as Msg1, and opens a window for the reception of RA                   While these TN-based approaches effectively manage con-
+response (RAR). After receiving the RAR, the UE transmits                gestion in static terrestrial environments, they fail to account
+an RRC request for uplink resources, and then, it receives a             for new transmission characteristics in LEO satellite networks,
+contention resolution (CR) message in response. If any step              rendering them suboptimal for space-based IoT.
+of the RAP fails, the UE enters a random backoff period and
+restarts the RAP again later.                                            B. NTN RA Process
+
+   Kodheli et al. [11] have extensively discussed these aspects             Satcom's long propagation delay presents a major challenge.
+and proposed reasonable parameter values. When determining               Grant-free RA (GF-RA) [26] reduces signaling overhead
+appropriate values for the RAR window and CR timer, the                  and access latency by enabling direct data transmission to
+substantial propagation delay must be taken into account. The            satellites. Recent frameworks [27] propose low-latency and
+backoff parameter values (Tbmoax) as defined by 3GPP in [12]             overhead-efficient GF-RA for NTN, while [28] analyzes the
+varies from {5 to 1920} ms.                                              age of information (AoI) in GF-NTN schemes. Dynamic
+                                                                         MsgA channel allocation (MCA) using DRL [29] maximizes
+   Although the state of the art suggests the parameter config-          access success, and other methodologies [30] improve network
+urations, the research barely considers the nature of satellite          access probability. GF-RA can also be integrated with machine
+mobility. Based on our observation, UEs should maximize                  learning (ML), such as a Bayesian learning algorithm [31]
+utilization of the periods when they are within the coverage             for active UE detection and channel estimation in massive
+area of a satellite with favorable channel conditions. Therefore,        GF-RA for IoT. However, GF-RA-based solutions still need
+we advocate for employing shorter values for these parameters            further studies to support high UE density schemes in a wide
+to maximize the utilization of limited transmission time and             coverage satellite network. Gupta et al. [32] also showed
+minimize unnecessary delays. The actual barring time Tbar and            another potential way to optimize the RA procedure via
+backoff time Tbo are determined based on the 3GPP standards              configuring the backoff duration.
+[10], [12] as follows:
+                                                                            In addressing diverse user requirements, adaptive RA and
+                   Tbar = (0.7 + 0.6 u1) Tbbaarse                   (1)  data transmission schemes [33] cater to NGSO satellite net-
+                                                                         works with heterogeneous traffic. Dynamic access control
+                      Tbo = u2Tbmoax                                (2)  and resource allocation strategies [34] adjust update intervals
+                                                                         in response to traffic fluctuations. Space­air­ground network
+where u1, u2  U [0, 1] denote independent uniform random                 integration [35] employs a virtual deadline indicator (VDI) to
+                                                                         guide UEs in selecting appropriate RA layers.
+variables.  Here,  T  base  is  the  barring  time  configured  by  the
+                      bar                                                   Energy efficiency in beyond 5G (B5G) and 6G NTN
+gNB, and Tbmoax represents the backoff window size indicated             involves utilizing Zadoff­Chu (ZC) sequences [36] in RACH
+                                                                         to manage massive IoT requests while minimizing energy con-
+by the backoff indicator.                                                sumption. A strategy is proposed where UEs remain inactive
+                                                                         when not transmitting data, activating only within satellite
+                        III. RELATED WORK                                coverage; UEs can be categorized based on channel quality,
+                                                                         similar to coverage enhancement (CE) in NB-IoT systems
+A. TN RA Process                                                         [37]. Although Satcom and NB-IoT integration has been
+                                                                         explored for RA procedures [38], [39], the diverse channel
+   During the LTE era, the CADRA scheme [13] improved                    qualities of UEs in Satcom remain underutilized.
+RA by employing ACB and enhanced access barring (EAB).
+To address preamble collisions and downlink resource short-                 AI-driven mMTC RACH research in Satcom has gained
+ages, dynamic backoff [14] was introduced. In the NR                     attention, with studies [40], [41], [42] exploring multiagent
+era, nonlearning-based strategies such as delay-aware pri-               DRL (MADRL) for protocol learning to enhance com-
+ority access classification (DPAC) ACB [15], queue-aware                 munication efficiency. However, applying these methods to
+prioritized access classification (QPAC) ACB [16], and novel             LEO satellite networks is challenging due to nonstationary
+RA schemes [17] address congestion and QoS requirements.                 topologies and increased interagent communication overhead.
+Timing advance (TA) values in [18] have enhanced RACH                    Existing MADRL agents rely on limited local state informa-
+throughput, while recursive-ACB (R-ACB) [19] and online                  tion, which is insufficient for RA and SAT BS associations
+control algorithms [20] have optimized resource efficiency and           in LEO networks. To overcome this, the emergent RACH
+preamble allocation.                                                     protocol (eRACH) [43] leverages SAT orbiting patterns and
+                                                                         MADRL to adapt without central coordination or extra com-
+   Learning-based strategies leverage neural networks (NNs) to           munication.
+predict traffic patterns and optimize ACB factors [21]. Prox-
+imal policy optimization within deep reinforcement learning                 The use of ACB in RACH for Satcom has proven effective
+(DRL) frameworks [22] dynamically adjusts ACB factors for                in managing high volumes of access requests from UEs,
+delay-sensitive UEs. Long short-term memory (LSTM) NNs                   provided that the ACB mechanism is suitably adapted. To
+forecast traffic in mixed ultrareliable low-latency communi-             mitigate wireless access congestion caused by numerous users
+cations (uRLLCs) and massive machine-type communications                 attempting network access, a dynamic ACB scheme utilizing
+(mMTCs) scenarios [23], while hierarchical hybrid (HH) ACB
+and BO schemes [24] use DRL to balance delay­energy
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                     24809
+
+Fig. 2. Proposed CTP ACB mechanism: UE priority based on channel quality.
+
+nonorthogonal multiple access (NOMA) for RA (DNRA) was                     Fig. 3. Overview ofthe CTP-ACB system architecture. The diagram depicts
+proposed in [44]. Building on this, we suggest that employing              the spatial UE­satellite interaction (top), the RAO-based timing structure
+ACB to categorize UEs into distinct groups is a practical                  during an overflight (middle), and the localized information flow for optimal
+approach that can offer significant benefits for the system.               access timing calculation at the IoT UE (bottom).
+
+   Existing approaches neglect the inherent predictability of              environment-sensing tasks with limited buffers. Their
+LEO satellite trajectories, treating the channel as a purely               traffic arrivals follow Poisson processes. If the buffer
+stochastic process. This leads to ineffective resource utiliza-            overflows, a head-drop policy is employed where the oldest
+tion, as UEs with poor channel conditions may contend for                  packets are discarded. All UEs and the LEO satellite
+resources they cannot effectively use. To bridge this gap,                 are time-synchronized via GNSS and satellite broadcast
+we propose the CTP ACB scheme. Unlike conventional ran-                    synchronization signals, allowing the UEs to perform RA in
+dom barring mechanisms, CTP ACB exploits deterministic                     subsequent RA opportunities. As depicted in Fig. 2, during
+trajectory information to dynamically prioritize UEs, thereby              each overflight, the LEO satellite determines and broadcasts
+transforming the access challenge from a stochastic contention             the ACB factors for various UE classes according to their
+problem into a predictable scheduling opportunity, signifi-                respective priorities. When the ACB factor is set, the UE
+cantly enhancing system capacity and fairness.                             performs an ACB check according to its priority-specific
+                                                                           factor. After successful completion of the ACB check, the
+    IV. SYSTEM MODEL AND PROBLEM FORMULATION                               UE initiates the RACH procedure to contend for uplink (UL)
+                                                                           radio resources. After the connection is made, the UE starts
+   In the following, we will describe our system model                     UL transmission in a last-in-first-out order.
+for the scenario illustrated in Fig. 2. Some critical nota-
+tions are summarized in Section II-C. To provide a clear
+visual overview of the proposed framework, Fig. 3 illustrates
+the system architecture, timing structure, and information
+flow of the collaborative time-precoded ACB (CTP-ACB)
+mechanism. The LEO satellite broadcasts its ephemeris
+data. Upon receiving this broadcast, each backlogged UE
+independently predicts its channel quality (SNR) across
+the upcoming RA opportunity (RAO) periods (TRO =
+80 ms). The UE then calculates its optimal transmission time
+slot ti. It waits for this specific time ti before performing the
+ACB check and transmitting the preamble.
+
+   We consider NM stationary UEs, uniformly distributed
+across the coverage area, performing delay-tolerant
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24810                                                                         IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+                                                                           where NMc ,t-1 is the number of collided UEs at t - 1 and NMp ,t
+                                                                           is the number of UEs passing ACB at t.
+
+                                                                              Given Np available preambles, the success probability for
+                                                                           an individual UE is
+
+                                                                                                    Ps    =  Â     -  1 ÃNMct,t-1      .                    (5)
+                                                                                                               1      Np
+
+Fig. 4. Illustration of RA opportunity (RO) period (TR). (a) Resource      Note that Ps is determined by NMct,t, so the value may be
+allocation with a short RO period. (b) Resource allocation with a long RO  different in different time slot t.
+period.
+                                                                              Thus, the expected number of successful UEs is
+A. RO Period and TDMA Resources
+                                                                                       N  s    =    NMct ,t Ps  =  NMct ,t  Â     1       ÃNMct ,t -1       (6)
+   We follow the physical RACH (PRACH) design in 3GPP                                     M,t                                 1-                  .
+TS 38.211 [45], we assume that TPRACH is the length of the                                                                        Np
+RACH resource, and TR is the interval between successive
+PRACH instances, also known as the RO period. Fig. 4                       E. Maximized RACH Throughput and Optimal ACB Factor
+shows two brief examples of the resource allocation with
+long and short PRACH periods. The remaining time resources,                   With Np limited to 64 in the 3GPP standard, controlling
+excluding PRACH, are allocated by the LEO satellite using a                NMp ,t is crucial to prevent network congestion, system insta-
+time division multiple access (TDMA) approach, dividing time               bility, and performance degradation. The ACB mechanism
+equally among successfully accessed UEs.                                   regulates the number of UEs attempting simultaneous access.
+                                                                           We assume a uniform ACB factor, PA, for all backlogged UEs.
+   While 3GPP NTN standards may impose caps on uplink                      Throughout our analytical derivations, we utilize superscripts
+resource pools or implement priority-based preemption [9],                 to distinguish the dynamic states of the UEs during the RAP: b
+we assume an on-demand allocation in this study. This allows               denotes backlogged UEs, ct denotes actively contending UEs,
+us to evaluate the theoretical upper bound of the throughput               and s denotes successful UEs.
+gain achieved through trajectory-based access control without
+the confounding variables of specific vendor-defined scheduler                To determine the maximum number of UEs for optimal
+constraints.                                                               RACH throughput (i.e., successful RACH completions per
+                                                                           RO), we have the following.
+B. Barring Time and Backoff Parameter
+                                                                              Theorem 1: (Approximate Expected Number of Successful
+   Instead of using random-based barring time and backoff                  UEs): Given the number of backlogged UEs NMb ,t, Np, and
+parameters as specified in the 3GPP standard, we set both                  PA, where PA/Np is small and NMb ,t is large, the expected
+parameters to zero in our analysis. If a UE fails the ACB                  number of successful UEs at time t is approximately
+check, it retries in the next PRACH using the updated ACB
+factor. Similarly, a failed RACH attempt prompts a new                                    N    s       NMb ,t PA      exp      - PANMb ,t ! .               (7)
+preamble transmission in the following PRACH. This strategy,                                   M,t                                  Np
+suggested in [19], minimizes delays, ensuring that UEs do
+not miss the optimal window for ACB checks and RACH                        Proof: The expected number of successful UEs is
+procedures.
+                                                                                       NMb ,t     NMb ,t  !                                     1 Ã j-1
+                                                                                                    j                                           Np
+                                                                              s    =   X                     PAj         PA)NMb ,t- j   Â                .
+                                                                              M,t                                                      j1
+                                                                           N                                      (1  -                      -
+
+C. Number of RA Opportunities (ROs)                                                    j=1
+
+   The LEO satellite's speed is vL km/s, and the coverage area             Through mathematical manipulation, this simplifies to
+dimensions are W km wide and L km long. The overflight
+duration, T = L/vL seconds, represents the time the satellite                             N    s    =     NMb ,t PA   Â     -  PA ÃNMb ,t-1  .
+traverses the coverage area's length. The RO period, TR ms,                                    M,t                      1      Np
+determines the total number of RA opportunities, NR, for UEs
+to initiate the RACH procedure. Assuming an Earth-moving                   By applying the Poisson limit theorem, where the number of
+
+beam with radius rL, NR is derived by converting the overflight            contending UEs is large and the individual success probability
+duration T into milliseconds and dividing it by the RO period              per preamble is small, which implies that PA/Np is small and
+TR. Applying the floor function to ensure an integer number                NMb ,t is large, we can approximate
+of complete slots yields
+                                                                                       Â          PA ÃNMb ,t-1                 - PANMb ,t ! .
+                                                                                         1     -                         exp
+                           T × 103                                                                Np                                   Np
+           NR =               TR     .  (3)
+
+                                                                           Therefore,
+
+D. RA Success Probability                                                                                                      - PANMb ,t ! .
+                                                                                                                                    Np
+In periodic PRACHs, the number of contending UEs at time                                  N    s       NMb ,t PA      exp
+                                                                                               M,t
+
+slot t is
+
+           NMct ,t = NMc ,t-1 + NMp ,t  (4)
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                                                                                                        24811
+
+   Theorem 2: Condition for Optimal ACB Factor] The optimal                                                  A. UE Determines Optimal Timing
+ACB factor, PA , satisfies
+                                                                                                                Given the available LEO orbit information, the channels
+                               NMb ,t PA = Np.                              (8)                              between the LEO satellite and the UEs are predictable.
+                                                                                                             Utilizing the LEO location and channel model parameters,
+Proof:  Maximize        N      s    subject  to   0       PA      1,  Np    0,                               each UE can determine its channel quality at any given time
+                               M,t                                                                           slot. We denote the data rate of the ith UE at time slot
+and NMb ,t  0.                                                                                               j as R j,i. To evaluate the expected data rate, we apply the
+derivative of   Solving for the critical point by               taking the  first                            standard definition of mathematical expectation over the finite
+                                                                respect to  PA                               retransmission window. Specifically, the data rate R j,i at a
+                the  approximation        of      N  s    with                                               potential success slot j is weighted by the probability that
+                                                     M,t                                                     the UE succeeds exactly at slot j after failing all previous
+                                                                                                             attempts since the initial slot t. Thus, each UE calculates its
+and setting it to zero yields                                                                                expected data rate upon successful network access, given NR
+                                                                                                             and NT , as follows:
+N  s    = NMb ,t exp           - NMb ,t PA !         1 - NMb ,tPA ! = 0.
+   M,t                              Np                       Np
+
+PA
+
+This directly yields the critical condition NMb ,tPA = Np. To                                                Rts,i = E  Rts,i    NR,  NT
+confirm that this critical point is a global maximum, we apply                                                                 
+
+the second derivative test
+
+                                                                                                                 t+NT -1 " j-1                  #
+
+                2    N  s                 NMb ,t  2                                                          =      XY
+                        M,t                Np
+                                    =  -            exp (-1) .                                                                        1 - Ps,k R j,iPs, j      (9)
+                                                                                                                                                              (10)
+                PA2          PA                                                                                         j=t k=t
+
+Since the number of preambles Np > 0 and the squared                                                            t+NT -1
+(te(rm2N(MsN,tMb/,tP)22A>) <00, )t.hTehsisecroignodroduesrliyvactiovnefirims ssttrhicetlfyunncetgioantivies
+strictly concave at the critical point, maximizing the expected                                               X (1 - Ps) j-t R j,iPs
+
+successful preambles.                                                                                                   j=t
+   The constraints are naturally satisfied. The solution for PA
+                                                                                                             where Rts,i represents the data rate of the ith UE if it starts
+is bounded by 1                                                                                              the ACB check and RACH at time slot t and succeeds within
+                                                                                                             the slots [t, t + NT - 1]. It is important to note that while
+                       8                          NMb ,t = 0                                                 the exact expectation in (9) requires the time-varying success
+                       ^0,                        NMb ,t < Np
+                       <                          otherwise.                                                 probability Ps, j (dependent on the instantaneous contention
+                PA = 1,                                                                                      NMct, j), we adopt a constant approximation Ps in (10). This
+                                                                                                             simplification is justified because the proposed CTP-ACB
+                       ^:Np/NMb ,t,
+                                                                                                             mechanism maintains the contention pool in a quasi-steady-
+This result aligns with the classical slotted ALOHA principle,
+where the optimal load is one transmission per resource unit.                                                state near the optimal capacity Np, rendering the fluctuations in
+                                                                                                             success probability negligible within the short retransmission
+   The ACB factor is discretized as per 3GPP TS 38.331,
+ranging from 0 to 0.95 in increments of 0.05. For mathematical                                               window NT . Here, NR is the number of RA opportuni-
+derivation, we use the values from the optimal solution. By                                                  ties (ROs) in an overflight, NT is the number of allowed
+adjusting the ACB factor, we maximize the expected number                                                    retransmission attempts (including the initial attempt), and
+of successful RACH completions.                                                                              t = 1, 2, . . . , NR - NT + 1 represents the time slots.
+
+                                                                                                                The optimal time slot for the ith UE to achieve the highest
+
+                                                                                                             expected data rate, when starting the ACB check and RACH,
+
+                                                                                                             is derived as
+
+                                                                                                             ti  =  arg      max   E  Rts,i     NR  ,  NT  .  (11)
+                                                                                                                                              
+                                                                                                                                t
+             V. PROPOSED CTP ACB MECHANISM
+                                                                                                             In other words, if the ith UE has data packets to transmit,
+   The proposed mechanism leverages predictable channel
+conditions, which are made possible by the availability of                                                   it should perform the ACB check and initiate the RACH
+LEO orbit information. Leveraging LEO trajectory information                                                 procedure at time slot ti to maximize its expected data rate.
+and channel model parameters, each UE can compute and                                                        Each UE retains its respective value of ti, eliminating the
+identify the optimal time slot that maximizes its expected data                                              need for information sharing with the LEO or other UEs, thus
+rate before initiating the RACH procedure. Consequently, each
+UE activates, performs the ACB check, and initiates RACH                                                     avoiding the signaling overhead of reporting information to
+attempts at the determined time slot to achieve higher data
+rates. UEs with similar optimal time slots are grouped into the                                              the satellite.
+same class. Using the known distribution of UEs, including
+the number of UEs in each class at a given time slot, the                                                    B. LEO Classifies UEs
+LEO can calculate the optimal ACB factors for each class.
+These optimal ACB factors, along with other RACH-related                                                        To enhance individual data rates and overall system through-
+parameters, are then broadcast to the UEs within the LEO's                                                   put, UEs with data packets ready for transmission are grouped
+coverage.                                                                                                    based on the alignment of their ti values. This classification
+                                                                                                             prioritizes UEs with ti values closer to the current time. Since
+                                                                                                             each UE stores its ti value, it can independently determine
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24812                                                               IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+                                                                                                kmax  Mkp,t
+
+                                                                                          =     X                     ct                    .
+                                                                                                                      M,t-1
+                                                                                                              +  N           (1     -  Ps)             (16)
+
+                                                                                                k=0
+
+                                                                       Theorem 3: Optimal Multiclass ACB Factors: The optimal
+                                                                    ACB factors for each class are
+
+                                                                                       "        -  Pk-1       Mic,tt  pA ,i  #1
+                                                                                         Np
+                                                                    pA ,k           =                  i=0                       ,     for k  0        (17)
+
+                                                                                                      Mkc,tt                 0
+
+                                                                    where [x]ba = max(a, min(b, x)).
+                                                                       Proof: We formulate the problem to determine the optimal
+
+                                                                    ACB factors as
+
+Fig. 5. UE classification: priority based on optimal timing.                              kmax        Mkp,t Ps
+
+                                                                                min       X                                                            (18)
+                                                                                              k                                                        (19)
+                                                                                pA,k                                                                   (20)
+                                                                                          k=0                                                          (21)
+
+which class it belongs to. Let Xta,i denote the class of the ith                s.t. 1  pA,0  pA,1  · · ·  pA,kmax  0
+UE at time slot t in the activated state, defined as
+                                                                                       kmax
+          Xta,i   =  (       ti|,  if activated
+                      |t -         otherwise                                           X
+                                                                                            pA,k > 0
+                      -1,
+                                                              (12)                     k=0
+
+where t = 0, 1, . . . , NR represents the current time slot. A                         N  ct   =   Np.
+smaller non-negative k indicates higher priority. Consequently,                           M,t
+
+a UE's class changes over time, with priority increasing as its     The objective function in (18) prioritizes UEs with higher
+ti value approaches the current time slot. This classification is   urgency (smaller k) by minimizing the weighted sum of
+illustrated in Fig. 5.                                              successful access attempts. Constraints (19) ensures higher
+                                                                    priority classes have higher ACB factors. Constrain (20) shows
+   The maximum class index, kmax, corresponds to the maxi-          that all ACB factors cannot be zero simultaneously. Constraint
+mum possible time difference between a UE's current slot and        (21) is the optimality theorem from (2).
+its optimal slot. This is physically bounded by the maximum
+                                                                       Substituting Mkp,t = Mkc,tt pA,k, this constrained linear pro-
+duration a UE can remain within the satellite's coverage.           gramming problem can be solved via its Lagrangian dual
+                                                                    function. We define the Lagrangian L(pA, , µ, ) as
+We derive this by taking the maximum distance a UE can
+traverse through the circular beam (the diameter, 2 · rL) and                   kmax                                  kmax                     !
+dividing it by the satellite velocity vL. This maximum visibility
+time is converted to milliseconds (×103) and divided by             L = X kMkc,tt pA,k Ps +  X Mkc,tt pA,k - Np
+
+the RAO period TR to express it in terms of discrete time                       k=0                                   k=0
+slots. Applying the ceiling function to ensure coverage of
+fractional slots and adjusting with a 1/2 boundary offset, kmax                        kmax                   kmax
+is determined by
+                                                                                       X                      X
+                                                                                    - µk pA,k + k pA,k - 1
+                                                                                                                                                       (22)
+
+                                                                                       k=0                      k=0
+
+          kmax =     rL · 2/vL × 103                - 1.      (13)  where  is the multiplier for the capacity constraint (21) and
+                            TR                        2             µk  0, k  0 are the dual multipliers for the bounds 0 
+                                                                    pA,k  1.
+In high-UE density scenarios, UEs with lower priorities may
+experience blocking during the ACB check.                              The Karush­Kuhn­Tucker (KKT) conditions require the
+
+                                                                    following.
+
+C. LEO Determines ACB Factors                                       Stationarity: (L/pA,k) = kMkc,ttPs + Mkc,tt - µk + k = 0.
+                                                                    Complementary Slackness: µk pA,k = 0 and k(pA,k - 1) = 0.
+
+   According to (8), we can determine the optimal ACB factors       From the stationarity condition, the allocation priority is
+for different classes with the UE numbers in different classes.
+                                                                    strictly driven by the index k. The optimal solution employs
+Here, we assume that the LEO satellite has the distribution
+                                                                    a greedy allocation. For class k, let the remaining available
+information, allowing it to calculate the ACB factors using
+                                                                    preambles   be  Nrem,k      =  Np   -     Pk-1     Mic,tt pA ,i.   If   Nrem,k  >  Mkc,tt ,
+the following steps. Let Mka,t be the number of UEs in class k
+at time slot t. The expected number of UEs passing the ACB                                                        i=0
+                                                                    an unconstrained calculation yields pA,k > 1. In this boundary
+
+in the multiclass scheme is                                         case, the complementary slackness condition k(pA,k - 1) = 0
+
+       Mkp,t = E °Mkp,t | Mka,t; pA,k« = Mka,t pA,k                 forces the upper bound multiplier k > 0 to activate, bounding
+
+                                                              (14)  the solution exactly to pA,k = 1. The excess preambles are
+
+where pA(k) is the ACB factor for class k = 0, 1, . . . , kmax.     then cascaded to the next priority class k + 1. Solving these
+Next, we extend the results in (4) to the multiclass case, and
+                                                                    KKT conditions yields the exact bounded projection pA ,k.
+then, we have the expected number of total contending UEs              The structure of the solution resembles a reverse water-
+
+is                                                                  filling algorithm, where access probability is greedily allocated
+
+          ct        n           Mkp,t        ct     o               to high-priority classes (small k) until the total load constraint
+          M,t     E NMct ,t                  M,t-1
+       N       =             |         ;  N                   (15)  Np is met.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                             24813
+
+D. Optimal RO Period to Maximize System Throughput                s.t. TR  TPRACH  (27)
+
+   While optimizing ACB factors improves access success           where s,max represents the maximum system throughput with
+within a given resource frame, the allocation of the frame        TR . This problem is also a nonlinear programming challenge,
+resources itself (between PRACH and data transmission) fun-       addressed via the interior-point method. The optimal RO
+damentally limits the upper bound of throughput.
+                                                                  period resulting from this problem is denoted as TR.
+   In this section, we investigate the optimal configuration of
+the RO period to maximize system throughput. Determining          E. Practical Implementation Issues
+this configuration is essential because RACH resources inher-
+ently compete with data transmission resources; increasing one       In our proposed solution, we assume that the channel is
+reduces the availability of the other. As illustrated in Fig. 4,  predictable so that the UE can determine its best channel
+where resources are divided into PRACH and TDMA in the            access timing. In reality, the channel condition between the UE
+time domain, we must find the optimal balance. Consequently,      and the LEO satellite is highly correlated with the elevation
+we formulate an optimization problem to balance system            angle of the LEO satellite. In LEO networks, the dominant
+throughput with the average number of served UEs.                 path loss component is deterministic geometric distance. Shad-
+                                                                  owing and small-scale fading can be effectively averaged out
+   1) Maximize System Throughput With Optimal RO Period:          or compensated for with link adaptation techniques.
+The variation in RO period lengths directly impacts the distri-
+bution of PRACH and scheduling resources. UEs with higher            While perfect knowledge of UE distribution is assumed for
+data rates finish transmission earlier, while lower rate UEs      analysis, in practice, the LEO satellite can estimate the traffic
+require more time. Priority of resource allocation is given to    load and class distribution by monitoring the RACH success
+high data rate UEs, with the rest distributed proportionally      rate and collision statistics from previous frames, calculating
+fairly. Thus, determining the optimal PRACH configuration to      from the UE class distribution of the UEs that pass the ACB
+achieve maximum system throughput is crucial. The optimiza-       and successfully pass the RAP in the last RA opportunity
+tion problem is formulated as follows:                            according to (6), (14) and (16).
+
+                    max s                               (23)         Regarding the signaling overhead, the LEO satellite is
+                    TR                                            required to broadcast ACB factors for different UE classes. In
+                                                                  the 3GPP standard, the ACB factor is an enumeration with 20
+                    s.t. TR  TPRACH                     (24)      values ranging from 0 to 0.95, which requires log2(20) = 5
+                                                                  bits for representation. Consequently, a maximum of 5kmax
+where s is the system throughput. Constraint (24) ensures         bits are needed for broadcasting. However, since pA,k is
+that time resource allocation accommodates both PRACH             monotonically nonincreasing with k as per (19), differential
+                                                                  coding can significantly compress the broadcast message size.
+and scheduling requirements. This optimization presents a
+
+nonlinear programming challenge, addressed via the interior-
+
+point method. If given the discrete and limited search space
+
+of TR, we can also employ an exhaustive search to find the             VI. PERFORMANCE EVALUATION METHODOLOGY
+
+global optimum. The solution to this problem is denoted as           To evaluate the effectiveness of the proposed CTP ACB
+TR . Although it might intuitively seem that extending the RO     mechanism, we conduct a series of detailed simulations.
+period allows for greater scheduling resource availability, the   Initially, we outline the simulation framework, including the
+finite buffer sizes of UEs introduce a limitation. Specifically,  channel model and study case scenarios. We also reference
+                                                                  related works for comparison. Following this, we define the
+when resources exceed the needs of higher data rate UEs,          evaluation metrics, such as overflight system throughput, mean
+                                                                  UE overflight throughput, system RB utilization, mean UE
+the surplus is reallocated to those with lower data rates.        energy efficiency, mean UE served times during an overflight,
+                                                                  and mean UE time-averaged AoI.
+Consequently, system throughput does not linearly increase
+                                                                     In our simulation model, we define a terrestrial area with
+with the extension of the RO period.                              dimensions length L and width W, wherein UEs are uniformly
+   2) Tradeoff With Expected Number of Served UEs: While          distributed. LEO satellites traverse centrally over this area,
+                                                                  aligned with the length dimension, ensuring that at any given
+extending the RO period may enhance system throughput, it         moment, only one LEO satellite is positioned directly above.
+                                                                  Furthermore, as soon as the incumbent LEO satellite exits
+also reduces service opportunities due to fewer PRACH slots       the area, the subsequent satellite promptly assumes coverage.
+                                                                  This cycle continues until the gathered data achieve statistical
+and a limited number of preambles. Particularly when the          convergence.
+
+number of UEs increases significantly, selecting a longer RO
+
+period based solely on system throughput considerations may
+be inefficient. To address this, we propose an optimization
+
+framework that balances system throughput with the expected
+
+service rate of UEs. Initially, we introduce a utility function
+
+representing the expected number of UEs serviced, defined as
+
+                       <81,  NMµ     if NMµ  NM,
+                             NM      otherwise.
+UNMµ  (TR)          =  :ln        ,                     (25)
+
+The optimization problem to balance these considerations is       A. Channel Model
+
+then formulated as                                                   The channel-related configurations are adopted from the
+                                                                  3GPP standard, including the antenna pattern and channel
+      max                 s    +     UNMµ  (TR)         (26)      modeling. The details are explained as follows, and the corre-
+                        s,max                                     sponding parameter values are listed in Table I.
+       TR
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24814                                                                    IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+                                    TABLE I                         The free-space path loss LFS is
+                   CHANNEL MODEL CONFIGURATION
+                                                                         LFS = 32.45 + 20 log10 (dLEO-UE) + 20 log10 ( fc)         (30)
+
+                                                                    where fc is the carrier frequency (Hz).
+                                                                       The SNR, , is calculated as
+
+                                                                                  = EIRP - LFS - LA - LSM - Lsc - Lad
+
+                                                                                 -Loa (oa) + G/T -k - 10 log10 ()                  (31)
+
+                                                                    where EIRP is the effective isotropic radiated power (dBm),
+
+                                                                    LA is the atmospheric gas loss (dB), LSM is the shadow margin
+                                                                    (dB), Lsc is the scintillation loss (dB), Lad is the additional
+                                                                    loss (dB), Loa(oa) = -Gp(oa) is the off-axis angle loss (dB),
+                                                                    G/T is the antenna-gain-noise-temperature ratio (dB/K), k is
+                                                                    Boltzmann's constant, and  is the channel bandwidth.
+
+                                                                       The data rate can be derived from the SNR using
+
+                                                                                           C () = log2 (1 + )                      (32)
+
+                                                                    where C() represents the possible data rate as a function of .
+                                                                    In digital communication, the SNR is mapped to a modulation
+                                                                    and coding scheme (MCS) for target transmission rate and
+                                                                    reliability. We use the equation defined in 3GPP TR 38.803
+                                                                    [47, Sec. 5.2.7] to derive the spectrum efficiency (SE), . The
+                                                                    actual data rate is then obtained by multiplying  and 
+
+                                                                                 8                        if  < min
+                                                                                 ^0,
+                                                                                 <
+
+                                                                                  =  · C () , if min    max                        (33)
+
+Fig. 6. Antenna pattern.                                                         ^: · C (max) , if   max
+
+   1) Antenna Pattern: We utilize the antenna pattern defined       where  = 0.4 represents implementation losses according to
+in 3GPP TR 38.821 [6, Sec. 6.1.3]. The pure antenna gain Gp         3GPP TR 38.803, min = -10 dB, and max = 22 dB.
+is defined as follows:
+                                                                       The practical data rate (bps) is
+
+                                                                                                   Rit =  · it                     (34)
+
+                8                                                   where Rit is the data rate of the ith UE at time slot t and ti is
+                                                                    the SE of the ith UE at time slot t.
+                ^1,                           if oa = 0
+                <
+
+Gp     (oa)  =  ^4    J1 (ka sin (oa))  2  ,  if 0  |oa|  90  (28)
+                :       ka sin (oa)     
+                                        
+                                        
+
+                                                                    B. Traffic Model and System Throughput Calculation
+
+where J1(x) is the Bessel function of the first kind and first      To evaluate the long-term system performance, we model
+
+order with argument x, a is the radius of the antenna's circular    the dynamic packet arrival and resource allocation process.
+
+aperture (meters), kB = 2 fc/c is the wavenumber, fc is the         UEs are categorized into Ng groups based on their achievable
+carrier frequency, c is the speed of light in a vacuum, and oa is
+the off-axis angle. The implemented antenna gain is obtained        data rates using the proportional fair (PF) criterion. The data
+
+by adding the LEO's maximum receiver antenna gain (from             rate range [Rmin, Rmax] is discretized with an increment of R =
+                                                                    (Rmax - Rmin)/Ng.
+Table I) to Gp. The antenna pattern is depicted in Fig. 6.
+                                                                    The system throughput is estimated iteratively by analyzing
+2) Link Budget Calculation: For the channel model, we
+                                                                    the queue dynamics over the satellite overflight duration T.
+utilize the one provided by 3GPP TR 38.811 [46, Sec. 6.6.2].             NMµ                  s
+                                                                    Let       =  min(NM ,  N  M,t  NR  )  denote  the  number  of  serviceable
+We only consider the line-of-sight (LOS) component in our
+                                                                    UEs. The packet dynamics for each UE i are modeled as
+research
+                                                                    follows:
+                                         hL
+                          dLEO-UE  =  sin (el)                (29)               Nn = pkTS                                         (35a)
+                                                                                 Iio f = I Nr,i + Nn > S b                         (35b)
+where dLEO-UE represents the straight-line distance from the                     N,i = Iio f S b + 1 - Iio f Á Nr,i + Nn           (35c)
+UE to the satellite (meters), hL is the LEO altitude (kilome-
+ters), and el is the elevation angle from the UE's perspective      where Nn is the number of new packets, I(·) is the indicator
+(degrees). We simplify the elevation angle calculation for          function for buffer overflow, and N,i represents the current
+                                                                    buffered packets.
+simulation convenience. Given that our scenario excludes low
+
+elevation angles, Earth curvature is omitted.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                                                                                24815
+
+Algorithm 1 Iterative Calculation of Steady-StateSystem            QPAC: Queue-based priority ACB, prioritizing UEs with data
+Throughput s                                                       sizes close to their buffer limits in the ACB check, as described
+                                                                   in [16].
+                                                                   DPAC: Delay-based priority ACB, prioritizing UEs with pack-
+                                                                   ets having smaller leftover delay budgets in the ACB check,
+                                                                   as described in [15].
+
+                                                                   D. Performance Metrics
+
+                                                                   1) Overflight System Throughput: We use the long-term
+
+                                                                   averaged system throughput for overflights. The system
+
+                                                                   throughput for the ith overflight is denoted as s,i, and N
+
+                                                                   overflights are simulated. The long-term averaged system
+
+                                                                   throughput is
+
+                                                                                           s    =   1     N                           (37)
+                                                                                                   N
+                                                                                                         X
+                                                                                                             s,i.
+
+                                                                                                         i=1
+
+                                                                      2) System RB Utilization: In our TDMA scheduling, the
+                                                                   total system resource for data transmission in a time slot is
+                                                                   TR - TPRACH. The number of UEs transmitting in the jth slot
+                                                                   of the ith overflight is Ni, j. The RB utilization is
+
+   We assume that the remaining time resources T = (TR -           URB              =   1     N     1    NR     PNi, j      Ti,k      (38)
+TPRACH)NR are distributed among groups. The resource allo-                             N           NR
+cation is adjusted iteratively to ensure fairness and utilization                            X           X          k=1
+
+                                                                                             i=1          j=1   TR - TPRACH
+
+Tgi  =  N,i  NMµ   pgi                                     (36a)   where Ti,k is the total transmission time of the kth UE in the
+        Rgi                                                (36b)   ith overflight.
+
+        8                                                             3) Mean UE Energy Efficiency: Here, we describe the
+
+        ^T  gi  ,                           if Tgi  T pgi          energy required by a UE to transmit a bit (bits per joule)
+        ^                                   otherwise
+
+        <                          Á
+
+Tgi =       T      -  P       Tgj     pgi                                           1   N NM                    Bi, j
+                                         ,
+                          jS                                       E=                  XX
+
+        ^                                                                                                       Ni, jTPRACHÁ          (39)
+
+        ^          P         pgk                                                  N i=1 j=1        T        +                     PM
+        :                                                                                             i, j
+                       k
+                          S
+
+where S = { j | Tgj  T pgj } represents the set of unsaturated     where Ti, j is the total transmission time of the jth UE in the
+groups. The remaining packets for the next iteration are           ith overflight, Ni, j is the number of preamble transmissions of
+updated by Nr,i = N,i - (Rgi Tgi /NM pgi ).                        the jth UE in the ith overflight, PM is the UE transmission
+                                                                   power (UE TX EIRP from Table I), and Bi, j is the total bits
+   The steady-state system throughput, s, is obtained when
+the iterative process converges, as summarized in Algorithm        transmitted by the jth UE in the ith overflight.
+
+1.
+
+                                                                   4) Mean UE Time-Averaged AoI: The time-averaged AoI
+
+C. Baselines                                                       of the kth UE during N overflights is Ak. The mean UE time-
+
+   The study cases are based on the total traffic load, which      averaged AoI is
+is determined by the number of UEs, the packet arrival rate,
+and the packet size. In this study, the packet size is fixed.                                A  =   1    NM                           (40)
+Consequently, we analyze two main scenarios as follows.                                            NM
+                                                                                                         X
+Case 1: Constant total number of UEs with varying packet                                                     Ak.
+arrival rates.
+Case 2: Constant packet arrival rate with varying numbers of                                             k=1
+UEs.
+                                                                   5) Mean UE Served Times in an Overflight: This metric
+   For each scenario, we examine the impact of different RO
+period lengths on the results.                                     describes the average number of times a UE is served during
+
+   The baseline ACB methods are as follows.                        an overflight
+
+ACB: Basic, controlling the number of UEs passing the ACB                              S  =   1    NM        1   N                    (41)
+check without further design.                                                                NM             N
+TAACB: Timing advance ACB, allocating ACB factors to UEs                                           X            X
+in the same timing advance (TA) group to mitigate preamble                                                          S i, j
+collisions, as described in [18] and [48].                                                          j=1
+                                                                                                                i=1
+
+                                                                   where S i, j is the number of times the jth UE is served in the
+                                                                   ith overflight.
+
+                                                                         VII. PERFORMANCE EVALUATION RESULTS AND
+                                                                                                 DISCUSSION
+
+                                                                   A. Overflight System Throughput
+
+                                                                      The overflight system throughput achieved through sim-
+                                                                   ulations is depicted in Fig. 7(a) and (b). It should be
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24816                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+Fig. 7. Performance comparison of CTP ACB with baselines under varying packet arrival rates and number of UEs for system throughput, mean UE energy
+
+efficiency, and mean UE time-averaged AoI. (a) Case 1: overflight system throughput versus packet arrival rate (pk). (b) Case 2: overflight system throughput
+versus number of UEs (NM). (c) Case 1: mean UE energy efficiency versus packet arrival rate (pk). CTP ACB outperforms baselines. (d) Case 2: mean UE
+energy efficiency versus number of UEs (NM). CTP ACB outperforms baselines. (e) Case 1: mean UE time-averaged AoI versus packet arrival rate (pk). AoI
+
+is relatively constant. (f) Case 2: mean UE time-averaged AoI versus number of UEs (NM). AoI increases with NM.
+
+noted that these results represent the "best-case capacity" of    However, examining the mean UE overflight throughput,
+the trajectory-aware scheduling. In practical 3GPP NR-NTN         defined as the ratio of system throughput to the number of
+deployments, system throughput may be further constrained by      UEs (T Psys/NMt ), provides further insight. Table II provides
+uplink resource pool capping [10] and inter-UE resource pre-      a detailed comparison of the proposed CTPACB with other
+emption mechanisms for high-priority traffic [9]. Our analysis    state-of-the-art schemes.
+focuses on the fundamental gain of predictive access control
+by assuming a flexible resource availability.                     B. Mean UE Energy Efficiency
+                                                                     The impact of increasing traffic load on energy efficiency
+Case 1 (Varying Packet Arrival Rate) (pk): As packet arrival
+rate (pk) increases, the system throughput exhibits an upward     in Cases 1 and 2 is depicted in Fig. 7(c) and (d). Energy
+trend, eventually plateauing due to inherent resource lim-        efficiency is inherently linked to the duration of data trans-
+itations. Significantly, our proposed CTP ACB mechanism           mission and the frequency of preamble collisions. The diverse
+consistently outperforms the baseline approaches under these      transmission times resulting from the various baseline methods
+conditions. Crucially, the theoretical curves derived from (10)   lead to energy efficiency trends that diverge from the observed
+align closely with the simulation results, with a relative error  overflight system throughput. Despite these variations, the
+margin of less than 1%. This empirical evidence validates the     proposed CTP ACB mechanism consistently exhibits superior
+robustness of the constant success probability approximation      energy efficiency compared to the evaluated baselines.
+employed in our optimization framework.
+Case 2 (Varying Number of UEs) (NMt ): A similar behavior is      C. Mean UE Time-Averaged AoI
+observed when the number of UEs (NMt ) is varied. The system
+throughput increases with NMt until it reaches a saturation          The mean UE time-averaged age of information (AoI) for
+point. Notably, the CTP ACB mechanism again demonstrates          both simulation cases is presented in Fig. 7(e) and (f). The
+superior performance in comparison to the evaluated baselines.    results reveal two distinct performance regimes depending on
+                                                                  the network density.
+   A direct comparison of the system throughput between
+Cases 1 and 2 reveals minimal discernible differences.            Case 1 (Varying Packet Arrival Rate) (pk)]: At a constant
+                                                                  low density (NM = 2000), the mean AoI remains relatively
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                                                         24817
+
+Fig. 8. Impact of packet arrival rate and number of UEs on mean UE served times, and the effect of continuous and optimal RO periods on overflight system
+
+throughput. (a) Case 1: mean UE served times versus packet arrival rate (pk). (b) Case 2: mean UE served times versus number of UEs (NM). (c) Case 1:
+overflight system throughput versus continuous TR (NM = 2000). (d) Case 2: overflight system throughput versus continuous TR (pk = 0.8). (e) Case 1:
+overflight system throughput with optimal TR and TR. (f) Case 2: overflight system throughput with optimal TR and TR.
+
+stable despite increasing pk. In this low-contention regime, that trajectory-aware scheduling is particularly essential for
+the CTP-ACB mechanism exhibits an AoI approximately 16% massive IoT scenarios. While CTP-ACB introduces a marginal
+
+higher than the standard ACB baseline. This is attributed latency tradeoff under light traffic, its ability to mitigate
+
+to the inherent design where UEs strategically delay their access congestion makes it far more robust and efficient as
+
+RACH procedure to coincide with predicted optimal channel the number of UEs grows, successfully balancing throughput,
+
+conditions. Since the probability of collision is naturally low energy consumption, and AoI.
+
+at 2000 UEs, the intentional "waiting period" for peak SNR
+
+becomes the dominant factor in AoI. However, as shown in
+
+Fig. 7(c), this strategic tradeoff allows CTP-ACB to achieve D. Mean UE Served Times
+
+significantly higher energy efficiency even at low loads.            Fig. 8(a) and (b) shows the results of the mean UE served
+Case 2 (Varying Number of UEs) (NM)]: In contrast, the            times. In Case 1, with a fixed packet arrival rate (pk), the
+mean AoI demonstrates a positive correlation with the number      mean UE served times remain relatively stable. Conversely,
+of UEs due to intensified resource contention. A significant      Case 2 reveals an inverse relationship between the number
+strength of the CTP-ACB mechanism becomes apparent as the         of UEs (NMt ) and the mean served times, as depicted in
+network scales toward massive IoT densities. While stochas-       Fig. 8(b). This trend suggests a reduction in service oppor-
+tic schemes like QPAC and the standard ACB suffer from            tunities per UE as the network density increases. Despite
+"congestion collapse," CTP-ACB intelligently spreads the          this inherent challenge, the proposed CTP ACB mechanism
+access load based on trajectory predictability. Consequently, as  effectively preserves the mean UE served times, maintaining
+summarized in Section VII-B, CTP-ACB effectively reduces          comparable values to other baseline approaches. An exception
+the mean AoI by 30.23% at NM = 12000 compared to the              is observed with TAACB, which exhibits higher served times
+baseline, outperforming all other state-of-the-art schemes in     due to its unique design principles, as illustrated in Fig. 8(a).
+terms of information freshness.                                   While TAACB shows higher served times, this metric can be
+
+Synthesizing the findings from both cases, it is evident that misleading. It likely reflects a fairness issue where proximal
+
+the primary determinant of the mean UE time-averaged AoI is UEs monopolize resources, whereas CTP ACB ensures a more
+
+the density of UEs within the network. The results highlight equitable distribution across the coverage area.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24818                                                                                   IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+Fig. 9. Expected number of served UEs versus RO period (TR). The number      Fig.  )1. 0T.R Ciassehig1h: eorpftiomr aml aRxOimpuemriothdro(TuR ghpauntd,  wTR hil)evTeR rsubsaplaancckeest  arrival rate
+of served UEs decreases exponentially with increasing TR.                    (pk                                                                                                            throughput
+
+                                                                             and served UEs.
+
+E. Maximize System Throughput With Optimal RO Period                         Fig.  )1. 1T.R Cisasheig2h:eor pfotirmmalaxRiOmupmertihordou(TghRpuatn, dwhTiRle  ) versus number of UEs
+                                                                             (NM                                                                               TR balances throughput
+   While the 3GPP standard specifies a discrete set of PRACH
+period configurations {10, 20, 40, 80, 160} ms, the actual opti-             and served UEs.
+mal value for maximizing system throughput might lie outside
+this predefined range. Consequently, to thoroughly investigate
+the relationship between the RO period (TR) and system
+throughput, we consider TR as a continuous variable in our
+analysis.
+
+   As illustrated in Fig. 8(c) and (d), the overflight system
+throughput initially exhibits an increase with a longer TR.
+This improvement can be attributed to the greater availability
+of resources for TDMA scheduling. However, beyond a certain
+threshold, further extending TR leads to a decline in through-
+put. This degradation occurs because, under a proportional
+fair scheduling scheme, UEs with lower data rates occupy
+a larger share of the available resources. It is important to
+note that for specific values of the number of UEs (NMt ) and
+the packet arrival rate (pk), there exists an upper limit to
+the achievable system throughput, regardless of the TR value.
+Interestingly, our simulations reveal that Cases 1 and 2, which
+represent similar overall traffic loads, yield nearly identical
+system throughput values across the tested range of TR.
+
+   Based on these observations, a key objective of our study is
+to identify the optimal PRACH configuration, specifically the
+value of TR, that results in the maximum overflight system
+throughput for a given set of traffic conditions, defined by NMt
+and pk.
+
+F. Tradeoff With Expected Number of Served UEs                               Fig.  12.  )C. aTsR e1s:ingunmifibcearnotlfysienrcvreedasUeEs sthweitnhuTmRbearnodf  TR versus packet          arrival
+                                                                             rate  (pk                                                                            served UEs.
+   Furthermore, our analysis identifies an optimal RA opportu-
+                                                                             RO period (TR) is comparatively illustrated in Fig. 8(e) and
+nity (RO) period, denoted as TR in the accompanying figures,                 (f). The advantages of factoring in the number of served
+that effectively balances the maximization of system through-
+
+put with the crucial consideration of the expected number
+
+of served UEs. As depicted in Fig. 9, this expected num-                     UEs during RO period configuration are clearly evident in
+
+ber decreases exponentially with an increasing TR. Notably,                  the results presented in Figs. 10­13, specifically for Case 1
+
+adopting  the  T     configuration  leads  to  a  substantial  increase  in  (Figs. 10 and 12) and Case 2 (Figs. 11 and 13). Specifically, the
+                  R
+                                                                                                                                                                     
+the expected number of served UEs, incurring only a marginal                 number     of  UEs  successfully  served  under                              the     T  R  configuration
+
+reduction in the overall system throughput.                                  significantly surpasses that achieved with TR , highlighting the
+
+The overflight system throughput achieved with both the                      superior balance offered by TR, particularly as the density of
+
+throughput-maximizing  RO  period          (T     )  and  the  balanced      UEs within the network grows.
+                                               R
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                          24819
+
+Fig.  13. Case 2: number of   served UEs with TR    and TR versus   number  of  and scaling smoothly up to J = 0.8981 at 12 000 UEs. This
+UEs   (NM). TR significantly  increases the number  of served UEs.              consistent, structural fairness is a direct result of the trajectory-
+                                                                                aware design. By mathematically deriving and assigning a
+Fig. 14. Comparison of Jain's fairness index under varying UE densities         unique optimal access time slot (ti) for each UE, CTP-ACB
+(NM = 2000 to 12 000).                                                          prevents simultaneous cross-regional contention. Instead of
+                                                                                allowing center-beam UEs to monopolize the overflight, the
+G. Fairness Analysis                                                            mechanism ensures that every UE receives a dedicated and
+                                                                                equal opportunity to access the network during its own
+   To quantitatively evaluate the fairness of resource allocation               localized peak channel window regardless of its geographic
+among the geographically distributed contending UEs, we                         placement. While baseline JFI scores artificially inflate under
+adopt Jain's fairness index (JFI). The index is defined as                      massive congestion (12 000 UEs) as all devices are uniformly
+                                                                                starved of resources, CTP-ACB fundamentally outperforms
+                                 PNM        Á2                                  the baselines by maintaining a structurally equitable schedule
+                                          xi                                    rather than relying on uniform starvation.
+                                     i=1
+                      J       =                                     (42)        H. Comparison With DRL-Based Access (eRACH)
+                                 NM  PNM      xi2
+                                                                                   To contextualize our analytical approach against state-of-
+                                         i=1                                    the-art ML paradigms, we implemented a DRL baseline
+                                                                                adapted from the eRACH protocol. Fig. 15 illustrates
+where xi represents the total data bits successfully delivered                  the system throughput comparison between our proposed
+by the ith UE and NM is the total number of active UEs. The                     CTP-ACB and the DRL agent under varying device densities
+JFI ranges from 1/NM (extreme starvation, where a single UE                     (NM  {2000, 4000, 8000}). We evaluated two variants of the
+monopolizes the network) to 1 (absolute fairness, where all                     eRACH agent: a "Fresh" model trained from scratch to observe
+UEs achieve identical throughput).                                              convergence behavior, and a "Pretrained" model to evaluate
+                                                                                generalization and peak tracking performance.
+   As depicted in Fig. 14, we evaluate the fairness performance
+across varying UE densities from NM = 2000 to 12 000.                              Our results reveal a distinct tradeoff between localized
+The proposed CTP-ACB mechanism consistently achieves the                        peak optimization and scalable robustness in highly dynamic
+highest fairness index across all evaluated scenarios. Under                    non-TN (NTN) environments. As shown in Fig. 15(a) and
+moderate loads (e.g., NM = 2000), traditional stochastic                        (b), for moderate loads (NM = 2000 and 4000), the fresh
+schemes exhibit lower fairness, with standard ACB achieving                     eRACH model eventually converges to a higher maximum
+J = 0.7239 and QPAC achieving J = 0.6857. This disparity                        throughput than CTP-ACB (reaching approximately 60 and
+occurs because UEs located directly beneath the satellite's                     90 kb/s, respectively). However, this optimization incurs sig-
+nadir experience overwhelmingly superior channel conditions,                    nificant convergence latency. The DRL agent suffers from
+allowing them to capture the limited preamble resources early                   severely degraded throughput due to massive collisions dur-
+and disproportionately dominate the successful transmissions.                   ing its exploratory phase, requiring over 100 episodes to
+                                                                                stabilize. In stark contrast, CTP-ACB leverages deterministic
+   In contrast, our proposed CTP-ACB mechanism inherently                       orbital physics to mathematically derive the optimal timing. It
+guarantees a highly equitable resource distribution, achieving                  achieves "zero-shot" optimality, instantly delivering a reliable
+an exceptional fairness index of J = 0.8486 at 2000 UEs                         and stable throughput (approximately 39 and 72 kb/s) from
+                                                                                the very first episode, bypassing training overhead entirely.
+
+                                                                                   Furthermore, the DRL approach exhibits critical vulnerabili-
+                                                                                ties regarding generalization. The "Pretrained" eRACH model,
+                                                                                while optimal at its presumed training baseline of NM = 2000,
+                                                                                suffers a severe performance collapse when deployed in denser
+                                                                                environments, plummeting to roughly 17 kb/s at NM = 4000.
+                                                                                This highlights the fundamental nonstationarity challenge in
+                                                                                LEO IoT environments; pre-learned policies struggle to adapt
+                                                                                when spatial topology and network load deviate from their
+                                                                                training distribution.
+
+                                                                                   This limitation becomes catastrophic under massive access
+                                                                                demands (NM = 8000), as depicted in Fig. 15(c). At this
+                                                                                scale, both the fresh and pretrained eRACH models fail com-
+                                                                                pletely, yielding near-zero throughput as the massive collision
+                                                                                domain overwhelms the agent's learning capacity. Conversely,
+                                                                                CTP-ACB scales effortlessly. By explicitly exploiting tra-
+                                                                                jectory awareness, it eliminates policy lag and maintains
+                                                                                robust access control, instantly achieving a peak throughput
+                                                                                of approximately 123 kb/s. Ultimately, while DRL methods
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24820                                                              IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+Fig. 15. Performance comparison of system throughput between the proposed analytical CTP-ACB and the DRL-based eRACH protocol. (a) NM = 2000.
+(b) NM = 4000. (c) NM = 8000.
+
+                                                                                           TABLE II
+                                                       COMPARISON OF CTP-ACB WITH STATE-OF-THE-ART SCHEMES
+
+can overoptimize for specific, static densities given sufficient                                TABLE III
+training time, utilizing deterministic orbital mechanics ensures
+superior scalability, instant deployment, and unwavering reli-     ROBUSTNESS OF CTP-ACB UNDER ELEVATION ANGLE
+ability across all network scales.                                                       PREDICTION ERRORS
+
+I. Robustness to Channel Prediction Errors
+
+   In practical NTN deployments, perfect channel predictabil-      a slightly premature or delayed transmission still falls within
+                                                                   a high-quality channel window.
+ity is an idealization. Satellite ephemeris inaccuracies and
+                                                                      Even under more severe prediction mismatches of ±5
+UE localization errors inevitably introduce mismatches in          and ±10, the system throughput degrades by 16.5% and
+                                                                   24.3%, respectively. The mechanism retains a substantial por-
+the elevation angle calculation. To evaluate the robustness of     tion of its performance because the trajectory-aware grouping
+                                                                   still effectively spreads the massive access load across the
+the proposed CTP-ACB mechanism under imperfect channel             time domain, preventing the severe congestion collapse that
+                                                                   typically plagues RA networks. These results confirm that
+knowledge, we introduce an elevation angle prediction error,       CTP-ACB is highly viable and robust for practical implemen-
+denoted as , into the UE's timing calculation.                     tations with imperfect localization.
+
+   In this sensitivity analysis, the UE estimates its channel                               VIII. CONCLUSION
+quality and determines its optimal access time t based on an
+erroneous angle ^t = t + . However, the actual transmission           In this article, we addressed the challenges of RA in LEO
+outcomes and system throughput are evaluated using the true        satellite IoT networks by proposing the CTP ACB mechanism.
+physical channel t. The simulation is conducted under a            By exploiting the high determinism of LEO orbital dynamics
+massive IoT load scenario with NM = 12000 UEs, a packet            and the predictable nature of large-scale fading, our approach
+arrival rate of pk = 0.8 pkts/s, and an RAO periodicity of
+TRAO = 80 ms. We simulate uniformly distributed prediction
+errors of   {±2, ±5, ±10}.
+
+   As summarized in Table III, the proposed CTP-ACB
+
+exhibits graceful degradation in the presence of prediction
+errors. A minor error of ±2 results in a negligible throughput
+
+drop of 3.1%. This robust performance occurs because the
+
+SNR profile of a LEO overflight is relatively flat near its peak;
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+CHEN et al.: CHANNEL-AWARE ACCESS AND RACH ENHANCEMENT                          24821
+
+transforms the stochastic access contention into a structured,                  [11] O. Kodheli et al., "Random access procedure over non-terrestrial
+channel-aware scheduling opportunity.                                                 networks: From theory to practice," IEEE Access, vol. 9,
+                                                                                      pp. 109130­109143, 2021.
+   We further formulated an optimization framework for the
+PRACH configuration, demonstrating that a balanced RO                           [12] NR; Medium Access Control (MAC) Protocol Specification, document
+period (TR) significantly enhances the number of served UEs                           (TS) 38.321, 3GPP, 2023.
+compared to a purely throughput-oriented strategy.
+                                                                                [13] Y.-C. Pang, G.-Y. Lin, and H.-Y. Wei, "Context-aware dynamic resource
+   Comprehensive simulations validate that CTP ACB con-                               allocation for cellular M2M communications," IEEE Internet Things J.,
+sistently outperforms conventional 3GPP benchmarks. The                               vol. 3, no. 3, pp. 318­326, Jun. 2016.
+results show substantial gains in system throughput, resource
+block utilization, and energy efficiency. Although a marginal                   [14] G.-Y. Lin, S.-R. Chang, and H.-Y. Wei, "Estimation and adaptation for
+increase in the mean UE time-averaged AoI was observed,                               bursty LTE random access," IEEE Trans. Veh. Technol., vol. 65, no. 4,
+this is identified as a strategic tradeoff to maximize energy                         pp. 2560­2577, Apr. 2016.
+efficiency for delay-tolerant IoT applications.
+                                                                                [15] M. R. Chowdhury and S. De, "Delay-aware priority access classification
+   Beyond LEO networks, the core principle of CTP-ACB                                 for massive machine-type communication," IEEE Trans. Veh. Technol.,
+(exploiting deterministic mobility) is generalizable to other                         vol. 70, no. 12, pp. 13238­13254, Dec. 2021.
+scenarios with predictable trajectories, such as medium Earth
+orbit (MEO) satellites, high-speed rails (HSRs), and fixed-path                 [16] M. R. Chowdhury and S. De, "Queue-aware access prioritization for
+UAVs. However, for stationary systems like geostationary orbit                        massive machine-type communication," IEEE Internet Things J., vol. 9,
+(GEO) satellites or purely stochastic TNs, the advantages of                          no. 17, pp. 15858­15873, Sep. 2022.
+our trajectory-aware design diminish as the predictive window
+becomes less relevant.                                                          [17] W. S. Jeon, S. B. Seo, and D. G. Jeong, "POMDP-based con-
+                                                                                      tention resolution for framed slotted-ALOHA protocol in machine-
+   For future work, we plan to extend this framework by                               type communications," IEEE Internet Things J., vol. 9, no. 15,
+relaxing the assumption of perfect channel knowledge and                              pp. 13511­13523, Aug. 2022.
+investigating the robustness of CTP ACB against channel
+prediction errors. Additionally, integrating ML techniques to                   [18] Y. He, G. Ren, and S. Liang, "Spatial group based access class barring
+predict sporadic IoT traffic patterns represents a promising                          for massive access in M2M communications," IEEE Commun. Lett.,
+direction to further optimize the dynamic configuration of                            vol. 25, no. 3, pp. 812­816, Mar. 2021.
+ACB parameters in next-generation intelligent NTNs. Fur-
+thermore, while this study provides a "best-case" throughput                    [19] H. S. Jang, H. Jin, B. C. Jung, and T. Q. S. Quek, "Resource-optimized
+analysis by assuming flexible resource pools, future research                         recursive access class barring for bursty traffic in cellular IoT networks,"
+will incorporate the constraints of capped resource pools and                         IEEE Internet Things J., vol. 8, no. 14, pp. 11640­11654, Jul. 2021.
+the impact of preemption by high-priority UEs, as specified in
+3GPP NR-NTN protocols.                                                          [20] J. Liu, M. Agiwal, M. Qu, and H. Jin, "Online control of preamble
+                                                                                      groups with priority in massive IoT networks," IEEE J. Sel. Areas
+                             REFERENCES                                               Commun., vol. 39, no. 3, pp. 700­713, Mar. 2021.
+
+[1] Framework and Overall Objectives of the Future Development of IMT           [21] M. Llobet, M. Cabrera-Bean, J. Vidal, and A. Agustin, "Optimizing
+      for 2030 and Beyond, document ITU-R M.2160-0, 2023.                             access demand for mMTC traffic using neural networks," IEEE Trans.
+                                                                                      Veh. Technol., vol. 72, no. 12, pp. 16834­16838, Dec. 2023.
+[2] O. Kodheli et al., "Satellite communications in the new space era: A
+      survey and future challenges," IEEE Commun. Surv. Tut., vol. 23, no. 1,   [22] H. Zhang, M. Jiang, X. Liu, X. Wen, N. Wang, and K. Long, "PPO-based
+      pp. 70­109, 1st Quart., 2021.                                                   PDACB traffic control scheme for massive IoV communications," IEEE
+                                                                                      Trans. Intell. Transp. Syst., vol. 24, no. 1, pp. 1116­1125, Jan. 2023.
+[3] X. Chen, Z. Xu, and L. Shang, "Satellite Internet of Things: Challenges,
+      solutions, and development trends," Frontiers Inf. Technol. Electron.     [23] H. L. D. Santos, J. C. M. Filho, C. M. Panazio, and T. Abra~o, "Random
+      Eng., vol. 24, no. 7, pp. 935­944, Jun. 2023.                                   access based on LSTM for mixed traffic IoT networks," IEEE Trans.
+                                                                                      Netw. Sci. Eng., vol. 11, no. 3, pp. 2561­2573, May 2024.
+[4] T. T. T. Le, N. U. Hassan, X. Chen, M.-S. Alouini, Z. Han, and C. Yuen,
+      "A survey on random access protocols in direct-access LEO satellite-      [24] W. Fan, P. Fan, and Y. Long, "Joint delay-energy optimization for multi-
+      based IoT communication," IEEE Commun. Surv. Tut., vol. 27, no. 1,              priority random access in machine-type communications," IEEE Trans.
+      pp. 426­462, Feb. 2025.                                                         Wireless Commun., vol. 23, no. 2, pp. 1416­1431, Feb. 2024.
+
+[5] Y. He, Y. Xiao, S. Zhang, M. Jia, and Z. Li, "Direct-to-smartphone for      [25] N. Jiang, Y. Deng, A. Nallanathan, and J. Yuan, "A decoupled learning
+      6G NTN: Technical routes, challenges, and key technologies," IEEE               strategy for massive access optimization in cellular IoT networks," IEEE
+      Netw., vol. 38, no. 4, pp. 128­135, Jul. 2024.                                  J. Sel. Areas Commun., vol. 39, no. 3, pp. 668­685, Mar. 2021.
+
+[6] Solutions for NR to Support Non-Terrestrial Networks (NTN), document        [26] J. Choi, J. Ding, N.-P. Le, and Z. Ding, "Grant-free random access
+      (TR) 38.821, 3GPP, 2023.                                                        in machine-type communication: Approaches and challenges," IEEE
+                                                                                      Wireless Commun., vol. 29, no. 1, pp. 151­158, Feb. 2022.
+[7] Z. Lin, M. Lin, B. Champagne, W.-P. Zhu, and N. Al-Dhahir, "Secrecy-
+      energy efficient hybrid beamforming for satellite-terrestrial integrated  [27] C. Guo, X. Chen, J. Yu, and Z. Xu, "Design of joint device and data
+      networks," IEEE Trans. Commun., vol. 69, no. 9, pp. 6345­6360, Sep.             detection for massive grant-free random access in LEO satellite Internet
+      2021.                                                                           of Things," IEEE Internet Things J., vol. 10, no. 8, pp. 7090­7099, Apr.
+                                                                                      2023.
+[8] L. He, Z. Jia, J. Wang, E. Lansard, Z. Han, and C. Yuen, "Joint power
+      allocation and task scheduling for data offloading in non-geostationary   [28] T. Yang, J. Jiao, S. Wu, R. Lu, and Q. Zhang, "Grant free age-optimal
+      orbit satellite networks," IEEE Trans. Netw. Service Manage., vol. 22,          random access protocol for satellite-based Internet of Things," IEEE
+      no. 3, pp. 2882­2896, Jun. 2025.                                                Trans. Commun., vol. 70, no. 6, pp. 3947­3961, Jun. 2022.
+
+[9] NR; Physical Layer Procedures for Control, document (TS) 38.213,            [29] X. Han, Z. Li, and Z. Xie, "Two-step random access optimization
+      3GPP, 2023.                                                                     for 5G-and-beyond LEO satellite communication system: A TD3-based
+                                                                                      MSGA channel allocation strategy," IEEE Commun. Lett., vol. 27, no. 6,
+[10] NR; Radio Resource Control (RRC); Protocol Specification, document               pp. 1570­1574, Jun. 2023.
+      (TS) 38.331.
+                                                                                [30] L. Zhen, Y. Zhang, K. Yu, N. Kumar, A. Barnawi, and Y. Xie, "Early
+                                                                                      collision detection for massive random access in satellite-based Internet
+                                                                                      of Things," IEEE Trans. Veh. Technol., vol. 70, no. 5, pp. 5184­5189,
+                                                                                      May 2021.
+
+                                                                                [31] M. Ying, X. Chen, and X. Shao, "Exploiting tensor-based Bayesian
+                                                                                      learning for massive grant-free random access in LEO satellite Internet
+                                                                                      of Things," IEEE Trans. Commun., vol. 71, no. 2, pp. 1141­1152, Feb.
+                                                                                      2023.
+
+                                                                                [32] H. Gupta, N. Srivastava, and L. Borman, "Optimized RACH procedure
+                                                                                      for low Earth orbit (LEO) satellites in non-terrestrial networks (NTN),"
+                                                                                      in Proc. IEEE Space, Aerosp. Defence Conf. (SPACE), Jul. 2025,
+                                                                                      pp. 1­6.
+
+                                                                                [33] H. Jia, C. Jiang, L. Kuang, and J. Lu, "Adaptive random access and data
+                                                                                      transmission scheme with mixed traffic in NGSO satellite networks,"
+                                                                                      IEEE Trans. Veh. Technol., vol. 72, no. 5, pp. 6765­6777, May 2023.
+
+                                                                                [34] H. Jia, C. Jiang, L. Kuang, and J. Lu, "Adaptive access control and
+                                                                                      resource allocation for random access in NGSO satellite networks,"
+                                                                                      IEEE Trans. Netw. Sci. Eng., vol. 9, no. 4, pp. 2721­2733, Jul. 2022.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+24822                                                                               IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 11, 1 JUNE 2026
+
+[35] J. Park et al., "Random access protocol for massive Internet of Things                                        Kuang-Hsun Lin (Member, IEEE) received the
+      connectivity in space-air-ground-integrated networks," IEEE Internet                                         B.S. degree in electrical engineering from National
+      Things J., vol. 10, no. 23, pp. 20442­20457, Dec. 2023.                                                      Taiwan University (NTU), Taipei, Taiwan, in 2015,
+                                                                                                                   and the Ph.D. degree in communication engineering
+[36] L. Zhen, A. K. Bashir, K. Yu, Y. D. Al-Otaibi, C. H. Foh, and P. Xiao,                                        from the Graduate Institute of Communication Engi-
+      "Energy-efficient random access for LEO satellite-assisted 6G Internet of                                    neering (GICE), NTU, in 2022.
+      Remote Things," IEEE Internet Things J., vol. 8, no. 7, pp. 5114­5128,
+      Apr. 2021.                                                                                                      He is an Assistant Professor with the Institute of
+                                                                                                                   Communications Engineering (ICE), National Yang
+[37] Y. Liu, Y. Deng, N. Jiang, M. Elkashlan, and A. Nallanathan, "Analysis                                        Ming Chiao Tung University (NYCU), Hsinchu,
+      of random access in NB-IoT networks with three coverage enhance-                                             Taiwan. His research interests include 6G com-
+      ment groups: A stochastic geometry approach," IEEE Trans. Wireless                                           munication systems, nonterrestrial networks (NTN),
+      Commun., vol. 20, no. 1, pp. 549­564, Jan. 2021.                              wireless mobile networks, power-saving mechanisms for devices and net-
+                                                                                    works, mobility management, and MAC protocol design.
+[38] G. Sciddurlo et al., "Looking at NB-IoT over LEO satellite systems:
+      Design and evaluation of a service-oriented solution," IEEE Internet                                         Hung-Yu Wei (Fellow, IEEE) received the B.S.
+      Things J., vol. 9, no. 16, pp. 14952­14964, Aug. 2022.                                                       degree in electrical engineering from National Tai-
+                                                                                                                   wan University (NTU), Taipei, Taiwan, in 1999, and
+[39] H. Chougrani, S. Kisseleff, W. A. Martins, and S. Chatzinotas, "NB-                                           the M.S. and Ph.D. degrees in electrical engineering
+      IoT random access for nonterrestrial networks: Preamble detection                                            from Columbia University, New York, NY, USA, in
+      and uplink synchronization," IEEE Internet Things J., vol. 9, no. 16,                                        2001 and 2005, respectively.
+      pp. 14913­14927, Aug. 2022.
+                                                                                                                      He is a Professor with the Department of Elec-
+[40] J. Foerster, Y. Assael, N. de Freitas, and S. Whiteson, "Learning to                                          trical Engineering and the Graduate Institute of
+      communicate with deep multi-agent reinforcement learning," in Proc.                                          Communications Engineering (GICE), NTU, where
+      Adv. Neural Inf. Process. Syst., 2016, pp. 2145­2153.                                                        he is also the Director of GICE and the Chair of the
+                                                                                                                   IoT Research Center. He was the Interim Chair and
+[41] A. Valcarce and J. Hoydis, "Toward joint learning of optimal MAC               the Associate Chair of the Department of Electrical Engineering from 2019
+      signaling and wireless channel access," IEEE Trans. Cognit. Commun.           to 2022. He was a Summer Intern at Telcordia Applied Research in 2000
+      Netw., vol. 7, no. 4, pp. 1233­1243, Dec. 2021.                               and 2001 and was with NEC Labs America from 2003 to 2005. His research
+                                                                                    interests include next-generation wireless networks, the IoT, and fog/edge
+[42] M. P. Mota, A. Valcarce, J.-M. Gorce, and J. Hoydis, "The emergence            computing.
+      of wireless MAC protocols with multi-agent reinforcement learning," in           Prof. Wei received the K. T. Li Distinguished Young Scholar Award from
+      Proc. IEEE Globecom Workshops (GC Wkshps), Dec. 2021, pp. 1­6.                the ACM Taipei/Taiwan Chapter in 2012, the Excellent Young Engineer Award
+                                                                                    from CIEE in 2014, the Wu Ta You Memorial Award from MOST in 2015,
+[43] J.-H. Lee, H. Seo, J. Park, M. Bennis, and Y.-C. Ko, "Learning                 and the Outstanding Research Award from MOST in 2020. He has also
+      emergent random access protocol for LEO satellite networks," IEEE             received the NTU Excellent Teaching Award three times. He chairs the IEEE
+      Trans. Wireless Commun., vol. 22, no. 1, pp. 257­269, Jan. 2023.              1935 Working Group for Edge Management and Orchestration Standard and
+                                                                                    the IEEE 1934 Working Group for Edge/Fog Computing and Networking
+[44] Y. Hu, L. Peng, and Y. Liu, "Design and analysis of a dynamic access           Architecture Standard. He is an Associate Editor of IEEE INTERNET OF
+      class barring NOMA random access algorithm," IEEE Commun. Lett.,              THINGS JOURNAL and IEEE IOT MAGAZINE.
+      vol. 26, no. 12, pp. 3054­3058, Dec. 2022.
+
+[45] NR; Physical Channels and Modulation, document (TS) 38.211, 3GPP,
+      2022.
+
+[46] Study on New Radio (NR) to Support Non-Terrestrial Networks, docu-
+      ment (TR) 38.811, 3GPP, 2020.
+
+[47] Study on New Radio Access Technology: Radio Frequency (RF) and
+      Co-Existence Aspects, document (TR) 38.803, 3GPP, 202.
+
+[48] J. Zhang, D. Xie, and X. Wang, "TARA: An efficient random
+      access mechanism for NB-IoT by exploiting TA value difference in
+      collided preambles," IEEE Trans. Mobile Comput., vol. 21, no. 3,
+      pp. 1110­1123, Mar. 2022.
+
+                               Yu-Wei Chen received the B.S. degree in electrical
+                               and computer engineering from National Yang Ming
+                               Chiao Tung University (NYCU), Hsinchu, Taiwan,
+                               in 2021, and the M.S. degree in communication
+                               engineering from the Graduate Institute of Com-
+                               munication Engineering (GICE), National Taiwan
+                               University (NTU), Taipei, Taiwan, in 2025.
+
+                                  Currently, he works as a Quantitative Researcher
+                               at Jim Quant Capital, Taipei. During his graduate
+                               studies, he was advised by Prof. Hung-Yu Wei and
+                               worked at the Wireless and Mobile Networking
+Laboratory. He completed an internship at the Industrial Technology Research
+Institution (ITRI) from 2021 to 2023, where he focused on low Earth orbit
+(LEO) satellite communication. His research interests include wireless mobile
+networking, LEO communication, and resource allocation.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:59:38 UTC from IEEE Xplore. Restrictions apply.
+

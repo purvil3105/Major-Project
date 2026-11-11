@@ -1,0 +1,1541 @@
+2876  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+LEO Satellite-Enabled Random Access With Large
+         Differential Delay and Doppler Shift
+
+Boxiao Shen , Student Member, IEEE, Yongpeng Wu , Senior Member, IEEE, Wenjun Zhang , Fellow, IEEE,
+                       Symeon Chatzinotas , Fellow, IEEE, and Bjo¨rn Ottersten , Fellow, IEEE
+
+   Abstract-- This paper investigates joint device identification,            methods significantly in terms of the device identification, channel
+channel estimation, and symbol detection for LEO satellite-                   estimation, and symbol detection.
+enabled grant-free random access systems, specifically targeting
+scenarios where remote Internet-of-Things (IoT) devices operate                  Index Terms-- Satellite communications, random access,
+without global navigation satellite system (GNSS) assistance.                 OTFS, message passing, doubly dispersive effect.
+Considering the constrained power consumption of these devices,
+the large differential delay and Doppler shift are handled at                                           I. INTRODUCTION
+the satellite receiver. We firstly propose a spreading-based multi-
+frame transmission scheme with orthogonal time-frequency space                I NTERNET-OF-THINGS (IoT) is one of the most impor-
+(OTFS) modulation to mitigate the doubly dispersive effect in                    tant scenarios for the next-generation communications [2].
+time and frequency, and then analyze the input-output relation-               A considerable part of IoT devices is distributed in remote
+ship of the system. Next, we propose a receiver structure based on            areas to support applications, such as smart agriculture, cli-
+three modules: a linear module for identifying active devices that            mate monitoring, and intelligent transportation systems [3].
+leverages the generalized approximate message passing algorithm               However, existing cellular networks, mainly located in densely
+to eliminate inter-user and inter-carrier interference; a non-linear          populated regions, struggle to provide the ubiquitous connec-
+module that employs the message passing algorithm to jointly                  tivity required by these diverse IoT applications. Recently,
+estimate the channel and detect the transmitted symbols; and                  low earth orbit (LEO) satellites have gained substantial inter-
+a third module that aims to exploit the three dimensional                     est, positioned to complement and expand existing terrestrial
+block channel sparsity in the delay-Doppler-angle domain. Soft                networks to achieve global connectivity [4]. The commer-
+information is exchanged among the three modules by careful                   cial interest in LEO satellite-enabled access first surged in
+message scheduling. Furthermore, the expectation-maximization                 the 1990s. Unfortunately, most of these early attempts failed,
+algorithm is integrated to adjust phase rotation caused by the                and only a few, such as Iridium, Globalstar, and Orbcomm,
+fractional Doppler and to learn the hyperparameters in the                    have had varying degrees of success [5]. Nowadays, the
+priors. Finally, the convolutional neural network is incorporated             advancements in aerospace, production, and communication
+to enhance the symbol detection. Simulation results demonstrate               technologies have renewed the LEO satellite market, where
+that the proposed transmission scheme boosts the system perfor-               systems like Starlink and OneWeb have deployed exten-
+mance, and the designed algorithms outperform the conventional                sively [6]. These developments pave the way for LEO satellite
+                                                                              communications to offer seamless global coverage. In contrast
+  Received 26 April 2024; revised 9 October 2024; accepted 29 December        to traditional human-centric communications, IoT primarily
+2024. Date of publication 13 January 2025; date of current version            relies on machine-type communications (MTC), which are
+11 April 2025. The work of Yongpeng Wu was supported in part by               often delay-tolerant, low data-rate and in some cases peri-
+the 111 Project under Grant BP0719010 and in part by the Shanghai             odic [7]. In this scenario, the random access protocol is crucial
+Science and Technology Administrative Service Center (STCSM) under            for enabling efficient connectivity.
+Grant 22DZ2229005. The work of Symeon Chatzinotas was supported in
+part by European Union's HORIZON.1.2--Marie Sklodowska-Curie Actions             Grant-free random access (GFRA) preferred in MTC has
+(MSCA) Program under Grant 101131481. The work of Bj¨orn Ottersten was        been proposed to reduce signaling overhead and enhance
+supported in part by Luxembourg National Research Fund (FNR) under Grant      access capability [8]. Over the past few years, the extensive
+INTER/MOBILITY/2023/IS/18014377/MCR. An earlier version of this paper         research has been conducted for joint device identification and
+was presented in part at the IEEE Globecom 2023 [DOI: 10.1109/GLOBE-          channel estimation (JDICE) in terrestrial GFRA systems [9],
+COM54140.2023.10437523]. The associate editor coordinating the review of      [10], [11], [12], [13], [14], [15]. Specifically, [9], [10], [11]
+this article and approving it for publication was L. Zhao. (Corresponding     treated JDICE as a sparse signal recovery problem within
+author: Yongpeng Wu.)                                                         the framework of compressed sensing. Here, the device pilots
+                                                                              serve as a sensing matrix, and the problem is tackled using the
+  Boxiao Shen, Yongpeng Wu, and Wenjun Zhang are with the Depart-             approximate message passing (AMP) algorithm. The authors
+ment of Electronic Engineering, Shanghai Jiao Tong University, Shanghai       in [12] employed block sparse Bayesian learning to develop a
+200240, China (e-mail: boxiao.shen@sjtu.edu.cn; yongpeng.wu@sjtu.edu.cn;      low-complexity message passing (MP) solution. By exploiting
+zhangwenjun@sjtu.edu.cn).                                                     the sparse feature and low-rank structure of the device state
+
+  Symeon Chatzinotas is with the Interdisciplinary Center for Security,
+Reliability and Trust (SnT), University of Luxembourg, 1855 Luxembourg
+City, Luxembourg, and also with the College of Electronics and Infor-
+mation, Kyung Hee University, Yongin-si 17104, South Korea (e-mail:
+Symeon.Chatzinotas@uni.lu).
+
+  Bj¨orn Ottersten is with the Interdisciplinary Center for Security, Relia-
+bility and Trust (SnT), University of Luxembourg, 1855 Luxembourg City,
+Luxembourg (e-mail: bjorn.ottersten@uni.lu).
+
+  Digital Object Identifier 10.1109/TWC.2025.3525738
+
+                         1536-1276 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence
+                                  and similar technologies. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                                       See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT  2877
+
+matrix, Shao et al. [13] proposed a dimension reduction             investigated the joint device identification and data detection,
+to decrease the computational complexity and developed a            where the active device maps the data to a codeword from a
+Riemannian trust-region algorithm for JDICE. The integra-           predetermined and unique codebook. Then, the active devices
+tion of orthogonal frequency division multiplexing (OFDM)           and the transmitted codewords were detected by maximizing
+into GFRA systems was investigated in [14] and [15]. The            the likelihood function of the received signal. Additionally, the
+authors in [14] proposed the generalized multiple measure-          authors in [25] proposed a OFDM-symbol repetition technique
+ment vector AMP algorithm to exploit the channel sparsity           combined with a grid-based parametric model to address
+in the angular domain, with the state evolution framework           the residual delay and Doppler shift. Based on this model,
+provided to predict performance. The authors in [15] further        a modified variance state propagation algorithm was designed
+addressed the challenges of timing and frequency offsets by         for JDICE. Furthermore, Li et al. [26] focused on the line-of-
+modeling their effects as phase shifts on the pilot matrix,         sight path, assuming asynchronous signals at the frame level
+leading to a multiple measurement vector recovery problem           but synchronous at the slot level, and developed an AMP-based
+for JDICE. Then, to effectively exploit the structured sparsity     algorithm for joint active device, delay, and Doppler
+resulting from this model, a structured generalized approx-         detection.
+imate message passing (GAMP) algorithm was developed.
+To further improve system performance, Jiang et al. [16]               However, as indicated in [21] and [22], the GNSS-assisted
+and Huang et al. [17] adopted spreading-based transmission          schemes pose additional problems. Firstly, the procedure
+schemes and designed an MP-based algorithm to perform               for updating satellite ephemeris at the device level remains
+joint device identification, channel estimation, and symbol         ambiguous. Secondly, frequent estimation and compensation
+detection (JDICESD). It should be noted that the schemes            for Doppler and delay could dramatically reduce battery life-
+in [9], [10], [11], [12], [13], [14], [15], [16], and [17] are      time of the terrestrial devices. Remote IoT devices, specifically
+designed for block fading channels, which are assumed to            designed to be smaller, lighter, more powerful, and lower
+remain constant during one block transmission. Meanwhile,           in cost, face particular challenges. For instance, devices in
+[15] does not take the significant Doppler shift into account       low-power wide-area networks (LPWANs) are expected to
+and assumes that the frequency offset tends to zero. However,       operate autonomously for about ten years with just two AA
+the inherent high mobility of LEO satellites introduces signif-     batteries [27]. Consequently, GNSS-based solutions may be
+icant Doppler shifts, leading to rapid time variability on the      impractical for these remote IoT applications. In scenarios
+terrestrial-satellite links (TSLs), probably resulting in outdated  without GNSS, a significant issue is the persistence of large
+channel state information [18]. Moreover, the long distance         differential delay and Doppler shift, with the differential
+between the ground devices and satellites induces a larger          delay potentially exceeding one symbol duration and the
+propagation delay as compared to terrestrial systems. These         Doppler shift surpassing one subcarrier spacing. To tackle
+issues may also cause severe inter-symbol and inter-carrier         this issue, the authors in [21] proposed to pre-compensate the
+interference, degrading the performance of existing algorithms.     Doppler shift at the terrestrial device level using the initial
+Consequently, current terrestrial GFRA frameworks, without          cell-search procedure in the grant-based random access. For
+adjustments or new designs, cannot be directly applied to the       the differential delay problem, the inherent phase ambiguity
+highly dynamic LEO satellite IoT communications.                    problem is solved using a discrimination criterion based on
+                                                                    the estimation of Doppler rate. Building on this, Xu et al.
+   The 3rd generation partnership project (3GPP) recom-             [22] introduced a refinement estimation stage utilizing change
+mendations for non-terrestrial networks (NTN) address large         point detection. However, both schemes proposed in [21]
+delays and Doppler shifts depending on whether the ter-             and [22] still require terrestrial devices to pre-compensate for a
+restrial device is equipped with a built-in global navigation       major portion of Doppler shift, adversely affecting their energy
+satellite system (GNSS) or not [19], [20]. Devices with             efficiency. Orthogonal time frequency space (OTFS) modula-
+GNSS pre-compensate for Doppler shift and propagation delay         tion has emerged as a promising solution to ensure reliable
+before uplink transmission, utilizing the knowledge of satel-       communications in LEO satellite-enabled GRFA systems [28],
+lite ephemeris and device's location. Conversely, for devices       [29], [30], which converts the time-frequency channels into
+without GNSS, the satellite broadcasts a common delay during        quasi-static delay-Doppler channels [31], [32]. In [28], OTFS
+the initial cell-search procedure. Following this, the differen-    is combined with tandem spreading multiple access to accom-
+tial delay and Doppler shift are either pre-compensated at          modate the differential Doppler shift characteristics in LEO
+the device side or managed by the satellite during uplink           satellite-enabled GFRA. To exploit the spatial diversity, the
+transmission. This particular scenario is a critical focus in       integration of massive multiple-input multiple-output (MIMO)
+ongoing 3GPP NTN standardization efforts, with several work         with OTFS-based GFRA has been explored in [29] and [30].
+items actively seeking solutions [21], [22]. Notably, most          Specifically, Shen et al. [29] introduced a two-dimensional
+existing traditional LEO satellite-enabled GFRA schemes [23],       (2D) pattern coupled hierarchical prior within sparse Bayesian
+[24], [25], [26] are tailored primarily for the first scenario,     learning for JDICE, exploiting channel sparsity in the delay-
+where the residual delay and Doppler shift remain within a          Doppler-angle domain. Zhou et al. [30] investigated OTFS
+small range. Specifically, [23] and [24] assumed a perfect          aided by training sequences and proposed a two-stage JDICE
+compensation: In [23], the authors transformed the received         scheme alongside a streamlined multi-user symbol detection
+signal to a tensor decomposition form and proposed a Bayesian       method. It is worth noting that techniques in [28], [29],
+learning algorithm for JDICE. Meanwhile, Guo et al. [24]            and [30] require terrestrial devices to pre-compensate for a
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2878  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+substantial part of the propagation delay, introducing addi-        Fig. 1. LEO satellite-enabled IoT network.
+tional complexity for remote IoT devices.
+                                                                    absence of fractional Doppler, the greater the number of
+   Overall, previous studies have primarily focused on GNSS-
+based solutions, which are unsuitable for power-limited remote      transmitted frames, the better the performance. On the
+IoT applications due to their high energy demands. Even             other hand, when the fractional Doppler is present, a mod-
+non-GNSS solutions, such as those in [21] and [22], and             erate number of frames yields the best performance.
+recent OTFS-based GFRA systems, require terrestrial devices         Moreover, the simulation results indicate that the pro-
+to pre-compensate for significant Doppler shift or delay,           posed MP-based algorithms outperform existing methods
+increasing their complexity and energy consumption. In this         significantly in terms of device identification, channel
+paper, we investigate LEO satellite-enabled GFRA systems            estimation, and symbol detection; The CNN-enhanced
+where devices operate without GNSS. To further reduce
+energy consumption, we eliminate the need for terrestrial           detector further improves the symbol detection perfor-
+devices to pre-compensate for the large differential delay and      mance of the MP-based algorithm.
+Doppler shift. Instead, we propose a spreading-based multi-
+frame OTFS transmission scheme, combined with a MP-based            The rest of this paper is organized as follows. Section II
+JDICESD algorithm to mitigate these negative effects at the
+satellite receiver. Our main contributions are summarized as        introduces the transmission scheme and formulates the prob-
+follows:
+                                                                    lem. Section III proposes the MP-based algorithm for
+   · We propose a spreading-based multi-frame OTFS trans-
+      mission scheme to mitigate the doubly dispersive effect       JDICESD. Section IV design the CNN-enhanced detector.
+      and increase the undersampling ratio by exploiting the
+      quasi-static properties of the channel in the delay-Doppler   Section V evaluates the performance of the proposed schemes,
+      domain. Subsequently, we conduct a detailed analysis
+      of the symbol-level input-output relationship within the      followed by the conclusions in Section VI.
+      system.
+                                                                    Notations: The superscripts (·) and (·)H denote the con-
+   · Based on the proposed transmission scheme, a MP-
+      based algorithm is designed for JDICESD. We divide            jugate and conjugated-transpose operations, respectively. The
+      the receiver structure into three modules: Delay-wise         boldface letters denote matrices or vectors. ¯ = -1 denotes
+      device activity identification (DDAI) module handles the
+      received signal along the delay dimension in parallel and     the imaginary unit. diag(x) denotes the diagonal matrix
+      employs the GAMP algorithm to eliminate the inter-user
+      and inter-carrier interference; Joint channel estimation      with the elements of x on the main diagonal, and vecd(X)
+      and symbol detection (JCESD) module addresses the             returns the main diagonal elements of a square matrix X.
+      nonlinear coupling of the activity state, channel coeffi-
+      cient, and transmit symbols of each device, where an MP       XF denotes the Frobenius norm of X. x denotes the
+      algorithm is derived in a symbol-by-symbol fashion for        smallest integer that is not less than x.  is the Hadamard
+      JCESD; and the 3D sparsity exploitation (TSE) module
+      aided by Markov random field aims to exploit the 3D           product operator and  denotes Kronecker product. (·)M
+      block sparsity of channel in the delay-Doppler-angle
+      domain. The soft information is exchanged among the           denotes mod M , and xN denotes              x+  N  N-  N  . The
+      three modules by carefully message scheduling. Further-                                                       2      2
+      more, the expectation-maximization (EM) algorithm is
+      embedded to accommodate the phase rotation caused by          notation  is used for definitions. (·) denotes the Dirac delta
+      the fractional Doppler and to learn the hyperparameters
+      in priors.                                                    function. X[a, :] denotes the a-th row of X, wihle X[:, b]
+
+   · The convolutional neural network (CNN) detector is             denotes the b-th column of X. X[a, b] and xa,b denote the
+      specifically designed to exploit the statistical information
+      provided by the proposed MP-based algorithm, thereby          (a, b)-th element of X. xa denotes the a-th element of x.
+      enhancing symbol detection. Particularly, the statistical
+      information for each transmitted symbols can be extracted                              II. SYSTEM MODEL
+      individually from the outputs of the MP-based algorithm.
+      This capability enables the CNN detector to efficiently          We consider a LEO satellite-enabled grant-free random
+      estimate all the transmitted symbols in parallel and adapt    access system with the fixed beam as illustrated in Fig. 1,
+      to the dynamic number of active devices.                      where OTFS is adopted to mitigate the doubly dispersive
+                                                                    effect [18] inherent in TSLs. The system comprises U single-
+   · Comprehensive experiments are conducted to evaluate            antenna terrestrial devices that communicate with a LEO
+      the performance of the proposed schemes. The results          satellite equipped with a uniform planar array (UPA) con-
+      demonstrate that the proposed transmission scheme             sisting of Na = Nz × Ny antennas and a regenerative
+      boosts system performance significantly. Notably, in the      payload for on-board baseband signal processing. During each
+                                                                    time interval, active devices share the same time-frequency
+                                                                    resources to transmit their signals to the satellite. Additionally,
+                                                                    to minimize energy consumption, we assume that these ter-
+                                                                    restrial devices operate without GNSS capabilities and do not
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT                                                                                     2879
+
+pre-compensate for delay and Doppler shifts. Following 3GPP          spreading code Cu,q[k, l], k = -N/2, . . . , N/2 - 1,
+recommendations [19], [20], the satellite initially broadcasts a     l = 0, . . . , M - 1, where M and N are the number of
+common delay for all devices, and subsequently handles the
+differential delay and Doppler shift observed in the uplink          subcarriers and OFDM symbols within one OTFS frame,
+transmission.
+                                                                     respectively. Then, the transmitted signal in the delay-Doppler
+A. Terrestrial-Satellite Link Model                                  domain is given by XuD,Dq[k, l] = Cu,q[k, l]tud [l], where tud [l]
+                                                                     represents the data symbol selected from a predefined alphabet
+   The TSLs will experience fast variations due to the high
+mobility of the LEO satellite. Hence, this time variation and        A = {a1, . . . , a|A|} with cardinality |A|. Through the inverse
+multipath propagation require a doubly dispersive channel            symplectic finite Fourier transform (ISFFT) [31], XuD,Dq[k, l] is
+model for accurate TSLs characterization. Then, the delay-           mapped to XuT,Fq[n, m] in the time-frequency domain given by
+Doppler-space domain channel from the u-th device to the
+(nz + nyNz)-th antenna at the satellite can be represented                                        1  N/2-1 M -1
+as [18]                                                                                        
+                                                                     XuT,Fq[n, m]        =                                     XuD,Dq      [k,  l]e-¯2(  ml  -  nk                      )  ,
+                                                                                                 MN                                                      M      N
+
+                                                                                                     k=-N/2 l=0
+
+                                                                                                                                                                                     (2)
+
+P                                                                    where k = -N/2, . . . , N/2 - 1, l = 0, . . . , M - 1. Next,
+                                                                     the OFDM modulator converts XuT,Fq[n, m] to a continuous
+hunz,ny (, ) = hi,u ( - i,u)  ( - i,u)                               signal su(t) using a transmit waveform gtx(t) as
+
+i=1
+
+                                     × e¯nzuz e¯nyuy .  (1)                         Q-1 M -1 N -1
+
+                                                                     su(t) =                         XuT,Fq [n, m]e¯2mf (t-Tcp-(n+qN )Tsym)
+
+where u = 0, . . . , U - 1, nz = 0, . . . , Nz - 1, ny = 0, . . . ,                 q=0 m=0 n=0
+Ny - 1, and P is the number of physical paths. As shown
+in Fig. 1, i,u = ~i,u -  c represents the differential delay                                         × gtx (t - (n + qN )Tsym),                                                      (3)
+for the i-th path from the u-th device to the satellite, where
+~i,u and  c are denoted as propagation delay and common              where Tcp is the time duration of the cyclic prefix (CP), and
+delay, respectively. The common delay corresponds to the             Tsym = T + Tcp is the time duration of a OFDM symbol
+                                                                     with CP. Note that the CP is added in this step.
+propagation time between the satellite and the closest point
+                                                                        Then, the signal su(t) is transmitted over the TSL defined
+on earth within the beam coverage [21]. Additionally, the            in (1), and the received signal at the (nz + Nzny)-th antenna
+notations hi,u and i,u are the path gain and Doppler shift           is given by
+of the i-th path from u-th device to the satellite, respectively.
+The directional cosines zu = cos uz and yu = sin zu sin au,          runz,ny (t) =                hunz,ny (, )su(t -  )ej2(t-)d d, (4)
+along the z-axis and y-axis, depend on the zenith angle zu
+and azimuth angle ua , respectively.                                 where the noise is omitted to simplify notation. The received
+
+   Note that previous schemes based on the OTFS [28], [29],          ssaymmpbloeldYfnTrzoF,mnSy,q,tuh[en,cmro]ssi-natmhebitgimuiety-frfeuqnucetinocny-Aspngarzxc,,neryd,uo(mt,afin)  are
+                                                                                                                                                                                     as
+[30], [31], [32], [33], [34] generally require the subcarrier
+spacing f > 2max and the symbol duration T > max                     YnTzF,nSy,q,u[n, m]       =     Anz ,ny    ,u  (t,  f  )                                ,                       (5)
+with f = 1/T , where max = max{i,u} and max =
+max{|i,u|}. In other words, these schemes are only suitable                                             grx ,r                 t=(n+qN )Tsym,f =mf
+for the underspread channel that maxmax < 1, which may
+not be satisfied in our considered scenario. For example,            where grx(t) is denoted as the received waveform and
+                                                                                                     grx (t - t) runz,ny (t) e-¯2f(t-Tcp-t)dt.
+as computed in [21], the differential delay and Doppler shift        Anz ,ny    ,u  (t,  f  )  =
+can be up to 698.62 µ s and ±41 kHz for the 3GPP Set-2,
+resulting in maxmax  28.64. As established in Proposition 1,            grx ,r
+the effective channel in this case is the 3D tensor at each
+                                                                     Finally, the symplectic finite Fourier transform (SFFT) [31]
+antenna, which requires more observations to facilitate the
+                                                                     maps the symbols into the delay-Doppler-space domain as
+channel estimation. This limitation motivates the development
+                                                                                               1          N -1 M -1
+of our proposed transmission scheme.                                                             MN
+                                                                     YnDzD,nSy,,qu[k, l]    =                               YnTzF,nSy,q,u  [n,  m]e¯2(   ml  -  nk                      )  .
+                                                                                                                                                         M      N
+
+                                                                                                          n=0 m=0
+
+                                                                                                                                                                                     (6)
+
+                                                                     We denote the delay and Doppler taps for the i-th path of the
+                                                                     u-th device as follows
+
+B. Transmission Scheme                                                    i,u       =       li,u +  bi,u  M  ,  i,u      =     ki,u + k~i,u + di,uN ,                                (7)
+                                                                                               M    f                                  N Tsym
+   The spreading-based multi-frame OTFS transmission
+scheme is proposed to handle the large differential delay and        where li,u = 0, . . . , M - 1 and ki,u = -N/2, . . . , 
+Doppler shift. In this scheme, each device is assigned an
+unique spreading code and its transmitted data symbols are           N/2 - 1 represent the indexes of the delay and Doppler
+spread into Q consecutive frames during once transmission,
+where these frames are experienced OTFS modulation and               tap, respectively. bi,u and di,u are the integers accounting for
+demodulation independently, and are collected for further joint                                                                            k~i,u
+processing at the receiver. Specifically, in the q-th OTFS           the  parts     beyond        T  and  f ,       respectively.                   (-   1   ,  1                    ]  is
+frame, q = 0, . . . , Q - 1, the u-th device is assigned a                                                                                               2      2
+
+                                                                     the fractional Doppler shift. In addition, we denote the delay
+
+                                                                     tap index set as Lu = [l1,u, . . . , lP,u]. The fractional delay
+
+                                                                     is not considered here since the resolution of the sampling
+
+                                                                     time is sufficient to approximate the path delays to the nearest
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2880                                                     IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+sampling points in typical wide-band systems [34]. Based                    of the channel may start to degrade. Therefore, in practical
+on (1)-(7), we can derive the input-output relationship of the              communications, smaller Q values are preferred to maintain
+system, as given in the following proposition.                              the quasi-static property of the channel. Furthermore, the phase
+                                                                            rotation u,q[l] caused by fractional Doppler accumulates
+   Proposition 1: Given Tcp  max and rectangular waveform                   across multiple frames and will be addressed carefully in our
+gtx(t) and grx(t), the input-output relationship in the delay-              algorithm design.
+Doppler-space domain of this spreading-based multi-frame
+OTFS transmission scheme is represented as                                     To exploit the sparsity in the angular domain, the
+                                                                            two-dimensional discrete Fourier transform is applied along
+                       M -1 N/2-1                                           the space dimension to obtain the input-output relationship in
+                                                                            the delay-Doppler-angle domain as
+YnDzD,nSy,,qu[k, l] =                  HnDzD,nSy,u [k, l, l] tud [(l-l)M ]
+
+                       l=0 k=-N/2
+
+                       × u,q[l]Cu,q [k - kN , (l - l)M ] , (8)              YaDzD,aAy,,uq [k, l]
+
+where                                                                             1               Nz  -1  Ny  -1                                           ay ny
+                                                                                 Nz Ny                                                                       Ny
+                                                                            =                                     YnDzD,nSy,,qu  [k  ,  l]e-¯2(  az nz  +         )
+                                                                                                                                                   Nz
+
+HnDzD,nSy,u [k, l, l]                                                                             nz =0 ny =0
+
+         = 1           P                                                       M -1 N/2-1
+
+                          hi,ue¯2i,ulTs e¯nz uz e¯ny yu                     =                             HaDzD,aAy,u [k, l, l] tdu [(l - l)M ]
+              N i=1
+                                                                               l=0 k=-N/2
+          × N (k - N Tsymi,u) (lTs - (i,u)T ) ,
+                                                          (9)                                     × u,q[l]Cu,q [k - kN , (l - l)M ] , (11)
+                       e¯2k~i,uq ,                       (10)
+u,q[l] =               0,           l  Lu, l = li,u                         where HaDzD,aAy,u[k, l, l] represents the effective channel in the
+                                    l / Lu,                                 delay-Doppler-angle domain given by
+
+N (x)    1             N -1  e-¯2   x  i,  Ts  =     1  is the sampling     HaDzD,aAy,u [k, l, l]
+           N           i=0          N             M f
+
+interval, and li,u is selected from Lu.                                     = 1  P
+
+Proof : Please see Appendix A.                                                      hi,ue¯2i,ulTs  (lTs - (i,u)T )
+
+Note that the relationship (8) aligns with those in [30]                       N i=1
+
+and [34] when adopting a single-frame OTFS transmission                        × N (k - N Tsymi,u)
+
+with replacing Cu,q[k, l]tud [l] for XuD,Dq[k, l], provided f >                × Nz (az - Nzzu/2)Ny (ay - Nyyu/2), (12)
+
+2max and T > max. It is observed in (9) that the effec-                     where ay = 0, . . . , Ny - 1 and az = 0, . . . , Nz - 1 are
+tive channel HnDzD,nSy,u [k, l, l] from the u-th device to the
+(nz + nyNz)-th antenna is represented as a 3D tensor related                indexes along the angular domain. Therefore, we can find
+                                                                            in (12) that HaDzD,aAy,u [k, l, l] has dominant elements only if
+to l, which is the received symbol position along the delay                 k  N Tsymi,u - bi,uN , l  (i,u)T M f , ay  Nyyu/2,
+                                                                            and az  Nzuz /2, which indicates the channel sparsity in
+dimension. However, the condition maxmax > 1 precludes                      the delay-Doppler-angle domain.
+
+simplifications via methods similar to those in [33] and [34],
+
+which poses the significant challenges to the conventional
+
+pilot-based single OTFS frame transmission scheme [28],
+
+[29], [30], [31], [32], [33], [34], particularly in achieving               C. Problem Formulation
+
+accurate channel estimation and symbol detection. Fortunately,                 According to the superposition principle, the q-th received
+                                                                            frame in the delay-Doppler-angle domain is given by
+HnDzD,nSy,u [k, l, l] remains approximately constant over Q con-
+secutive frames, benefited by the quasi-static property of (1) in                                 U -1
+
+the delay-Doppler domain. This characteristic allows the pro-               YaDzD,aAy,q[k, l] =            uYaDzD,aAy,,uq [k, l] + ZaDzD,aAy,q[k, l],             (13)
+
+posed scheme to gather more observations, thereby facilitating                                        u=0
+
+the joint design of channel estimation and symbol detection.
+
+In practice, the quasi-static property may be disrupted when                where u  {0, 1} is the activity indicator of the u-th device
+                                                                            and ZaDzD,aAy,q[k, l]  CN (0, 2) is the noise. To facilitate the
+the number of transmitted frames becomes large. For instance,               following analysis, we rewrite (13) into the matrix form for
+
+based on the simulation parameters in Sec. V, the Doppler                   each q and l as
+
+resolution is approximately 195 Hz and the delay resolution
+
+is around 2.1 µ s. Given an initial elevation angle 50o and                 Yql = Cql (q  IN )(Tl  IN )(  IMN )H~ l + Zlq, (14)
+
+Q = 8 frames, the absolute variations of the Doppler shift and              where Yql and Zql are with the (k, az + Nzay)-th ele-
+                                                                            ment YaDzD,aAy,q[k, l] and ZaDzD,aAy,q[k, l], respectively. Clq =
+delay can be computed as   11.7 Hz and   0.6 µ s,                           [Cl0,q, . . . , CUl -1,q], where Clu,q  CN×MN is the spreading
+                                                                            code matrix of the u-th device at the delay dimension l; Clu,q
+which are less than the one-tenth and one-third of the Doppler
+                                                                            is a block circulant matrix due to the 2D circular convolution
+and delay resolutions, respectively. This indicates that the
+                                                                            in (11), and its sub-matrix is the circulant matrix defined by
+channel in the delay-Doppler domain remains approximately
+                                                                            [Cu,q[0, (l - l)M ], Cu,q[1, (l - l)M ], . . . , Cu,q[-1, (l - l)M ]].
+quasi-static during the transmission of Q = 8 frames. When                  q = diag{q}, where q  CUM with the (uM + l)-
+                                                                            th element u,q[l], and IN  RN×N is the identity matrix.
+Q increases to 25, we find that   36.5 Hz and  
+
+1.9 µ s. In this case,  is still less than the one-fifth of
+
+the Doppler resolution, while  is below but approaches
+
+the delay resolution, indicating that the quasi-static nature
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT                                                           2881
+
+Tl = diag([tl0, . . . , tlU-1]), where tul = [tdu[(l)M ], . . . , tdu[(l -  a general and accurate distribution for the practical scenarios
+M + 1)M ]].  = diag(), where  = [0, · · · , U-1].                           with the antenna array [36], i.e,
+H~ l  CUMN×Na is with the (uM N + lN + k, az + Nzay)-
+th element HaDzD,aAy,u [k, l, l]. Next, we collect the Q received           p(hli,,uj ,l | sli,,uj ,l )
+frames into a single matrix as                                                  = (sli,,uj ,l + 1)(hli,,uj ,l )
+
+           Yl = C,l(Tl  IN )Hl + Zl,                   (15)                            + (sil,,uj ,l - 1)  K     kuCN (hli,,uj ,l | µuk , ku),
+
+                                                                                                                                                         (17)
+
+where Yl = (Y0l )T, . . . , (YQl -1)T T, Hl = (  IMN )H~ l,                                                k=1
+
+C,l = (Cl0(0  IN ))T, . . . , (CQl -1(Q-1  IN ))T T.                        where K and    (ku, µuk  , ku) are the    number of         components and
+                                                                            parameters of   BGM,     respectively,     and sli,,uj ,l     {+1, -1} is
+Compared to the single OTFS frame transmission scheme,
+                                                                            the support of hli,,uj ,l . According to (12), the matrices {Hl,u,l }
+C,l  with  undersampling ratio   Q  allows  for  more  obser-
+                                UM
+                                                                            share the common support for each l, and hence we can let
+vations to enhance the algorithm performance. We aim to                     sui,,jl = sli,,uj ,l . In addition, the channel sparsity in the delay-
+
+estimate (H, t) through the maximum a posterior probability
+
+(MAP) principle given as                                                    Doppler-angle domain turns into the 2D block sparsity in
+                                                                            the matrix Hl,u,l . Then, we adopt the Markov random field
+           (H^ , ^t) = arg max p(H, t | Y),                                 (MRF) prior to describe the sparsity of Hl,u,l , and the support
+                                                       (16)
+                          (H,t)
+                                                                            can be characterized by the classic Ising model as
+
+where Y = [Y0, . . . , YM-1], H = [H0, . . . , HM-1], t =                   p(Su,l )
+[t0, . . . , tU-1], and tu = [tud [0], . . . , tud [M - 1]].
+                                                                                                                                           
+   Problem (16) is generally non-convex and difficult to solve.
+MP algorithms could provide possible solutions. However,                     exp          N -1 Na-1 1                          siu,,lj  -       siu,,jl  
+the sensing matrix C,l is underdetermined due to the phase                                                                                               
+rotation caused by the fractional Doppler, and the variables to
+be estimated in (16) are all coupled together to form a bilinear                                     2
+function. Hence, the exact MP based on the sum-product
+rule is difficult to implement and the existing low complexity                            i=0 j=0          siu,,lj Diu,,jl
+AMP-type algorithms cannot be applied directly. To address
+this issue, we are developing an iterative algorithm with a                                                                1
+carefully designed receiver structure and sophisticated mes-                                                             2
+sage updates. Additionally, the phase ambiguity problem [16]
+inevitably arise in (16) since both channel and data symbols                =                        (sui,,jl , siu,,lj )          (sui,,jl ),           (18)
+are unknown in the receiver. Common methods for combating
+this problem include differential coding or asymmetric con-                           i,j si,j Di,j                           i,j
+stellation [35]. In this work, we assume that the asymmetric
+constellation is adopted by ground devices. The coding-related              where (siu,,jl , sui,,lj ) = exp(sui,,jl siu,,lj ), (sui,,jl ) =
+technique is worth investigating in the future work.                        exp(-sui,,jl ), Su,l is a support matrix with (i, j)-th element
+                                                                            sui,,jl , Diu,,jl = {sui-,l1 ,j , sui+,l1 ,j , sui,,jl- 1, sui,,jl+ 1} is the set contain-
+                                                                            ing the neighbors of siu,,jl , and  and  are the parameters of
+                                                                            MRF prior; a larger  implies a larger size of each block
+                                                                            of nonzeros, and a larger  encourages a sparser Hl,u,l .
+
+                                                                            To facilitate the algorithm design, we introduce the auxiliary
+
+                                                                            variables
+
+                                                                                       Wl = (Tl  IN )Hl, Rl = C,lWl.                                     (19)
+
+                    III. JDICESD ALGORITHM                                  The similar splitting method can be adopted to get Wl,u,
+                                                                            Wl,u,l , and wil,,ju,l . We define W = [W0, . . . , WM-1]
+   In this section, we resort to Bayesian method for designing              and S = [S0,0, . . . , SU-1,M-1]. Then, the joint posterior
+JDICESD algorithm, where the receiver structure is divided
+into three modules and the soft information is exchanged                    distribution is given by
+iteratively among them by careful scheduling. In addition,
+EM algorithm is embedded to adjust the phase rotation caused                p(W, H, t, S | Y)
+by fractional Doppler and to learn hyperparameters in priors.
+                                                                             p(Yl | Wl)p(Wl | Hl, t)p(t)p(Hl | S)p(S)
+
+                                                                            l
+
+A. Factor Graph Representation                                               { p(yol ,j |rol ,j )                    [p(wil,,ju,l |hil,,uj ,l , t(l-l)M +uM ))
+
+   Firstly, Hl is partitioned as sub-matrices Hl,u = Hl[uM N :              l o,j                          u,l ,i,j
+(u + 1)M N - 1, :]  CMN×Na corresponding to the channel
+of the u-th device. Those sub-matrices are further split as                            × p(hli,,uj ,l | sui,,jl )]} p(tl+uM )) p(Su,l ), (20)
+Hl,u,l = Hl,u[lN : (l + 1)N - 1, :]  CN×Na, l =
+0, . . . , M - 1, which is the channel of the l-th grid in the                                                   u,l               u,l
+delay dimension of the u-th device. We denote the (i, j)-th
+element of Hl,u,l as hil,,uj ,l , i = 0, · · · , N - 1, j = 0, · · · ,      where p(wil,,ju,l |hli,,uj ,l , t(l-l)M +uM )          =       (wil,,ju,l -
+Na - 1. Then, K-components Bernoulli-Gaussian-mixture
+(BGM) distribution is assigned for modeling hil,,uj ,l , which is           hli,,uj ,l t(l-l)M +uM ) according to the equality constraint
+
+                                                                            in (19) and p(yol ,j |rol ,j ) = CN (yol ,j |rol ,j , 2) due to
+
+                                                                            the Gaussian noise. In addition, we assign the uniform
+
+                                                                            distribution for the transmitted data symbols, i.e.,
+
+                                                                            p(tl+uM )  =   1   |A|   (tl+uM           -  am).
+                                                                                          |A|  m=1
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2882                                                                                            IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+                                                                                                           energy detector, given by
+
+                                                                                                                                             M -1
+
+                                                                                                                                 ^u = I                 Wl,uF2 > T ,                                   (21)
+
+                                                                                                                                                  l=0
+
+                                                                                                           where I{·} is the indicator function and T is the empirical
+                                                                                                           predefined threshold. Moreover, the transmitted symbols are
+                                                                                                           detected separately using t(l-l)M +uM based on the MAP
+                                                                                                           rule. In the following subsection, we will derive the soft
+                                                                                                           messages within the receiver in detail.
+
+                                                                                                           B. Message Scheduling
+
+Fig. 2. Factor graph representation.                                                                          In this subsection, we assume that the phase rotation caused
+                                                                                                           by fractional Doppler, the noise variance, and the parameters
+   The factor graph representation of (20) is shown in Fig. 2,                                             of BGM are known, which will be updated later. In addition,
+where the factor nodes el with element eil,,uj ,l , gl with element                                        xx and xx are denoted as the message passed from node x
+gil,,ju,l , and f l with element fol,j correspond to the distri-                                           to x and x to x, respectively. Now, we describe how the
+butions p(hil,,uj ,l | sli,,uj ,l ), p(wil,,ju,l |hli,,uj ,l , t(l-l)M +uM ), and                          messages iterate among the three modules to get the final
+p(yol ,j|rol ,j), respectively. As shown in Fig. 2, the receiver                                           estimation. Firstly, the DDAI module aims to estimate Wl
+                                                                                                           in the linear model, and hence the output message can be
+structure is divided into three modules, with the communi-                                                 approximated by the GAMP [37], given as
+
+                                                                                                                       = CN (w | r^ ,  ), wil,,uj ,l
+
+                                                                                                                         gil,,uj ,l
+                                                                                                                                                  l,u,l               wl,u,l      wl,u,l               (22)
+                                                                                                                                                  i,j                 i,j         i,j
+
+                                                                                                           where the  mean         r^wl,u,l       and the  variance                wl,u,l   are  updated
+
+                                                                                                                                    i,j                                            i,j
+
+cation flow illustrated in Fig. 3. Firstly, the soft message                                               iteratively by GAMP (see line 9 and 10 of Algorithm 1).
+
+gil,,uj ,l     from  the          JCESD      module         is   initialized      and   serves  as         Next, we focus on the messages scheduling of the JCESD and
+
+   wil,,uj ,l                                                                                              the TSE module. Combined with the output of DDAI module
+                                                                                                           and the message from variable node t to check node gl, the
+the prior for Wl in the DDAI module. The DDAI module,                                                      message from gl to Hl will be a BGM distribution, given as
+
+accounting for the factor f l, processes the received signal Y
+
+along with this soft message. It utilizes the GAMP algorithm                                                 gil,,uj ,l                  t(l-l)M +uM                  wil,,uj ,l
+                                                                                                                                         gil,,uj ,l                   gil,,uj ,l
+to eliminate the inter-user interference in the delay-Doppler                                                 hil,,uj ,l        hil,,uj ,l
+                                                                             , which wil,,uj ,l
+domain. This process yields the soft message                                                                                  × (wil,,ju,l - hil,,uj ,l t(l-l)M +uM )
+                                                                               gil,,uj ,l
+
+is returned to the JCESD module as the likelihood for Wl.                                                                     |A|
+
+Next, the JCESD module handles the non-linear factor gl.                                                             =             -p lm,u,i,l,j CN (hil,,uj ,l am    |    r^wl,u,l    ,   wl,u,l  ),  (23)
+               wil,,uj ,l                                                                   hli,,uj ,l
+                                                                                                                                                                            i,j            i,j
+                  gil,,uj ,l                                                                   eil,,uj ,l
+It  takes                     as  input  and  produces           the  soft  message                                           m=1
+
+as the likelihood for Hl. Leveraging the MRF modeling p(S),                                                where  = t(l-l)M +uM                   |A|      -p m l,u,i,l,j  (t(l-l)M         +uM    -   am)
+                                             hil,,uj ,l                                                                                           m=1
+                                                                                                                           gil,,uj ,l
+                                                eli,,uj ,l                        el
+the   TSE module              combines                      with the  factor            to  exploit        is initialized as the uniform distribution over A and updated
+                                                                                                                                   hli,,uj ,l     = gil,,uj ,l
+the   3D       sparsity       in  H.  The    refined        prior  eli,,uj ,l     for   Hl  is  then       later.  Combining                                          with        the  conditional     PDF
+                                                                                                                                      eli,,uj ,l          hli,,uj ,l
+                                                                      hli,,uj ,l                           of hil,,uj ,l in (17), the message from check node el to variable
+
+fed back to the JCESD module, which updates and provides                                                   node Su,l is the Bernoulli distribution, given as
+                              gil,,uj ,l
+the   soft     message                       for  the  DDAI        module.        Subsequently,              eli,,uj ,l                                               gil,,uj ,l
+                                 wil,,uj ,l
+                                                                                                              siu,,jl                    hil,,uj ,l | siu,,jl            hli,,uj ,l
+the DDAI module derives the estimated posterior distribution                                                                         p
+                                                  gil,,uj ,l          wil,,uj ,l
+wil,,uj ,l     for W          by  combining                      and                 .  These   soft                          siu,,jl
+                                                     wil,,uj ,l          gil,,uj ,l
+                                                                                                                     = il,,uj ,l  sui,,jl - 1 + (1 - il,,uj ,l ) siu,,jl + 1 ,
+messages are iteratively exchanged among the three modules
+
+until convergence is achieved. Ultimately, the JCESD module                                                                                                                                            (24)
+                                                   , wil,,uj ,l     , hil,,uj ,l            eli,,uj ,l
+integrates     the    soft        messages                                        and                              il,,uj ,l                         iA,lj,u,l
+                                                     gil,,uj ,l       eli,,uj ,l               hli,,uj ,l                          CN (0|r^iw,jl,u,l ,iw,jl,u,l )+iA,lj,u,l
+                                                                                                           where              =                                                   ,    and  the  auxiliary
+to obtain the estimated posterior distributions hil,,uj ,l for H
+and t(l-l)M +uM for transmitted symbols t. Simultaneously,                                                 variable  Al,u,l        is  defined    as
+the approximated MMSE estimations for H and W are
+                                                                                                                       i,j
+
+                                                                                                            = Al,u,l      K |A|        ku-p lm,u,i,l,j
+
+obtained as the means of their respective estimated posterior                                                i,j
+
+distributions. Then, the active devices are identified using the                                                      k=1 m=1
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT                                                                                                    2883
+
+Fig. 3. The block diagram of the inter-module communications.
+
+           × CN            0  |   r^wl,u,l       -  µkuam,          wl,u,l  + ku |am|2              .     Since  eli,,uj ,l      =  , the hli,,uj ,l      messages            from g      to  t is  given
+
+                                   i,j                              i,j                                             hil,,uj ,l           gil,,uj ,l
+
+                                                                                                 (25)     by
+
+                      (s ), eli,,uj ,l                                                                          gil,,uj ,l                                        hli,,uj ,l  wil,,uj ,l
+                                                                                                                                                                  gil,,uj ,l  gil,,uj ,l
+With  the  inputs       siu,,jl    u,l            we   are         now  ready           to  describe             t(l-l)M +uM                hil,,uj ,l ,wil,,uj ,l
+                                   i,j
+
+the messages involved in the TSE module. To clearly char-                                                                                 × (wil,,ju,l - hli,,uj ,l t(l-l)M +uM )
+
+acterize the relative position, the left, right, top, and bottom                                                                          |A|
+neighbors of siu,,jl are           reindexed by {sui,,jlL , sui,,jlR , sui,,jlT ,            siu,,jlB }
+corresponding to Diu,,jl .         The left, right, top, and bottom                          input                                     =        -p m l,u,i,l,j (t(l-l)M +uM - am),                  (31)
+
+                                              Lu,l             Ru,l     ,Ti,uj,l             Bu,l                                         m=1
+
+messages   of   siu,,jl ,  denoted    as         i,j        ,     i,j                ,  and     i,j    ,  where -p lm,u,i,l,j is given as
+
+are  Bernoulli   distributions.         Lu,l           is      given    by                                    -p lm,u,i,l,j
+                                                                                                          (1 - il,,ju,l )CN
+                                           i,j
+
+Lu,l                    (s ) M-1      eil,,uj ,l    u,l                                                                                0  |  r^wl,u,l  ,   wl,u,l
+                                      sui,,jl       i,j
+   i,j          sui,,jl l=0                                                                                                                   i,j          i,j
+
+                                                                                                              + il,,ju,l    K                      r^wl,u,l                    wl,u,l
+
+              ×                    pu,l          (siu,,jlL  )(sui,,jl   ,  sui,,jlL  )                                           kuCN        0  |   i,j      -µkuam,           i,j        +   ku  |am|2  .
+
+                                      i,jL                                                                                  k=1
+
+                  p{L,T,B}                                                                                Combined with the input messages to t(l-l)M +uM , the output
+                                                                                                          message from t(l-l)M +uM is given by
+           =     Lu,l      siu,,jl - 1           +  (1      -   Lu,l    )   sui,,jl + 1          ,
+
+                 i,j                                            i,j
+
+                                                                                                 (26)                                                   N -1 Na-1             gib,,uj,b+M -(l-l)M
+                                                                                                                                   0b<(l-l)M i=0 j=0                          t(l-l)M +uM
+          Lu,l                                                                                             (  ) t(l-l)M +uM
+where           is   given    in   (27),      shown            at  the  bottom          of  the  next
+          i,j                                                                                                gil,,uj ,l
+
+page. The input messages of siu,,jl from right, top, and bottom                                                                           b= l
+
+                                                                                                                                                              ) N -1 Na-1
+have  a  similar     form     to  Lu,l        .  Then,         the  output  message              from                              ×(                                         gib,,uj,b-(l-l )M
+                                                                                                                                                                              t(l-l)M +uM
+sui,,jl is given by                  i,j
+
+                                                                                                                                          (l-l)M b<M i=0 j=0
+
+                                                                                                                                                b=l
+
+                                                                                                                                                )( Na-1
+  (s )   sui,,jl                                                                                                                                          gil,u,j,l                   ) gil,,uj,l
+                                                                                                                                                          t(l-l)M +uM
+   eil,,uj ,l                                                                                                                                                                           t(l-l)M +uM
+                     u,l           eil,,uj ,l                           pu,l                                                       ×(
+                     i,j           sui,,jl p{L,R,T,B}                   i,j
+
+                             ^l=l                                                                                                      i= i j=0                               j  =j
+
+           = il,,ju,l  siu,,jl - 1 + (1 - il,,ju,l ) siu,,jl + 1 ,                                                                 |A|
+
+                                                                                                                                =         -p lm,u,i,l,j (t(l-l)M +uM - am).                         (32)
+
+                                                                                                 (28)                              m=1
+
+where il,,ju,l is given in (29), shown at the bottom of the next                                          Then, -p m l,u,i,l,j can be updated by
+page. The refined messages of Hl after exploiting sparsity will
+                                                                                                          -p lm,u,i,l,j  =      1      (                  N -1 Na-1
+be fed back to the JCESD module, given as
+                                                                                                                            Fil,,ju,l   0b<(l-l )M                    -p bm,u,i,b,+jM -(l-l)M )
+
+                                                                                                                                                          i=0 j=0
+
+        eil,,uj ,l                sui,,jl                                                                                                    b= l
+                                  eli,,uj ,l
+         hil,,uj ,l                               l,u,l u,l                                                                                          N -1 Na-1
+                      p(h | s ) sui,,jl
+                                                  i,j              i,j                                                      ×(                                     -p bm,u,i,b,-j(l-l)M )
+
+                =(1 - il,,ju,l )(hil,,uj ,l )                                                                                    (l-l)M bM i=0 j=0
+                                                                                                                                         b= l
+
+                     + il,,ju,l    K    kuCN hli,,uj ,l | µuk , ku ,                                                                   Na -1
+
+                                                                                                 (30)                       ×(                  -p lm,u,i,l,j )(   -p m l,u,i,l,j )                 (33)
+
+                                   k=1                                                                                           i=i j=0                     j= j
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2884                                                                                        IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+where Fil,,ju,l is the normalization constant such that                                                       ¯wl,u,l   = li,,uj ,l                K          |A|      ¯kl,,um,l,i,j (  ¯kl,,um,l,i,j  2
+                                                                                                                                                   k=1        m=1
+                                                                                                       where   i,j                                                                                        +
+
+  |A|    -p lm,u,i,l,j  =      1. Next,         given hli,,uj ,l           and  , t(l-l)M +uM          ¯kl,,um,l,i,j ). Similarly, the posterior distribution of hil,,uj ,l is also
+  m=1
+                                                               gil,,uj ,l             gil,,uj ,l
+                                                                                                       approximated as a BGM distribution, given by
+the message of feedback from JCESD module to DDAI is the
+                                                                                                                        hil,,uj ,l     gil,,uj ,l
+BGM distribution, given by                                                                                              gil,,uj ,l     hli,,uj ,l
+                                                                                                               hli,,uj ,l
+gil,,uj ,l
+                                                                                                                 = (1 - li,,uj ,l )(hli,,uj ,l ) + il,,uj ,l
+   wil,,uj ,l
+
+                        l,u,l          l,u,l                               hil,,uj ,l  t(l-l)M +uM                  K |A|           ¯kl,,um,l,i,j CN (wil,,ju,l | kl,,um,l,i,j , lk,,um,l,i,j ),
+                        i,j            i,j (l-l)M +uM                      gil,,uj ,l  gil,,uj ,l
+      (w -h t )  wil,,uj ,l                                                                                      ×
+
+                                                                                                                    k=1 m=1
+
+  = (1 - il,,ju,l )(wil,,ju,l ) + il,,ju,l                                                                                                                                                             (39)
+
+      K |A|    ku-p m l,u,i,l,j CN wil,,ju,l | µuk am, ku |am|2 ,                                      where
+
+  ×                                                                                                                                      1            |am|2
+                                                                                                                                       ( ku            wl,u,l
+      k=1 m=1                                                                                                    lk,,um,l,i,j       =              +               )-1,                                (40)
+                                                                                                                                                       i,j                                             (41)
+                                                                                            (34)
+
+Now, the posterior distribution of wil,,ju,l is approximated as                                                  kl,,um,l,i,j       =  kl,,um,l,i,j   (  µku  +    r^wl,u,l  am   ).
+a BGM distribution by combing all the input messages to it,                                                                                              ku
+                                                                                                                                                                    i,j
+given by
+                                                                                                                                                                    wl,u,l
+
+                                                                                                                                                                    i,j
+
+                                                                                                       Then, the mean and variance with respect to (39) are given as
+
+                        gil,,uj ,l  wil,,uj ,l                                                                                                     K |A|
+                        wil,,uj ,l  gil,,uj ,l
+    wil,,uj ,l                                                                                                   h^li,,uj ,l = li,,uj ,l                      ¯kl,,um,l,i,j kl,,um,l,i,j ,             (42)
+                                                                                                                                                                                                       (43)
+  =(1 - il,,uj ,l )(wil,,ju,l ) + il,,uj ,l                                                                                                  k=1 m=1
+
+               K |A|    ¯kl,,um,l,i,j CN (wil,,ju,l | ¯kl,,um,l,i,j , ¯lk,,um,l,i,j ),                           ^hl,u,l  =         ¯hl,u,l        -  h^li,,uj ,l  2
+
+                                                                                                                  i,j                i,j                            ,
+
+      ×                                                                                     (35)                                                                                                       2
+
+         k=1 m=1                                                                                       where  ¯hl,u,l   = li,,uj ,l                K          |A|      ¯kl,,um,l,i,j (  kl,,um,l,i,j      +
+                                                                                                                                                   k=1        m=1
+                                                                                                               i,j
+
+where                                                                                                  kl,,um,l,i,j). After the algorithm convergence, the estimation of
+                                                                                                       hli,,uj ,l is given by (42). In addition, the approximated posterior
+  li,,uj ,l    = (1 - il,,ju,l )CN (0                l,u,l Al,u,l
+
+                                                    i,j i,j
+
+                                                |  r^wl,u,l    ,   wl,u,l  )  +          l,u,l Al,u,l  distribution of data symbols is given by
+
+                                                    i,j            i,j                  i,j i,j
+
+                 ku-p lm,u,i,l,j CN     r^wl,u,l        µuk am,             wl,u,l     +ku  |am|2                                      |A|
+               =
+¯kl,,um,l,i,j                            i,j       |                        i,j                               = t(l-l)M +uM                 pm l,u,l (t(l-l)M +uM - am)                                (44)
+                                                                                                                                                                                                       (45)
+                                                   Al,u,l                                                                           m=1
+
+                                                     i,j
+
+¯lk,,um,l,i,j          1            +     1        )-1                                                 where
+               =( ku |am|2              wl,u,l
+                                                                                                                               pm l,u,l  -p m l,u,i,l,j -p lm,u,i,l,j .
+                                        i,j
+
+¯kl,,um,l,i,j  =¯kl,,um,l,i,j  (   µuk  +       r^wl,u,l  ).                                (36)       Based on (44), we perform the symbol-by-symbol MAP esti-
+                                  kuam                                                                 mation for data symbols as
+                                                  i,j
+
+                                                 wl,u,l
+
+                                                 i,j
+
+The mean and variance with respect to (35) are given as                                                          t^(l-l)M +uM          =    arg       max     t(l-l    )M  +uM    (a).                 (46)
+
+                                                                                                                                                      aA
+
+               w^il,,ju,l =li,,uj ,l     K |A|          ¯kl,,um,l,i,j ¯kl,,um,l,i,j ,
+
+                                        k=1 m=1                                             (37)       C. Learning Hyperparameters
+                                                                                            (38)
+               ^wl,u,l         =¯iw,jl,u,l -       w^il,,ju,l     2                                       EM algorithm is an iterative technique that increases a lower
+                                                                                                       bound on the likelihood at each iteration, thus guaranteeing
+                i,j                                                ,                                   that the likelihood converges to a local maximum or at
+
+                Lu,l    =              e-+         M -1        il,,juL,l               pu,l            + e-   M l=-0 1(1 - il,,juL,l )      p{L,T,B}(1             -    pu,l  )
+                                                   l=0
+                i,j                                                        p{L,T,B} i,jL                                                                                i,jL                           (27)
+
+                               (e + e-)            e-             M -1     il,,juL,l               pu,l     + e  M l=-0 1(1 - il,,juL,l )             p{L,T,B}(1       -    pu,l        )
+                                                                  l=0
+                                                                                       p{L,T,B} i,jL                                                                        i,jL
+
+                        il,,ju,l =                                                     e- ^l= l i^l,,ju,l   p{L,R,T,B}   pu,l                                                                          (29)
+                                   e-
+                                                                                                                         i,j
+
+                                                   ^l= l i^l,,ju,l         p{L,R,T,B}        pu,l      + e   ^l= l(1 - i^l,,ju,l )     p{L,R,T,B}(1           -     pu,l  )
+
+                                                                                             i,j                                                                    i,j
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT                                                                  2885
+
+least a saddle point [38]. Based on the previous approxi-                                   where R = [R0, . . . , RM-1]. By examining the first derivative
+                                                                                            of the objective function with respect to the variables, the
+mated posterior distributions, the EM algorithm is adopted to                               updates of parameters can be derived as
+learn the phase rotation   {q, q} and parameter p¯ 
+{2, ku, µuk , ku, u, k}. Firstly, we assign the i.i.d. Gaussian                             (2)t+1
+distribution prior for the elements of q, i.e., u,q[l] 
+CN (0, 1), and treat W as the hidden variable. Then, the update                             =       1             yol ,j - r^ol ,j  2 + or,lj                     (56)
+of q in the (t + 1)-th iteration is given by                                                   QM N Na l,o,j
+
+      qt+1  =  arg  max  EW[log                  p(W,  Y,   q )    |    Y,  t]       (47)   (µku)t+1
+
+                     q                                                                         l,l,i,j li,,uj ,l  |A|    ¯kl,,um,l,i,j  kl,,um,l,i,j
+                                                                                                                  m=0
+            =  arg  min  qH Aq q                 -  2{bqH q }                        (48)   =                                                                     (57)
+
+                     q                                                                                l,l,i,j il,,uj ,l  |A|  ¯kl,,um,l,i,j
+                                                                                                                         m=0
+where
+                                                                                            (ku)t+1
+
+      Aq = DT[ (Clq)HClq  (VW l )T]D + 2IUM , (49)                                             l,l,i,j li,,uj ,l  |A|    ¯kl,,um,l,i,j  kl,,um,l,i,j- µkut    2   lk,,um,l,i,j
+                                                                                                                  m=0
+                           l                                                                                                                                   +
+
+         bq = DTvecd( (Clq)HYql (W^ l)H),                                            (50)   =                     l,l,i,j li,,uj ,l     |A|    ¯kl,,um,l,i,j
+                                                                                                                                        m=0
+                         l
+                                                                                                                                                                  (58)
+VW l = diag( Var[wjl ]) + W^ l(W^ l)H,                                               (51)
+                                                                                            (ku)t+1
+                    j
+
+         D = IUM  1N ,                                                               (52)   =  l,l,i,j il,,uj ,l  |A|    ¯kl,,um,l,i,j                            (59)
+                                                                                                                  m=0
+
+wjl is the j-th column of Wl, Var[wjl ] is the posterior                                              l,l,i,j li,,uj ,l
+variance of wjl given in (38), and 1N  RN is the all-one
+vector. In addition, the optimization problem (48) is subject                               where r^ol ,j and or,lj are updated by GAMP (see line 5 and 6 of
+to |u,q[l]| = 1. Although the gradient-based algorithm can                                  Algorithm 1).
+
+achieve a stationary point [39], it involves large computations.                               Building upon the message expressions and EM update
+                                                                                            rules, we propose the MRF-MP-GAMP algorithm for
+Alternatively, we propose to adopt the following analytical                                 JDICESD as summarized in Algorithm 1, where we denote
+                                                                                            the index uM N + lN + i as v. The lines 3-10 represent
+rule, i.e.,                                                                                 the GAMP algorithm, which can be executed in parallel for
+                                                                                            each l and j. lines 11-18 are expressions derived using MP
+                    qt+1 = Proj(A-q 1bq),                                            (53)   rules, and the lines 20 and 21 correspond to the EM update.
+                                                                                            Proper initialization of the hyperparameters is crucial for EM
+where the n-th element of Proj(x) is xn/ |xn|. The motivation                               update which refers to [38], and the damping is leveraged in
+
+behind (53) is that the optimal solution of (48), when not                                  the GAMP part to help the convergence of the algorithm [40].
+                                                                                               The computational complexity of the proposed algorithm
+constrained, is projected onto the unit circle in the complex
+plane, ensuring that |u,q[l]| = 1. However, the matrix                                      is analyzed as follows: The computational complexity of the
+                                                                                            proposed receiver structure is primarily determined by the
+inversion required by (53) typically entails substantial compu-                             operations in the DDAI, JCESD, TSE modules, and the EM
+tational efforts, with a complexity of O(U 3M 3). Fortunately,                              update. Specifically, the dominant computational task in the
+as observed in (10), u,q[l] is nonzero only in the presence                                 DDAI module is the matrix multiplication involved in the
+                                                                                            GAMP algorithm. For each iteration, this involves operations
+of a physical path corresponding to a delay of approximately                                of complexity O(QU M 2N 2Na). In the JCESD and TSE
+   l                                                                                        module, the complexity is governed by the element-wise
+M f   .  This  sparsity  can  be                 exploited  to  truncate    Aq  and  bq ,   product operations, which require O(|A| QM 2N Na) and
+                                                                                            O(U M N Na) per iteration, respectively. For the EM update,
+thereby reducing the complexity involved in updating q.                                     the matrix inversion in (54) of our manuscript dominates the
+                                                                                            computations, with a complexity O(P¯3). Theoretically, P¯ can
+In practical scenarios, the exact number of active physical                                 be set to the number of active paths, i.e., P¯ = pU P . In this
+                                                                                            case, the number of active paths is sufficiently small, e.g.,
+paths pU P , i.e., the number of nonzero elements in q                                      pU P = 12, following the simulation parameters of our
+is typically unknown. To address this, we retain P¯ (P¯                                     manuscript. As a result, the computational burden for the
+                                                                                            matrix inversion is negligible. In practical implementations,
+pU P ) elements of q, selecting those corresponding to the                                  the exact number of active paths may be unknown. To handle
+                                                                                            this uncertainty, we recommend selecting a sufficiently large
+indices of delay taps with the highest energies in W. Initially,                            P¯ to ensure that P¯  pU P . However, given the sparsity
+we calculate the energy of each delay tap as  = {ul | ul =                                  of active devices and physical paths in satellite channels, this
+thelM=in-0d1iceW^s ol,fu,tlh eF2P,¯lua,rgle}s.t                                             should not pose a significant computational challenge. Overall,
+                                                 We then form the set       E  containing
+                                                 elements in . Using        E  , we select
+elements from Aq and bq to construct A¯ q  CP¯×P¯ and
+b¯q  CP¯, respectively. We denote the selected sub-vector of
+q according to E as ¯ q, which can be updated as
+
+                    ¯ tq+1 = Proj(A¯ -q 1b¯q).                                       (54)
+
+Besides, the parameter p¯ is updated in the (t + 1)-th iteration
+as
+
+p¯ t+1   =  arg  max     ER,H[log                p(R,  H, Y     |  p¯)  |  Y, p¯t],  (55)
+
+                   p¯
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2886                                                                           IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+the total complexity of the MRF-MP-GAMP algorithm is in                               Algorithm 1 MRF-MP-GAMP
+the order of O(QU M 2N 2Na + |A| QM 2N Na + P¯3).
+                                                                                      Require: Received signals Y, spreading code matrix Cl, l;
+   Despite the iterative nature of the algorithm, these opera-
+tions are well-suited for parallelization, as many tasks can be                            the maximum number of iterations Iout and Imrf, and the
+processed independently for each device or resource block.
+The parallelizable nature of the matrix multiplication and                                 termination threshold Tout
+element-wise products in the DDAI, JCESD, and TSE mod-                                Ensure: The estimated activity indicator ^, effective channel
+ules allows for significant acceleration when implemented on
+graphics processing units (GPUs). Additionally, GPUs are also                              H^ , and data symbols ^t.                                Lu,l             Ru,l
+especially well-suited for the highly parallel structure of the
+DDAI module, where the GAMP algorithm can estimate Wl                                 1:   Initialization:     u, l, i, j:  Initialize              i,j      =       i,j         =
+in parallel for each l. In particular, matrix operations can be
+distributed across multiple cores to achieve faster computation                             Tu,l  =   Bu,l     = 0.5; l, o, j: Initialize g^ol ,j                   = 0; l:
+times. Addtionally, field-programmable gate arrays (FPGAs)
+can also be employed to further accelerate the proposed                                     i,j       i,j
+algorithms by implementing customized data paths for matrix                                Initialize C,l = Cl; l, u, l, i, j, m: -p lm,u,i,l,j = 1/|A|;
+operations and element-wise computations, enabling real-time
+processing with low latency.                                                               l, v, j: choose ^vw,jl , w^vl ,j, and p¯.
+
+                IV. CNN-ENHANCED DETECTOR                                              2: for tI = 1 to Iout do
+                                                                                       3: l, o, j: op,lj = v co,,vl 2 ^vw,jl
+   CNNs are widely being used in many DL applications due                              4: l, o, j: p^lo,j = v co,,vl w^vl ,j - op,lj g^ol ,j .
+to their remarkable ability to combine feature extraction and                          5: l, o, j,: or,lj = op,lj 2/(op,lj + 2)
+detection tasks. In this section, we adopt CNNs to efficiently                         6: l, o, j,: r^ol ,j = (op,lj yol ,j + 2p^ol ,j )/(op,lj + 2)
+exploit the statistical information provided by the MRF-MP-                            7: l, o, j,: og,lj = (op,lj - or,lj )/(op,lj )2
+GAMP algorithm, enhancing symbol detection performance.                                8: l, o, j,: g^ol ,j = (r^ol ,j - p^ol ,j )/op,lj
+                                                                                       9: l, v, j: vw,jl = ( o co,,vl 2 og,lj )-1
+                                                                                      10: l, v, j: r^vw,lj = w^vl ,j + vw,jl o co,,vl g^ol ,j
+                                                                                      11: l, u, l, i, j: Compute il,,uj ,l via (24)
+
+                                                                                      12:  for tmrf  =     1   toUpIdmarftedoiL,uj,l  ,   Ru,l  ,   Tu,l  ,   Bu,l  via       (27)
+                                                                                      13:     u, l   , i,  j:
+                                                                                                                                          i,j       i,j       i,j
+
+A. CNN Framework                                                                      14: end for
+                                                                                      15: l, u, l, i, j,: Update il,,ju,l via (29)
+   1) Preprocessing: We denote the estimated set of active                            16: l, u, l, i, j, m: Update-p m l,u,i,l,j and -p m l,u,i,l,j via (31)
+devices as U^ = {u|^u = 1, u = 0, · · · , U - 1}. According
+                                                                                           and (33)
+to the equality constraint in (19), for each u  U, a simple                           17: l, u, l, i, j, m: Compute li,,uj ,l , ¯kl,,um,l,i,j , ¯kl,,um,l,i,j , and
+data detection rule can be represented as t^(l-l)M +uM =                                   ¯kl,,um,l,i,j via (36)
+wil,,ju,l /hli,,uj ,l given the perfect wil,,ju,l and hli,,uj ,l . How-                                                                  ^wl,u,l
+ever, the perfect channel information is hard to get directly                         18:  l, u, l, i, j:      Update  w^il,,ju,l ,                ,  and    h^li,,uj ,l (tI  +  1)
+                                                                                                                                          i,j
+
+                                                                                           via (37), (38), and (42)                                                              2
+                                                                                                     H^ l(tI + 1) - H^ l(tI) 2
+in the practical scenarios. Fortunately, the proposed MRF-                            19:  if                                                  Tout             H^ l(tI)          :
+                                                                                                                                           F
+MP-GAMP algorithm can output the approximated MMSE                                                l                                                          l                   F
+
+estimations w^il,,ju,l and h^il,,uj ,l , and the corresponding estima-                     break end if
+
+tion  uncertainty   ^wl,u,l  and       ^hl,u,l  .  We  expect        that  CNNs       20: q: Update ¯ q via (54)
+
+                     i,j                i,j                                           21: Update p¯ via (56)-(59)
+
+exploit this statistical information to learn an efficient detec-                     22: l: Reconstruct C,l via (15)
+
+tion rule. Specifically, we collect all the effective channel                         23: end for
+                                                                                      24: u: Compute ^u via (21)
+elements related to the data symbol tl+uM into the 3D                                 25: l, l, u: Compute t^(l-l)M +uM via (46)
+tensor H l,u  CN×Na×M with H l,u[:, :, ^l] = H^ ^l,u,(^l-l)M ,
+
+^l = 0, · · · , M - 1. Similarly, we can get W l,u, T lw,u, and
+T lh,u, where W l,u[:, :, ^l] = W^ ^l,u,(^l-l)M , T wl,u[:, :, ^l] is with
+                          ^ , wl^,u,(l^-l)M
+the   (i, j)-th  element                     and   T lh,u[:, :, ^l]  is  with  the    constructed, where n = {(Ilc,nu, plt,nu)|u  Un  U^n, l =
+                           i,j                                                        0, . . . , M - 1} is generated from the n-th sample (Yn, tn).
+                                                                                      Here, Yn and tn = [tn0 , . . . , tnU-1 ] represent the received
+(i, j)-th  element  ^hl^,u,(l^-l)M  .  Then,  we   stack  the        four  tensors    signal and the transmitted symbols of all devices, respectively.
+                                                                                      Icl,nu is the input to the CNN, while ptl,nu is the true posterior
+                     i,j                                                              distribution of the transmitted symbols and serves as the target
+
+along the last dimension to get the input of the CNN as                               of CNN. In addition, Un = {u|nu = 1, u = 0, . . . , U - 1} is
+                                                                                      denoted as the set of true active devices.
+Ilc,u = [[W l,u], [T wl,u], [H l,u], [T lh,u]]  CN×Na×4M . Note
+                                                                                         To construct the sub-dataset n, Un is initially determined
+that the statistical information for each transmitted symbols                         based on the device activity p. Then, the transmitted symbols
+                                                                                      tn are generated, with symbols for active devices randomly
+is extracted individually from the outputs of the Algorithm 1.                        selected from the predefined alphabet A and those for inactive
+
+Then, the CNN could efficiently estimate all transmitted                              devices set to zero. Subsequently, received signal Yn is
+
+symbols in parallel and accommodate the dynamic number
+
+of active devices.
+
+2) Training Phase: In this phase, by adjusting the weights
+
+of the adopted CNN, we aim to make the output of the
+
+CNN as close as possible to the true posterior distribution
+
+of the transmitted symbols. The dataset  = n is firstly
+
+                                                                                   n
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT  2887
+
+obtained by transmitting tn over a randomly time-varying
+
+TSL using the transmission scheme proposed in Sec. II-B.
+
+By feeding Yn into Algorithm 1, the set of estimated active
+devices U^n, the MMSE estimations w^nl,iu,j,l and h^nl,iu,,jl , and the
+                                                   ^wl,u,l                    ^hl,u,l
+corresponding           estimation  uncertainties                   and                are
+                                                    ni,j                       ni,j
+obtained. Following the preprocessing module, Icl,nu is derived
+for u  Un  U^n and l = 0, . . . , M - 1. Furthermore,
+
+the one-hot encoding is adopted to represent the true pos-
+terior distribution for the transmitted symbols, i.e., plt,nu =
+[I{tnl+uM = a1}, · · · , I{tnl+uM = a|A|}] for u  Un  U^n,
+
+and l = 0, . . . , M - 1, where tnl+uM denotes the (l + uM )-th
+
+element of tn.
+
+   The CNN, parameterized by weights , defines the                                           Fig. 4. The architecture of MRF-MP-GAMP-CNN.
+non-linear function f (·; ), which maps Ilc,nu to the estimated
+posterior distribution p^tl,nu for the transmitted symbol tnl+uM ,                           The output layer employs a Softmax function to estimate the
+                                                                                             posterior distribution of the data symbols. Finally, the refined
+i.e.,                                                                                        data symbols and effective channel are represented by (62)
+                                                                                             and (63), respectively. It is worth noting that this model utilizes
+                                p^tl,nu = f (Icl,nu; ).                                (60)  a complex neural network [43], which defines the operations
+                                                                                             in the complex plane, such as complex convolution. Unlike
+To optimize the weights of CNN, the cross entropy is utilized                                traditional methods, this approach allows the algorithm to
+as the loss function, i.e.,                                                                  process complex numbers directly, eliminating the need to
+                                                                                             convert input signals into the real domain.
+                = arg min E[-                    ptl,num log p^lt,num ],               (61)
+                                                                                             C. Practical Deployment Considerations
+                                              m
+                                                                                                1) Impact on Satellite Payload: The proposed receiver
+where ptl,num and p^lt,num are the m-th element of plt,nu and                                structure, despite its iterative nature, can be accelerated using
+p^lt,nu, respectively, and the expectation is calculated over .                              modern hardware like GPUs and FPGAs, which offer high
+In the simulations, the weights are updated iteratively using the                            computational performance with minimal physical footprint.
+                                                                                             Advances in miniaturization allow powerful units to be inte-
+Adam optimizer [41]. During each iteration, only a small batch                               grated into satellites without significantly increasing payload
+                                                                                             mass. Furthermore, the hardware can be scaled according to
+of elements from  are adopted to calculate the expectation                                   mission requirements, with fewer processing units for lower
+                                                                                             communication demands and more for higher demands.
+in (61).
+                                                                                                2) Power Consumption: Power consumption is critical
+3) Testing Phase: In this phase, the received signal Y is                                    for LEO satellites with limited onboard resources. While
+firstly processed by Algorithm 1, yielding outputs U^, w^il,,ju,l ,                          GPUs and FPGAs offer computational advantages, they also
+               ^wl,u,l          ^hl,u,l                                                      introduce power considerations. However, modern versions
+h^il,,uj ,l ,           ,  and           .  Subsequently,    Icl,u        is  constructed    are energy-efficient, and power management techniques like
+                i,j              i,j                                                         dynamic voltage and frequency scaling (DVFS) [44] can
+                                                                                             reduce power usage during low-demand periods. Low-power
+for u  U^ and l = 0, . . . , M - 1, which is then fed into the                               FPGAs designed for space applications could further minimize
+                                                                                             power consumption. Another factor mitigating power concerns
+trained CNN to get the estimated posterior distribution p^lt,u                               is that, in practice, the data from active devices may be
+                                                                                             sent over kQ frames, where k  N. Once the device states
+for the transmitted symbol tl+uM . Finally, the detection of                                 (active or inactive) are identified after the first Q frames, the
+                                                                                             remaining (k - 1)Q frames are only used for joint channel
+symbol tl+uM is performed by choosing t^l+uM = am with                                       estimation and symbol detection for active devices. In this
+                                                                                             case, the received signal and spreading code of the active
+                                m  =     arg  max  p^tl,mu.                            (62)  devices are input into the MRF-MP-GAMP-CNN, which then
+                                                                                             performs computations only for the active devices, rather than
+                                                m                                            for all potential devices. This optimization ensures that the
+                                                                                             full computational power is not required throughout the entire
+Further, the estimated effective channel is refined by the more                              transmission, helping to conserve energy.
+precise data symbols, as given by
+
+                        h^^li,,uj ,(^l-l)M = w^i^l,,ju,(^l-l)M /t^l+uM .               (63)
+
+B. Architecture of MRF-MP-GAMP-CNN
+
+   As illustrated in Fig. 4, the proposed MRF-MP-GAMP-
+CNN framework comprises three main modules. Initially,
+the MRF-MP-GAMP module produces the set of estimated
+active devices, and the posterior means and variances for
+W and H of active devices. Subsequently, these outputs are
+combined in the preprocessing module to form the input for the
+CNN module. This module leveraging statistical information
+to improve symbol detection, involves a convolutional layer,
+batch normalization, and the ReLU activation function as its
+foundational elements. Additionally, residual learning [42] is
+incorporated to facilitate the optimization for CNN weights.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2888                                                        IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+                                  TABLE I                                                                      TABLE II
+                      SIMULATION PARAMETERS                                                       BASIC PARAMETERS OF CNN
+
+   3) Feasibility of Integration With Existing Satellite Infras-         Fig. 5. The convergence of MRF-MP-GAMP, where SNR = 2 dB and
+tructure: As indicated in [21] and [22], current 3GPP NTN                Q = 8.
+protocols do not fully support IoT devices without GNSS,
+while this is a focus of ongoing standardization efforts. For-           in Table II, where (C, W × W) indicates that the number of
+tunately, only minor changes to satellite infrastructure are
+needed, such as extending CP length to exceed maximum                    output channels is C and the filter size is W × W.
+differential delay and adding ISFFT and SFFT modules to
+support OTFS-based transmissions. Regarding the integra-
+tion of the proposed algorithm, especially given the ongoing
+evolution of satellite technology. Many modern LEO satel-
+lite platforms already support advanced onboard processing,
+including hardware-accelerated systems.
+
+   Overall, while challenges related to payload, power con-
+sumption, and integration exist, they are manageable with
+current technology and design optimizations. The proposed
+system is scalable and suitable for future satellite deployments
+supporting remote IoT applications.
+
+                                                                            The activity error rate (AER), normalized mean-squared-
+
+                      V. NUMERICAL RESULTS                               error (NMSE), and symbol error rate (SER) are adopted
+
+This section presents simulation results to demonstrate                  as metrics for device identification, channel estimation,
+
+the effectiveness of the proposed algorithms. We consider a              and symbol detection, respectively, given by AER =
+                                                                                                                                          2
+                                                                                                                         M -1             F
+
+                                                                                                                           l=0
+typical random access scenario in the non-terrestrial networks           1    U -1  u - ^u           ,  NMSE =               Hl-H^ l         and       =
+                                                                         U    u=0                                            , M -1               SER
+                                                                                                                                     F2
+                                                                                                                             l=0
+without GNSS, where U = 40 potential devices are randomly                                                                    Hl
+
+distributed within the coverage area of the satellite. This                1    U M -1   I{ti     =        t^i},  where  we  assume   inactive    devices
+                                                                         UM     i=0
+
+area is defined as a circle with the radius of 128 km. The               transmit zero for computing the SER. The two-phase OTFS
+
+satellite is equipped with 4 × 4 UPA and the device activity             scheme is adopted for performance comparison, incorpo-
+
+is set as p = 0.1 unless otherwise specified. The power                  rating three benchmarks. The first benchmark, ConvSBL-
+
+delay profile of TSL follows the NTN-TDL-D [20]. The                     GAMP+MP, utilizes the ConvSBL-GAMP [29] for JDICE,
+
+nonnegative pulse amplitude modulation (NPAM) is adopted                 followed by symbol detection using the MP algorithm [31].
+
+to alleviate the phase ambiguity problem, which has been                 The second, GMMV-AMP+GAMP, employs the GMMV-
+
+applied broadly in the non-coherent communications [45].                 AMP [14] for similar purposes, with symbol detection
+
+Since large-scale propagation effects vary over relatively long          conducted via the GAMP algorithm [37]. The third, Oracle-
+
+distances, we assume that these effects can be effectively               LMMSE, leverages perfect channel state information to detect
+
+compensated [18]. The main parameters are summarized in                  data symbols using the LMMSE equalizer [46]. We evaluate
+
+Table I. In addition, the elements of each device's spreading            the proposed algorithms in two distinct scenarios: (i) The
+                                                                         on-grid case, where the fractional Doppler k~i,u = 0, does
+code follow the i.i.d. Gaussian distributions, i.e., Cu,q[k, l] 
+                                                                         not involve the extra phase rotation. (ii) The off-grid case,
+CN (0,    1  ).  The  received  signal-to-noise  ratio  is  defined  as
+        QN                                                                      k~i,u    (-    1  ,     1  ],
+                                                                         where                 2        2      requires  to  update  the  phase   rotation
+                       . M -1
+
+                       l=0
+SNR     =    10 log10  Rl 2F     For  the        MRF-MP-GAMP-            by the proposed algorithm. Note that conventional algorithms
+
+                       QM N Na2
+
+CNN, datasets are generated with 8,000 samples for training,             are not directly applicable to multi-frame transmission sce-
+
+2,000 for validation, and 2,000 for testing. The CNN architec-           narios affected by fractional Doppler shifts, and thus they are
+
+ture consists of 8 residual blocks and the Adam optimizer [41]           evaluated solely in the on-grid case.
+
+is utilized to update the weights at a learning rate of 0.0001 and          Fig. 5 shows the convergence of the proposed MRF-MP-
+
+a batch size of 128. All the basic parameters of CNN are given           GAMP, which plots NMSE versus the number of iterations
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT  2889
+
+Fig. 6. Performance comparison among different schemes given different Fig. 7. Performance comparison among different schemes given different
+
+number of frames, where SNR = 2 dB.                               SNR values, where Q = 8.
+
+at SNR = 2 dB and Q = 8. This figure also illustrates the         ConvSBL-GAMP+MP; the NMSE of the MRF-MP-GAMP is
+impact of varying the number of BGM components K on the           about 0.5 and 2 dB lower than the ConvSBL-GAMP+MP and
+algorithms performance. It is observed that the proposed algo-    GMMV-AMP+GAMP, respectively. Additionally, the MRF-
+rithms tends to be stable after approximately 100 iterations,     MP-GAMP-CNN benefits from further exploiting statistical
+and its convergence rate appears to be relatively insensitive to  information, achieving additional gains over its counterparts.
+changes in K. Besides, the marginal gain can be achieved by       In the off-grid case, while increased Q values initially reduce
+increasing K from 1 to 2. However, increasing K to 4 results      NMSE and SER for proposed algorithms approximately up to
+in performance degradation, likely due to overfitting effects     Q = 12, further increases in Q degrade performance due to
+associated with a larger K. Based on these observations,          the rising number of unknown phase rotations, which pose a
+subsequent simulations are conducted with K = 2 and the           significant estimation challenge. In practical communications,
+number of iterations Iout = 150.                                  smaller Q values are preferred to maintain the quasi-static
+                                                                  properties of the channel in the delay-Doppler domain. Despite
+   Fig. 6 illustrates the influence of the number of frames Q on  performance declines, the MRF-MP-GAMP-CNN still outper-
+the performance of the proposed algorithms, presenting both       forms the Oracle-LMMSE in scenarios where 6  Q  18.
+NMSE and SER as functions of Q. Notably, the single-frame         In subsequent simulations, we will fix Q = 8 to ensure
+transmission scheme (Q = 1) performs inadequately in              performance and computational efficiency.
+scenarios with large differential delay and Doppler shift.
+In the on-grid case, as Q increases, it is observed that the         Fig. 7 depicts the performance of various algorithms in
+NMSE and SER of all the schemes continually decrease,             terms of NMSE and SER as functions of SNR. It is observed
+and the proposed algorithms always perform much better            that the proposed algorithms significantly outperform the
+than the benchmarks. This indicates the effectiveness the         benchmarks in the on-grid case. Specifically, Fig. 7(a) shows
+proposed multi-frame transmission scheme and the JDICESD          that at 0 dB SNR, the proposed MRF-MP-GAMP improves
+algorithms. For example, at Q = 12, the SER of the MRF-           upon ConvSBL-GAMP+MP and GMMV-AMP+GAMP by
+MP-GAMP is lower than 0.01 and is one-fifth that of the           approximately 1.2 dB and 2.2 dB in NMSE, respectively;
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2890  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+Fig. 8. Performance comparison among different schemes given different  Fig. 9. Performance comparison for device identification among different
+device activities, where SNR = 2 dB and Q = 8.                          schemes.
+
+Fig. 7(b) reveals that at an SER of 0.01, MRF-MP-GAMP                   which indicates the proposed schemes are capable of support-
+surpasses Oracle-LMMSE by about 2 dB in terms of                        ing more active devices access. Note that the performance
+SNR. Conventional schemes that operate separately have                  of all the schemes deteriorates obviously when the device
+high error floors for SER, limiting their ability to sup-               activity increases. This degradation is primarily due to the
+port a large number of devices. In contrast, the proposed               limited size of the receiving antenna array, which results in
+algorithms, benefited by JDICESD design, exhibit robust                 decreased spatial separation as the number of active devices
+performance. Furthermore, Fig. 7 indicates that in the off-             grows. Consequently, inter-user interference intensifies in the
+grid case, the NMSE for MRF-MP-GAMP is lower than                       spatial domain, further impacting performance.
+that for on-grid GMMV-AMP+GAMP and comparable to
+on-grid ConvSBL-GAMP+MP. Additionally, the SER for                         Finally, we show the performance comparison for device
+off-grid MRF-MP-GAMP is lower than that of both GMMV-                   identification across various schemes in Fig. 9, which plots
+AMP+GAMP and ConvSBL-GAMP+MP when the SNR                               the AER versus SNR and device activity, respectively. It is
+exceeds -2 dB, validating the effectiveness of the proposed             observed that the on-grid MRF-MP-GAMP and MRF-MP-
+scheme for LEO satellite-based uplink transmission in the               GAMP-CNN deliver the best performance. Notably, when
+presence of large differential delay and Doppler shift. More-           device activity exceeds 0.1, the off-grid MRF-MP-GAMP
+over, the SER for off-grid MRF-MP-GAMP-CNN outperforms                  achieves performance comparable to that of the on-grid
+Oracle-LMMSE at SNRs above -2 dB, which demonstrates the                ConvSBL-GAMP+MP. This demonstrates the effectiveness of
+capability of the CNN-enhanced symbol detector.                         the proposed schemes.
+
+   Fig. 8 plots the NMSE and SER as the functions of the                                          VI. CONCLUSION
+device activity, given SNR = 2 dB. It is observed that the on-
+grid MRF-MP-GAMP-CNN achieves the best performance.                        This paper investigated grant-free random access tailored
+Notably, the off-grid MRF-MP-GAMP-CNN outperforms the                   for LEO satellite communications in the absence of GNSS
+three on-grid benchmarks when device activity exceeds 0.1,              assistance. Exploiting the quasi-static property of the channel
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT                                                          2891
+
+in the delay-Doppler domain, we proposed a spreading-based                   1      N -1 M -1
+multi-frame OTFS transmission scheme to handle the large                       NM
+differential delay and Doppler shift. Then, the MP-based               =                             YqTF  [n,  m]e¯2(  ml    -  nk  )
+algorithm was designed for joint device identification, channel                                                         M        N
+estimation, and signal detection, which is capable of eliminat-
+ing the inter-user and inter-carrier interference and exploiting                    n=0 m=0
+the 3D sparsity of the channel in the delay-Doppler-angle
+domain. Additionally, based on the statistical information             (a) 1 P                                          M +Mcp-1-(li+biM )
+provided by the receiver, the CNN detector was incorporated to
+improve the symbol detection performance for active devices.           = N M 2 hi                          XqDD[k, l]
+Simulation results demonstrated that the proposed multi-frame
+transmission scheme enhances system performance, and the                            i=1        k      l                       p=Mcp-(li+biM )
+designed algorithms outperform the conventional methods
+significantly in terms of the device identification, channel                     p(ki +k~i +di N  )  M -1            m(p-l+(li   +bi  M  )-Mcp  )
+estimation, and symbol detection.                                                                                                M
+                                                                                    (M +Mcp )N
+                                                                       e e e ¯2k~iq¯2                           -¯2
+
+                                                                                                     m=0
+
+                                                                                                  N -1
+                                                                       e e M-1
+                                                                             ¯2  m  (p-l -Mcp  )           -¯2  n(k-k   -ki -k~i  -di    N  )
+                                                                                          M                                  N
+
+                                                                       m =0                       n=0
+
+                                                                       =     1P     hi               XqDD[k, l]N (k - k - ki - k~i)
+
+                                                                             N i=1       k        l
+
+                                                                       M +Mcp-1-(li+biM )            p(ki+k~i+diN )
+
+                                                                                             e¯2        (M +Mcp)N    ((p      -  l   -   Mcp)M )
+
+                           APPENDIX A                                  p=Mcp-(li+biM )
+                   PROOF OF PROPOSITION 1
+                                                                       × ((p - l + li + biM - Mcp)M )e¯2k~iq
+   We firstly focus on the input-output relationship for the
+single-input single-out (SISO), and hence omit the index of            =     1P     hi               XqDD[k - kN , (l - l)M ]e¯2k~iq
+devices and antennas. The relationship for MIMO can be
+extended directly. According to (1)-(5), we can derive the I/O               N i=1       k        l
+in the time-frequency domain as
+                                                                             N (k                 k~i)e¯2  (ki +k~i +di N  )  (Mcp  +l-li      -bi  M  )
+
+                                                                          ×         -    ki  -               (M +Mcp )N
+
+   YqTF[n, m]                                                                M -1 N/2-1
+
+        = Agrx,r(t, f ) |t=(n+qN )Tsym,f =mf                           =                       HDD [k, l, l] q[l]
+
+                                                                             l=0 k=-N/2
+
+           Q-1 N -1 M -1                                                  × XqDD [k - kN , (l - l)M ] ,                                                   (68)
+
+        =                 XqTF[n, m]Hq,n,m,q [n, m],             (64)
+
+           q=0 n=0 m=0                                                 where (a) is obtained by utilizing (7) and q[l] has the similar
+                                                                       form as (10). Let h¯i = hie¯2i(McpTs-i), and then we have
+where
+
+Hq,n,m,q [n, m]                                                        H DD      [k, l, l]         1       P
+                                                                                                  
+   P                                                                                        =                 h¯ie¯2ilTs  (lTs - (i)T )
+                                                                                                     N i=1
+=       hie¯2mf ([(n-n)+(q-q)N ]Tsym-i)e¯2(m-m)f Tsym
+                                                                                                                × N (k - N Tsymi). (69)
+   i=1
+
+   × Agrx,gtx ([(n-n)+(q -q)N ]Tsym -i, (m-m)f -i)                     Multiplying (69) by the antenna phase rotation e¯nzuz and
+                                                                       e¯nyyu , we get the result in Proposition 1.
+   × e¯2i((n+qN )Tsym-i).                                        (65)
+
+Since the Tcp > i and the adoption of rectangular waveform,                                        REFERENCES
+Agrx,gtx ([(n - n) + (q - q)N ]Tsym - i, (m - m)f - i) =
+0 only if n = n and q = q, i.e., there is no inter-symbol and          [1] B. Shen, Y. Wu, W. Zhang, S. Chatzinotas, and B. Ottersten, "Joint
+                                                                            device identification, channel estimation, and signal detection for LEO
+inter-frame interference. Then, (64) can be simplified as                   satellite-enabled random access," in Proc. IEEE Global Commun. Conf.,
+                                                                            Kuala Lumpur, Malaysia, Dec. 2023, pp. 679­684.
+                         M -1
+                                                                       [2] Y. Mehmood, F. Ahmad, I. Yaqoob, A. Adnane, M. Imran, and
+           YqTF[n, m] =        XqTF[n, m]Hq,n,m[n, m], (66)                 S. Guizani, "Internet-of-Things-based smart cities: Recent advances and
+                                                                            challenges," IEEE Commun. Mag., vol. 55, no. 9, pp. 16­24, Sep. 2017.
+                         m =0
+                                                                       [3] M. De Sanctis, E. Cianca, G. Araniti, I. Bisio, and R. Prasad, "Satellite
+where                                                                       communications supporting Internet of Remote Things," IEEE Internet
+                                                                            Things J., vol. 3, no. 1, pp. 113­123, Feb. 2016.
+                      1  P         Tsym -i
+                      T                                                [4] J. Jiao, S. Wu, R. Lu, and Q. Zhang, "Massive access in space-based
+   Hq,n,m[n,   m]  =          hi            e¯2i(t+(n+qN )Tsym)             Internet of Things: Challenges, opportunities, and future directions,"
+                                                                            IEEE Wireless Commun., vol. 28, no. 5, pp. 118­125, Oct. 2021.
+                         i=1      Tcp -i
+                                                                       [5] X. Lin, S. Cioni, G. Charbit, N. Chuberre, S. Hellsten, and J. Boutillon,
+                      × e-¯2mf (t+i-Tcp)e¯2mf (t-Tcp)dt.                    "On the path to 6G: Embracing the next wave of low earth orbit satellite
+                                                                            access," IEEE Commun. Mag., vol. 59, no. 12, pp. 36­42, Dec. 2021.
+                                                                 (67)
+                                                                       [6] S. Liu et al., "LEO satellite constellations for 5G and beyond: How will
+We denote the length of CP as Mcp = TcpM f . By substi-                     they reshape vertical domains?" IEEE Commun. Mag., vol. 59, no. 7,
+                                                                            pp. 30­36, Jul. 2021.
+tuting (2) and (67) into (66) and then applying the SFFT for
+YqTF[n, m], we can get the I/O in the delay-Doppler domain             [7] J. Choi, J. Ding, N.-P. Le, and Z. Ding, "Grant-free random access
+as                                                                          in machine-type communication: Approaches and challenges," IEEE
+                                                                            Wireless Commun., vol. 29, no. 1, pp. 151­158, Feb. 2022.
+YqDD[k, l]
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+2892  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 24, NO. 4, APRIL 2025
+
+ [8] L. Liu, E. G. Larsson, W. Yu, P. Popovski, C. Stefanovic, and              [30] X. Zhou et al., "Active terminal identification, channel estimation,
+      E. de Carvalh, "Sparse signal processing for grant-free massive connec-         and signal detection for grant-free NOMA-OTFS in LEO satellite
+      tivity: A future paradigm for random access protocols in the Internet           Internet-of-Things," IEEE Trans. Wireless Commun., vol. 22, no. 4,
+      of Things," IEEE Signal Process. Mag., vol. 35, no. 5, pp. 88­99,               pp. 2847­2866, Apr. 2023.
+      Sep. 2018.
+                                                                                [31] P. Raviteja, K. T. Phan, Y. Hong, and E. Viterbo, "Interference
+ [9] Z. Chen and W. Yu, "Massive device activity detection by approximate             cancellation and iterative detection for orthogonal time frequency
+      message passing," in Proc. IEEE Int. Conf. Acoust., Speech Signal               space modulation," IEEE Trans. Wireless Commun., vol. 17, no. 10,
+      Process. (ICASSP), New Orleans, LA, USA, Mar. 2017, pp. 3514­3518.              pp. 6501­6515, Oct. 2018.
+
+[10] Z. Chen, F. Sohrabi, and W. Yu, "Sparse activity detection for             [32] X. Wang, W. Shen, C. Xing, J. An, and L. Hanzo, "Joint Bayesian
+      massive connectivity," IEEE Trans. Signal Process., vol. 66, no. 7,             channel estimation and data detection for OTFS systems in LEO satellite
+      pp. 1890­1904, Apr. 2018.                                                       communications," IEEE Trans. Commun., vol. 70, no. 7, pp. 4386­4399,
+                                                                                      Jul. 2022.
+[11] L. Liu and W. Yu, "Massive connectivity with massive MIMO--Part I:
+      Device activity detection and channel estimation," IEEE Trans. Signal     [33] W. Shen, L. Dai, J. An, P. Fan, and R. W. Heath, "Channel estimation for
+      Process., vol. 66, no. 11, pp. 2933­2946, Jun. 2018.                            orthogonal time frequency space (OTFS) massive MIMO," IEEE Trans.
+                                                                                      Signal Process., vol. 67, no. 16, pp. 4204­4217, Aug. 2019.
+[12] Y. Zhang, Q. Guo, Z. Wang, J. Xi, and N. Wu, "Block sparse Bayesian
+      learning based joint user activity detection and channel estimation for   [34] D. Shi et al., "Deterministic pilot design and channel estimation
+      grant-free NOMA systems," IEEE Trans. Veh. Technol., vol. 67, no. 10,           for downlink massive MIMO-OTFS systems in presence of the frac-
+      pp. 9631­9640, Oct. 2018.                                                       tional Doppler," IEEE Trans. Wireless Commun., vol. 20, no. 11,
+                                                                                      pp. 7151­7165, Nov. 2021.
+[13] X. Shao, X. Chen, and R. Jia, "A dimension reduction-based joint
+      activity detection and channel estimation algorithm for massive access,"  [35] S.-H. Wu, U. Mitra, and C.-C.-J. Kuo, "Iterative joint channel estimation
+      IEEE Trans. Signal Process., vol. 68, pp. 420­435, 2020.                        and multiuser detection for DS-CDMA in frequency-selective fading
+                                                                                      channels," IEEE Trans. Signal Process., vol. 56, no. 7, pp. 3261­3277,
+[14] M. Ke, Z. Gao, Y. Wu, X. Gao, and R. Schober, "Compressive sensing-              Jul. 2008.
+      based adaptive active user detection and channel estimation: Massive
+      access meets massive MIMO," IEEE Trans. Signal Process., vol. 68,         [36] X. Shao, X. Chen, Y. Qiang, C. Zhong, and Z. Zhang, "Feature-aided
+      pp. 764­779, 2020.                                                              adaptive-tuning deep learning for massive device detection," IEEE J.
+                                                                                      Sel. Areas Commun., vol. 39, no. 7, pp. 1899­1914, Jul. 2021.
+[15] G. Sun et al., "Massive grant-free OFDMA with timing and frequency
+      offsets," IEEE Trans. Wireless Commun., vol. 21, no. 5, pp. 3365­3380,    [37] S. Rangan, "Generalized approximate message passing for estimation
+      May 2022.                                                                       with random linear mixing," in Proc. IEEE Int. Symp. Inf. Theory, St.
+                                                                                      Petersburg, Russia, Jul. 2011, pp. 2168­2172.
+[16] S. Jiang, X. Yuan, X. Wang, C. Xu, and W. Yu, "Joint user identification,
+      channel estimation, and signal detection for grant-free NOMA," IEEE       [38] J. P. Vila and P. Schniter, "Expectation-maximization Gaussian-mixture
+      Trans. Wireless Commun., vol. 19, no. 10, pp. 6960­6976, Oct. 2020.             approximate message passing," IEEE Trans. Signal Process., vol. 61,
+                                                                                      no. 19, pp. 4658­4672, Oct. 2013.
+[17] J. Huang, H. Zhang, C. Huang, L. Yang, and W. Zhang, "Noncoherent
+      massive random access for inhomogeneous networks: From message            [39] L. You, J. Xiong, D. W. K. Ng, C. Yuen, W. Wang, and X. Gao,
+      passing to deep learning," IEEE J. Sel. Areas Commun., vol. 40, no. 5,          "Energy efficiency and spectral efficiency tradeoff in RIS-aided mul-
+      pp. 1457­1472, May 2022.                                                        tiuser MIMO uplink transmission," IEEE Trans. Signal Process., vol. 69,
+                                                                                      pp. 1407­1421, 2020.
+[18] L. You, K.-X. Li, J. Wang, X. Gao, X.-G. Xia, and B. Ottersten, "Massive
+      MIMO transmission for LEO satellite communications," IEEE J. Sel.         [40] S. Rangan, P. Schniter, A. K. Fletcher, and S. Sarkar, "On the conver-
+      Areas Commun., vol. 38, no. 8, pp. 1851­1865, Aug. 2020.                        gence of approximate message passing with arbitrary matrices," IEEE
+                                                                                      Trans. Inf. Theory, vol. 65, no. 9, pp. 5339­5351, Sep. 2019.
+[19] Technical Specification Group Radio Access Network; Solutions for NR
+      To Support Non-Terrestrial Networks (NTN) (Release 16), document TR       [41] D. P. Kingma and J. Ba, "Adam: A method for stochastic optimization,"
+      38.821, V1600, 3GPP, Dec. 2019.                                                 2014, arXiv:1412.6980.
+
+[20] Technical Specification Group Radio Access Network; Study on New           [42] K. He, X. Zhang, S. Ren, and J. Sun, "Deep residual learning for
+      Radio (NR) To Support Non-Terrestrial Networks (Release 15), docu-              image recognition," in Proc. IEEE Conf. Comput. Vis. Pattern Recognit.
+      ment TR 38.811, V15.4.0, 3GPP, Sep. 2020.                                       (CVPR), Las Vegas, NV, USA, Jun. 2016, pp. 770­778.
+
+[21] H. Chougrani, S. Kisseleff, W. A. Martins, and S. Chatzinotas, "NB-        [43] C. Trabelsi, "Deep complex networks," in Proc. Int. Conf. Learn.
+      IoT random access for nonterrestrial networks: Preamble detection               Represent., Vancouver, BC, Canada, Feb. 2018, pp. 1­19.
+      and uplink synchronization," IEEE Internet Things J., vol. 9, no. 16,
+      pp. 14913­14927, Aug. 2022.                                               [44] E. Le Sueur and G. Heiser, "Dynamic voltage and frequency scaling: The
+                                                                                      laws of diminishing returns," in Proc. Int. Conf. Power Aware Comput.
+[22] Y. Xu, J. Jiang, D. He, and W. Zhang, "A NB-IoT random access scheme             Syst., 2010, pp. 1­8.
+      based on change point detection in NTNs," IEEE Open J. Commun. Soc.,
+      vol. 4, pp. 2176­2185, 2023.                                              [45] L. Jing, E. De Carvalho, P. Popovski, and À. O. Martínez, "Design
+                                                                                      and performance analysis of noncoherent detection systems with mas-
+[23] M. Ying, X. Chen, and X. Shao, "Exploiting tensor-based Bayesian                 sive receiver arrays," IEEE Trans. Signal Process., vol. 64, no. 19,
+      learning for massive grant-free random access in LEO satellite Internet         pp. 5000­5010, Oct. 2016.
+      of Things," IEEE Trans. Commun., vol. 71, no. 2, pp. 1141­1152,
+      Feb. 2023.                                                                [46] G. D. Surabhi and A. Chockalingam, "Low-complexity linear equal-
+                                                                                      ization for OTFS modulation," IEEE Commun. Lett., vol. 24, no. 2,
+[24] C. Guo, X. Chen, J. Yu, and Z. Xu, "Design of joint device and data              pp. 330­334, Feb. 2020.
+      detection for massive grant-free random access in LEO satellite Internet
+      of Things," IEEE Internet Things J., vol. 10, no. 8, pp. 7090­7099,                                      Boxiao Shen (Student Member, IEEE) received the
+      Apr. 2023.                                                                                               B.E. degree in communication engineering from
+                                                                                                               Chongqing University of Posts and Telecommuni-
+[25] Y. Zuo, M. Yue, M. Zhang, S. Li, S. Ni, and X. Yuan, "OFDM-based                                          cations (CQUPT), Chongqing, China, in 2018, and
+      massive connectivity for LEO satellite Internet of Things," IEEE Trans.                                  the M.E. degree in communication and information
+      Wireless Commun., vol. 22, no. 11, pp. 8244­8258, Nov. 2023.                                             systems from the University of Electronic Sci-
+                                                                                                               ence and Technology of China (UESTC), Chengdu,
+[26] Y. Li, S. Chen, and W. Meng, "Asynchronous grant-free massive access                                      China, in 2021. He is currently pursuing the Ph.D.
+      with Doppler frequency offset in NTN," IEEE Wireless Commun. Lett.,                                      degree with the Department of Electronic Engi-
+      vol. 13, no. 2, pp. 367­371, Feb. 2024.                                                                  neering, Shanghai Jiao Tong University (SJTU).
+                                                                                                               From 2019 to 2021, he was a Visiting Scholar at
+[27] S. Cluzel et al., "3GPP NB-IoT coverage extension using LEO satel-         the Future Network of Intelligence Institute (FNii), The Chinese University
+      lites," in Proc. IEEE 87th Veh. Technol. Conf. (VTC Spring), Porto,       of Hong Kong, Shenzhen, China. His research interests include satellite
+      Portugal, Jun. 2018, pp. 1­5.                                             communications, integrated sensing and communications, and the application
+                                                                                of artificial intelligence on wireless communications.
+[28] Y. Ma, G. Ma, N. Wang, Z. Zhong, J. Yuan, and B. Ai, "Enabling OTFS-
+      TSMA for smart railways mMTC over LEO satellite: A differential
+      Doppler shift perspective," IEEE Internet Things J., vol. 10, no. 6,
+      pp. 4799­4814, Mar. 2023.
+
+[29] B. Shen, Y. Wu, J. An, C. Xing, L. Zhao, and W. Zhang, "Random access
+      with massive MIMO-OTFS in LEO satellite communications," IEEE J.
+      Sel. Areas Commun., vol. 40, no. 10, pp. 2865­2881, Oct. 2022.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+SHEN et al.: LEO SATELLITE-ENABLED RANDOM ACCESS WITH LARGE DIFFERENTIAL DELAY AND DOPPLER SHIFT  2893
+
+                               Yongpeng Wu (Senior Member, IEEE) received the                                       Symeon Chatzinotas (Fellow, IEEE) received the
+                               B.S. degree in telecommunication engineering from                                    M.Eng. degree in telecommunications from the Aris-
+                               Wuhan University, Wuhan, China, in July 2007, and                                    totle University of Thessaloniki, Greece, in 2003,
+                               the Ph.D. degree in communication and signal pro-                                    and the M.Sc. and Ph.D. degrees in electronic engi-
+                               cessing with the National Mobile Communications                                      neering from the University of Surrey, U.K., in
+                               Research Laboratory, Southeast University, Nanjing,                                  2006 and 2009, respectively.
+                               China, in November 2013.
+                                                                                                                      He is currently a Full Professor/the Chief Scientist
+                                 He is currently a Professor with the Department                                    I and the Head of the Research Group SIGCOM,
+                               of Electronic Engineering, Shanghai Jiao Tong Uni-                                   Interdisciplinary Centre for Security, Reliability and
+                               versity, China. Previously, he was Senior Research                                   Trust, University of Luxembourg. In parallel, he is an
+                               Fellow with the Institute for Communications Engi-                                   Adjunct Professor with the Department of Electronic
+neering, Technical University of Munich, Germany, and the Humboldt                   Systems, Norwegian University of Science and Technology, an Eminent
+Research Fellow and the Senior Research Fellow with the Institute for Digital        Scholar at Kyung Hee University, South Korea, and a Collaborating Scholar
+Communications, University Erlangen-N¨urnberg, Germany. During the Ph.D.             at the Institute of Informatics and Telecommunications, National Center for
+studies, he conducted cooperative research at the Department of Electrical           Scientific Research "Demokritos." In the past, he has lectured as a Visiting
+Engineering, Missouri University of Science and Technology, USA. His                 Professor at the University of Parma, Italy, and contributed in numerous
+research interests include massive MIMO/MIMO systems, massive machine                Research and Development Projects for the Institute of Telematics and
+type communication, physical layer security, and signal processing for wireless      Informatics, Center of Research and Technology Hellas, and the Mobile Com-
+communications.                                                                      munications Research Group, Center of Communication Systems Research,
+  Dr. Wu was a recipient of the IEEE Student Travel Grants for IEEE                  University of Surrey. He has authored more than 800 technical papers in
+International Conference on Communications (ICC) in 2010, the Alexander              refereed international journals, conferences, and scientific books. He received
+von Humboldt Fellowship in 2014, the Travel Grants for IEEE Communication            numerous awards and recognitions, including the IEEE Fellowship and the
+Theory Workshop in 2016, the Excellent Doctoral Thesis Awards of China               IEEE Distinguished Contributions Award. He has served on the Editorial
+Communications Society in 2016, the Exemplary Editor Award of IEEE                   Board of IEEE TRANSACTIONS ON COMMUNICATIONS, IEEE OPEN JOUR-
+COMMUNICATION LETTERS in 2017, the Young Elite Scientist Sponsorship                 NAL OF VEHICULAR TECHNOLOGY, and the International Journal of Satellite
+Program by CAST in 2017, and the Excellent Youth Science Fund Project                Communications and Networking.
+of National Natural Science Foundation of China in 2021. He has been the
+Symposium Chair of various conferences, including Globecom, ICC, VTC,                                               Bj¨orn Ottersten (Fellow, IEEE) received the M.S.
+and PIMRC. He has been the Lead Guest Editor of IEEE JOURNAL OF                                                     degree in electrical engineering and applied physics
+SELECTED TOPICS IN SIGNAL PROCESSING, IEEE JOURNAL ON SELECTED                                                      from Link¨oping University, Link¨oping, Sweden,
+AREAS IN COMMUNICATIONS, and IEEE WIRELESS COMMUNICATIONS.                                                          in 1986, and the Ph.D. degree in electrical engi-
+He was an Editor of IEEE TRANSACTIONS ON COMMUNICATIONS and                                                         neering from Stanford University, Stanford, CA,
+IEEE COMMUNICATIONS LETTERS. He is currently an Editor of IEEE                                                      USA, in 1990. He has held research positions
+WIRELESS COMMUNICATIONS.                                                                                            with the Department of Electrical Engineering,
+                                                                                                                    Link¨oping University; the Information Systems Lab-
+                               Wenjun Zhang (Fellow, IEEE) received the B.S.,                                       oratory, Stanford University; Katholieke Universiteit
+                               M.S., and Ph.D. degrees in electronic engineer-                                      Leuven, Leuven, Belgium; and the University of
+                               ing from Shanghai Jiao Tong University, Shanghai,                                    Luxembourg, Luxembourg. From 1996 to 1997,
+                               China, in 1984, 1987, and 1989, respectively. After   he was the Director of research with ArrayComm, Inc., a start-up in San
+                               three years' working as an Engineer with Philips,     Jose, CA, USA, based on his patented technology. In 1991, he was appointed
+                               Nuremberg, Germany, he went back to his Alma          as a Professor of signal processing with the Royal Institute of Technology
+                               Mater in 1993, and became a Full Professor of elec-   (KTH), Stockholm, Sweden. He has been the Head of the Department for
+                               tronic engineering in 1995. He was one of the main    Signals, Sensors, and Systems, KTH, and the Dean of the School of Electrical
+                               contributors of Chinese DTTB Standard (DTMB)          Engineering, KTH. He is the Founding Director of the Interdisciplinary
+                               issued in 2006. He is the Chief Scientist of Chinese  Centre for Security, Reliability and Trust, University of Luxembourg. He is a
+                               Digital TV Engineering Research Centre (NERC-         fellow of EURASIP, AAIA, and the Royal Swedish Academy of Engineering
+DTV), an industry/government consortium in DTV technology research and               Sciences. He was a recipient of the IEEE Fourier Technical Field Award,
+standardization, and the Director of the Cooperative MediaNet Innovation             the IEEE Signal Processing Society Technical Achievement Award, the
+Center (CMIC), an excellence research cluster affirmed by Chinese Govern-            EURASIP Group Technical Achievement Award, and European Research
+ment. He holds 142 patents and published 110 papers in international journals        Council (ERC) advanced research grant twice. He has co-authored journal
+and conferences. His main research interests include video coding and wireless       papers that received the IEEE Signal Processing Society Best Paper Award
+transmission, multimedia semantic analysis, and broadcast/broadband network          in 1993, 2001, 2006, 2013, and 2019, and nine IEEE conference papers best
+convergence.                                                                         paper awards. He has been a board member of IEEE Signal Processing Society,
+                                                                                     Swedish Research Council and currently serves of the boards of EURASIP
+                                                                                     and Swedish Foundation for Strategic Research as well as on the ERC
+                                                                                     Scientific Council. He has served as the Editor in Chief of EURASIP Signal
+                                                                                     Processing, and acted on the Editorial Boards of IEEE TRANSACTIONS
+                                                                                     ON SIGNAL PROCESSING, IEEE SIGNAL PROCESSING MAGAZINE, IEEE
+                                                                                     OPEN JOURNAL FOR SIGNAL PROCESSING, EURASIP Journal on Advances
+                                                                                     in Signal Processing, and Foundations and Trends in Signal Processing.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:40:31 UTC from IEEE Xplore. Restrictions apply.
+

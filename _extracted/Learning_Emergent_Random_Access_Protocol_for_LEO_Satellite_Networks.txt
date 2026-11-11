@@ -1,0 +1,1083 @@
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023                                    257
+
+Learning Emergent Random Access Protocol for
+               LEO Satellite Networks
+
+Ju-Hyung Lee , Member, IEEE, Hyowoon Seo , Member, IEEE, Jihong Park , Senior Member, IEEE,
+                  Mehdi Bennis , Fellow, IEEE, and Young-Chai Ko , Senior Member, IEEE
+
+   Abstract-- A mega-constellation of low-altitude earth                      1,500 Starlink LEO SATs [1]­[3] covering 12 countries in
+orbit (LEO) satellites (SATs) are envisaged to provide a                      3 different continents [4]. Besides, federal communications
+global coverage SAT network in beyond fifth-generation (5G)                   commission (FCC) has recently authorized Amazon Project
+cellular systems. LEO SAT networks exhibit extremely long                     Kuiper to launch half of 3,236 LEO SATs by 2026 and
+link distances of many users under time-varying SAT network                   the rest by 2029 [5]. The ramification of this LEO SAT
+topology. This makes existing multiple access protocols, such as              mega-constellation is not only limited to advancing conven-
+random access channel (RACH) based cellular protocol designed                 tional SAT applications such as high-precision earth obser-
+for fixed terrestrial network topology, ill-suited. To overcome               vation [6] but also envisaged to open up a new type of
+this issue, in this paper, we propose a novel contention-based                wireless connectivity, i.e., non-terrestrial networks (NTNs) in
+random access solution for LEO SAT networks, dubbed emergent                  beyond the fifth-generation (5G) or 6G cellular systems [7].
+random access channel protocol (eRACH). In stark contrast to                  While each SAT plays a role as a mobile base station (BS),
+existing model-based and standardized protocols, eRACH is a                   a mega-constellation of LEO SATs has a great potential in
+model-free approach that emerges through interaction with the                 provisioning fast and reliable connectivity to ground users
+non-stationary network environment, using multi-agent deep                    anywhere in the globe, including ocean, rural areas, and
+reinforcement learning (MADRL). Furthermore, by exploiting                    disaster sites [8]­[10].
+known SAT orbiting patterns, eRACH does not require central
+coordination or additional communication across users, while                     Notwithstanding, each SAT BS has an extremely wide
+training convergence is stabilized through the regular orbiting               coverage (e.g., 160 - 1000 [km] inter-SAT BS distance [11]),
+patterns. Compared to RACH, we show from various simulations                  disallowing sophisticated central coordination among SAT
+that our proposed eRACH yields 54.6% higher average network                   BSs and users in real-time under limited communication
+throughput with around two times lower average access delay                   and computing resources. Furthermore, as opposed to fixed
+while achieving 0.989 Jain's fairness index.                                  terrestrial BSs, SAT BSs move, requiring location-specific
+                                                                              resource management. Unfortunately, existing model-based
+   Index Terms-- LEO satellite network, random access, emergent               and standardized protocols, such as carrier-sense multiple
+protocol learning, multi-agent deep reinforcement learning, 6G.               access (CSMA) based WiFi protocols and random access
+                                                                              channel (RACH) based cellular protocols, cannot flexibly
+                          I. INTRODUCTION                                     optimize their operations without incurring severe protocol
+                                                                              fragmentation, not to mention a significant effort in protocol
+W E ARE at the cusp of an unprecedented revolution                            standardization for a myriad of possible scenarios.
+         led by thousands of low earth orbit (LEO) satellites
+                                                                                 To overcome the aforementioned fundamental challenges
+(SATs) in space. SpaceX has already launched more than                        in LEO SAT networks, in this article, we develop a
+                                                                              novel model-free random access (RA) protocol that naturally
+  Manuscript received 11 November 2021; revised 3 April 2022;                 emerges from a given local SAT random access environment,
+accepted 9 July 2022. Date of publication 29 July 2022; date of current       dubbed emergent random access channel protocol (eRACH).
+version 9 January 2023. This work was supported by Institute of Infor-        In eRACH, the emergence of RA protocol is induced by deep
+mation & communications Technology Planning & Evaluation (IITP) grant         reinforcement learning (DRL) at the ground user agents by uti-
+funded by the Korea government (MSIT) (No. 2021-0-00260), Research            lizing locally observable information, not requiring inter-agent
+on LEO Inter-Satellite Links. An earlier version of this paper was pre-       communication or centralized training. Consequently, eRACH
+sented in part at the 2022 IEEE VTC Workshops. The associate editor           jointly takes into account SAT associations and RA collision
+coordinating the review of this article and approving it for publication was  avoidance in a given local environment, thereby achieving
+P. Li. (Corresponding author: Young-Chai Ko.)                                 lower RA latency and high downstream communication effi-
+                                                                              ciency after eRACH.
+  Ju-Hyung Lee is with the Ming Hsieh Department of Electrical and
+Computer Engineering, University of Southern California, Los Angeles,            The fundamentals of eRACH are laid by protocol learning
+CA 90007 USA, and also with the School of Electrical and Com-                 via multi-agent DRL (MADRL). Several recent works have
+puter Engineering, Korea University, Seoul 02841, South Korea (e-mail:        underpinned the effectiveness of protocol learning [12]­[14]
+juhyung.lee@usc.edu).                                                         in that the learned protocols can adapt to various environments
+                                                                              while achieving higher communication efficiency than those
+  Hyowoon Seo is with the Department of Electronics and Communications
+Engineering, Kwangwoon University, Seoul 01897, South Korea (e-mail:
+hyowoonseo@kw.ac.kr).
+
+  Jihong Park is with the School of Information Technology, Deakin Univer-
+sity, Geelong, VIC 3220, Australia (e-mail: jihong.park@deakin.edu.au).
+
+  Mehdi Bennis is with the Centre for Wireless Communications, University
+of Oulu, 90014 Oulu, Finland (e-mail: mehdi.bennis@oulu.fi).
+
+  Young-Chai Ko is with the School of Electrical and Computer Engineering,
+Korea University, Seoul 02841, South Korea (e-mail: koyc@korea.ac.kr).
+
+  Color versions of one or more figures in this article are available at
+https://doi.org/10.1109/TWC.2022.3192365.
+
+  Digital Object Identifier 10.1109/TWC.2022.3192365
+
+1536-1276 © 2022 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                    See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+258                                      IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+of model-based protocols. However, these benefits come at traditional stationary SAT and for the emerging non-stationary
+
+the cost of additional inter-agent communication for MADRL, SAT networks. In Sec. III, network model, system sce-
+
+which are non-negligible under non-stationary network topolo- nario, and performance matrices are presented. Then, the
+
+gies, questioning the feasibility of protocol learning for LEO emergent contention-based RA for the LEO SAT networks,
+
+SAT networks. In fact, MADRL agents in [12]­[14] learn called eRACH, is proposed, which is addressed by our pro-
+
+to communicate by exchanging local state information of posed multi-agent Actor-Critic based algorithm in Sec. IV.
+
+each agent using a few bits, where the information exchange In Sec. V, simulation results are provided, followed by con-
+
+between agents is often referred to as a cheap talk. Such cheap cluding remarks in Sec. VI.
+
+talks may no longer be cheap under a non-stationary topology Notation: Throughout this paper, we use the normal-face
+
+of an LEO SAT network, which may require a large amount          font to denote scalars, and boldface font to denote vectors.
+of local state information for RA and SAT BS associations.       We use RD×1 to represent the D-dimensional space of real-
+                                                                 valued vectors. We also use  · to denote the L2-norm, which
+   In this respect, our proposed eRACH is designed based         is a Euclidean norm, and use (·)H to represents conjugate
+on locally observable information. We extensively test which
+
+of the locally observable information candidates are essential transpose. xf (x) denotes the gradient vector of function
+on eRACH training. Surprisingly, it is shown that eRACH f (x), i.e., its components are the partial derivatives of f (x).
+
+does not even require cheap talks. Instead, eRACH exploits IN is the identity matrix of size N .
+1) the expected SAT location that is known a priori owing to
+
+the pre-determined SAT orbiting pattern and 2) the collision     II. RELATED WORKS AND BACKGROUNDS
+
+events that are inherently observable without additional costs.
+While training eRACH, we have validated that the expected A. Random Access for Satellite Networks
+
+SAT location contains sufficient information on the network In traditional SAT networks, most of the access pro-
+
+topology, as long as the variance between the expected and the tocols have been developed for geosynchronous equatorial
+
+actual SAT locations is less than 1 [km]. Furthermore, we have orbit (GEO) SATs, also known as geostationary SATs [15].
+
+realized that the collision event contains sufficient information Slotted ALOHA scheme is widely used for GEO SAT net-
+
+on how crowded each SAT BS is. Given 1) and 2), thanks work systems owing to its simple implementation. Various
+
+to the periodic orbiting pattern of LEO SAT, the problem of types of slotted ALOHA have been further proposed, taking
+
+MADRL frequently revisits the almost identical environment, into account the characteristics of GEO SAT, including large
+
+ensuring to discover an optimal protocol carrying out SAT BS propagation latency [16], [17]. However, these ALOHA-based
+
+association and RA decisions.                                    access protocols fail to support many user terminals due to
+
+We summarize our contributions in this paper as follows. a lack of collision control. Designing multiple access proto-
+
+· We propose a novel emergent RA protocol for a ground- cols for SAT networks, long round trip time (RTT) latency
+
+     to-LEO SAT communication network, dubbed eRACH. limits the adoption of conventional access techniques, such
+
+     To the best of our knowledge, this is the first of its as CSMA/CA. Such long RTT latency is induced by long
+
+     kind to show that a new protocol that collaborates one-way propagation delay in GEO SAT network (approxi-
+
+     between multi-agents can emerge by utilizing just locally mately 120 [ms]) and in LEO SAT network (approximately
+
+     observable information, especially suited for LEO SAT 1 - 5 [ms]). Particularly for GEO SAT networks, centralized
+
+     networks. This is done by developing an actor-critic- reservation schemes are employed which avoid failed access
+
+     based neural network architecture and a fully distributed attempts prior to the packet transmission to cope with such
+
+     MADRL framework without any inter-agent communica- long RTT latency [15]. However, for LEO SAT networks
+
+     tion (see Algorithm 1 in Sec. IV).                          which connect a myriad of scattered terrestrial user terminals,
+
+· To provide an upper-bound performance, we addition- the coordinated method requires a significant system overhead.
+
+     ally introduce a cheap-talk inter-agent communication In contrast to stationary GEO SAT networks, emerging LEO
+
+     into eRACH, and propose a variant of eRACH, termed SAT networks, wherein numerous LEO SATs orbit rapidly
+
+     eRACH-Coop (see Sec. V-A).                                  at a speed of around 7.6 [km/s] (see Fig. 1), are dynamic
+
+· Numerical results corroborate that while eRACH-Coop and require frequent and fast handovers [18], [19], calling
+
+     achieves the highest average network throughput with for another channel access considering not only long RTT
+
+     the lowest collision rate at the cost of the cheap talk latency but also the inherent dynamics of LEO SAT networks.
+     overhead, eRACH still achieves up to 6.02x and 54.6% In this regard, the contention-based random access channel
+     higher average network throughput with 10x and 2x (RACH), adopted for cellular networks (e.g., 5G NR, 4G
+
+     lower average RA latency than slotted ALOHA and LTE/LTE-A), is also considered for LEO SAT networks [20].
+
+     conventional cellular RACH, respectively (see Table II The contention-based RACH procedure is used to initialize and
+
+     in Sec. V).                                                 synchronize prior to allocating resources in downlink (DL) and
+
+· Furthermore, the distributed operations and the limited uplink (UL) channels. In the RACH, a sender randomly trans-
+
+     local information of eRACH inherently promote equal mits short packet preambles to the receiver and then waits for
+
+     RA opportunities for all users, yielding 23.6% higher a positive response from the receiver prior to transmitting the
+
+     Jain's fairness than eRACH-Coop (see Table II in complete message. Particularly, the RACH protocol is initiated
+
+     Sec. V).                                                    by transmission of a randomly chosen preamble through phys-
+
+The remainder of this article is organized as follows. ical RACH (PRACH) for the preamble transmission. The basic
+
+In Sec. II, we first summarize the RA protocols for the RACH is designed to follow the four-step message exchanging
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS                                                       259
+
+                                                                        Despite the novelty of [13], [14], the superior performance
+                                                                     of the learned protocol largely depends on the learning of
+                                                                     cheap-talk exchanged between network nodes, which incurs
+                                                                     additional communication and learning overhead. Moreover,
+                                                                     the proposed method assumes centralized training that requires
+                                                                     each network node to obtain full-observable information; it
+                                                                     is an obstacle to actual system application. Besides, in these
+                                                                     works, the protocol was optimized for only stationary net-
+                                                                     works. Thus, it is still questionable whether a protocol for
+                                                                     non-stationary networks can emerge without relying too much
+                                                                     on information exchange between agents.
+
+Fig. 1. An illustration of random access in LEO satellite networks.                    III. SYSTEM MODEL
+
+procedure, that is, 1) PRACH transmission, 2) random access          A. Network and Channel Models
+response (RAR), 3) radio resource control (RRC) connection
+request, and 4) an RRC connection setup (and resolution).               Consider a set K of orbital planes around the earth, sets Ik
+By the four-step procedure and utilizing Zadoff-Chu (ZC)             of LEO SATs orbiting on the orbital plane k for all k  K, and
+sequences, RACH is able to control collision events while
+attempting to access many users. Despite this, RACH is not           a set J of SAT user terminals (UTs) deployed on the ground
+ideally suited for LEO SAT networks as it does not takes into
+account the optimal association by which to choose among             inside an area A. The position of UT j  J is expressed as a
+several accessible SAT candidates [21], [22]. As such, existing
+access protocols have some limitations for non-stationary LEO        3-dimensional real vector on Cartesian coordinates denoted by
+SAT networks.
+                                                                     qj = (qjx, qjy, qjz)  R3, and similarly, the position and velocity
+   To design LEO SAT-oriented access protocol, we need to
+consider the following two conditions: 1) Collisions needs           of SAT i            kK Ik   at  time  t      0 is denoted by     qi(t)     =
+to be managed efficiently without centralized access control;        (qix(t), qiy(t),  qiz(t))   R3  and   vi(t)  = (vix(t), viy(t),  viz (t))  
+and 2) SAT associations and backoff mechanisms need to be
+jointly optimized to achieve low access delay and high spectral      R3, respectively, for all i  kK Ik. Suppose the number
+efficiency. The current standardized protocols and archetypical
+model-based algorithms face several challenges, mainly due to        of SATs on each orbital plane is equal to each other given as
+the non-stationarity of the LEO SAT network topology.
+                                                                     |Ik| = I for all k  K, and assume all SATs are moving in
+   Recently, not just enhancing the model-based access
+method [23], [24], but also a new model-free protocol has            uniform circular motion with the same orbital period T , while
+been studied in the context of emergent communication, using
+model-free DRL algorithms, which can be an alternative               the arc length between any two neighboring SATs on the same
+solution for the time-varying network topology.
+                                                                     orbital plane is equal to each other.
+B. Emergence of Protocol Through MADRL
+                                                                     Consider that time is discretized in slots of length  and
+   The emergent communication studies iterative communica-
+tion between intelligent agents (e.g., DRL agents), through          let qi[0] be the initial position of the SAT i  kK Ik at
+which their goal-oriented representations naturally emerge.          time t = 0. Then, by following the discrete-time state-space
+Pioneered by [12], [25], this topic of emergent communication
+has arisen firstly in the deep learning literature. In [12],         model [19], [26], the position of SAT i at time t = m can
+Foerster et al. studied how languages emerge and how to
+teach natural languages to artificial agents. Spurred by this        be expressed as
+trend of emergent communication, Hoydis et al. adopted the
+idea of emergent communication into cellular systems in [13],                                              m
+[14]. Here, MAC signaling is interpreted as a language spoken
+by the user equipment (UE) and the base station (BS) to              qi(m )  qi(0) +                             vi(m  ) + ni,        (1)
+coordinate while pursuing the goal of delivering traffic across
+a network. Therein, two distinct policies (i.e., a channel access                                          m =1
+policy and a signaling policy) are trained by using the off-the-
+shelf learning-to-communicate (L2C) techniques (e.g., DIAL           where ni is the additive random noise representing the
+and RIAL in [12]). This approach has shown the potential of          perturbation on the i-th satellite position and attitude deter-
+the emergent protocol design in their particular scenario.
+                                                                     mination error [27], whose entries are independent and iden-
+
+                                                                     tically distributed zero-mean Gaussian random variables with
+                                                                     E[niniH] = i2I3.
+
+                                                                        Communication channels between SATs and UTs follow
+
+                                                                     the characteristics of ground-to-space (or space-to-ground) RF
+                                                                     link [28]. The channel gain between satellite i  kK Ik and
+                                                                     UT j  J at time t is expressed as
+
+                                                                                       hi,j (t) = h~i,j (t) i,j (t),                  (2)
+
+                                                                     where i,j(t) and h~i,j(t) are the effects of large-scale (e.g.,
+                                                                     path loss and shadowing) and small-scale fading at time t,
+                                                                     respectively, and E[|h~i,j(t)|2] = 1 for all t  0.
+
+                                                                        The large-scale fading is modeled based on the tractable
+                                                                     line-of-sight (LoS) probability model [28], [29] with shadow-
+                                                                     ing and blockage effects. Note that in the LoS probability
+                                                                     model, the large-scale fading follows generalized Bernoulli
+                                                                     distribution of two different events; the channel is LoS or
+                                                                     non-LoS (NLoS) with a certain probability. The probability
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+260                                                                                   IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+of event that a channel between SAT i and UT j at time t
+being LoS is modeled as
+
+            Li,ojS(t)  =   1  +              1         -          ,                       (3)
+                                 L1exp[-L2 (i,j (t)          L1)]
+
+where L1 and L2 are the environmental parameters depending                                     Fig. 2. Random access signaling and data transmission of the considering
+on the propagation condition [30] and                                                          random access scenario. Random access signaling incorporates signaling
+                                                                                               overhead incurred by preamble transmission from UT to SATs and feedback
+                 i,j (t)  =   180 sin-1       qiz(t) - qjz                                (4)  vice versa.
+                                            ||qi(t) - qj||2
+                                                                                               orbital planes. The RA action of UT j  J at RA opportunity
+is the angle of SAT i and UT j referred to as an elevation                                     n is denoted by
+angle.
+
+   Meanwhile, depending on whether the channel is LoS or                                                    aj[n]  {BACKOFF, 1, . . . , K}.            (7)
+NLoS, different large-scale fading i,j(t) can be expressed as
+                                                                                               Note that aj[n] = BACKOFF means that the UT j does
+     i,j (t) =     o||qi(t) - qj||-2 , for LoS channel,                                   (5)  not access at the n-th opportunity and waits for the next
+                   o||qi(t) - qj||2-, for NLoS channel,                                        one. Moreover, those who attempt to access choose a pream-
+                                                                                               ble uniform-randomly over the predefined signature sequence
+where o is the average power gain at the reference distance                                    index set {1, 2, . . . , P }, so that
+do = 1 [m],  is the path loss exponent and  is the attenuation
+scaling factor in the NLoS link [29]. Note that h~ik,j has its                                                 pj[n]  {1, 2, . . . , P }.              (8)
+randomness from both random occurrence of LoS and NLoS
+                                                                                               Here, each preamble is associated with P resources that
+as well as the small-scale fading. Accordingly, the expected                                   the SATs can grant during the data transmission duration;
+                                                                                               contention may occur when multiple terminals select the same
+channel gain over both randomness is given by
+
+            E |hi,j (t)|2 = ~iL,ojS(t)o||qi(t) - qj ||2-,                                 (6) PRACH.
+                                                                                                    The RA signaling shown in Fig. 2 is done in two steps.
+where
+                                                                                                 First, each UT that decides to access sends a preamble to the
+
+                 ~Li,ojS(t) = Li,ojS(t) + (1 - iL,ojS(t)).                                     associated SAT. Secondly, the SAT sends small-sized feedback
+                                                                                               that informs whether there was a collision or not to the UT. UT
+
+                                                                                               that have chosen collided preambles fail to access, while those
+
+B. LEO SAT Random Access Scenario                                                              of UT that have chosen preambles without collision succeed
+
+    Consider an LEO satellite random access (RA) scenario, to access.
+
+where UTs attempt to access to LEO satellite networks for
+radio resource grant. To study the massive access scenario in C. Collision Rate, Access Delay, and Network Throughput
+
+LEO SAT networks, we suppose that UTs always have data to The performance of RA in LEO SAT network is evaluated
+
+transmit in their infinite length queue, and thus, they always with collision rate, access delay and average network through-
+
+have intentions to RA at every opportunity they have. Each put, as explained in the following.
+
+UT has information of the periodic position of SATs on each 1) Collision Rate: Denote the collision indicator of UT j 
+
+orbital plane and attempts to access only to the closest SAT J 's RA at opportunity n  {1, . . . , N } by cj[n], and define
+on each orbital plane. For the sake of convenience, we assume it as
+
+that the closest SAT on each orbital plane is the same for every                                        0,  (aj[n], pj[n]) = (aj [n], pj [n]) j  J \j
+                                                                                                        1,  otherwise,
+UT at the same time point. According to the network model,                                     cj[n] =                                                 (9)
+
+note that the time duration that one SAT becomes the closest
+
+among       all  SAT   on    each  orbital  plane  is  T  ,  where                 T  is  the  if aj[n] = BACKOFF, and otherwise we have cj[n] = 0. Then,
+                                                       I                                       the collision rate is defined as:
+orbiting period and I is the number of SATs on each orbital
+
+plane. Suppose that there are N RA opportunities during the                                                         1      N
+                                                                                                                  N |J |  n=1 jJ
+interval    T    and they are synchronized over all orbital planes                                          C  =                  cj [n].              (10)
+            I
+
+as shown in Fig. 2. The time duration of each RA opportunity
+
+is    T  ,  which  incorporates    RA    signaling  duration  s                    and  data      2) Access Delay: Define the access indicator of UT j  J 's
+     IN                                                                                        RA at opportunity n  {1, . . . , N } as
+struacnhsmthiasstiosn/du,radt/iondZ, i+.e..,Fosr+simd p=leITdNe,sfcorirpstoiomne,
+                                                                                   s and d
+                                                                                   we focus
+
+only on N RA opportunities in the rest of this section and                                     j[n] =       (1 - cj[n]), aj[n] = BACKOFF
+
+suppose the first opportunity starts at t = 0. Here, the time                                               0,            aj[n] = BACKOFF.             (11)
+
+duration of each n-th RA opportunity is discretized with  ,
+
+i.e., t = n, n  {1, 2, . . . , N }.                                                            Let Na be the number of successful accesses of all UTs out
+
+    At each RA opportunity, each UT chooses whether to of N access attempts, which is given as
+
+access or backoff, and then further decide the SAT to which                                                       1N
+it will access. Such set of actions is simply denoted by                                                    Na = |J |             j [n].               (12)
+{BACKOFF, 1, . . . , K} in which K := |K| is the number of
+                                                                                                                          n=1 jJ
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS                            261
+
+Then, the average access delay is given as:                       represents the orbital motion of the LEO SAT constellation and
+                                                                  the positioning error of the LEO SAT resulting from various
+D  =  (Na  - N )(ms     + md)        + ms.            (13)        physical forces and pointing, acquisition, and tracking (PAT)
+                 Na                                               error [27]. Besides, (9) is the binary constraint that represents
+                                                                  the collision in LEO SAT. Recall that the collision occurs for
+   3) Network Throughput: According to the defined channel        UT agents that attempt to access the same LEO SAT ik with
+model, the uplink (UL) throughput from UT j  J to SAT             the same preamble signature, at the same time slot.
+i  kK Ik can be expressed as
+                                                                     In a nutshell, eRACH considers the following steps:
+Ri,j(t) = B log2  1  +    |hi,j (t)|2        [bps],   (14)
+                            n2                                       1) Association decision for SAT-UT,
+                                                                     2) Backoff decision,
+where B represent the bandwidth, n2 is the noise variance,           3) RACH access (PRACH preamble p is chosen uniform-
+and  is the UL transmission power.
+                                                                         randomly), and
+   Note that UT can transmit data only when its access is            4) UL data transmission (only when accessed successfully),
+successful. Thus, when aj[n] = BACKOFF, the attainable
+throughput at UT j  J in the n-th RA opportunity can be           during which, eRACH determines 1) and 2), while the rest
+                                                                  are automatically determined according to the established
+expressed as                                                      protocol as described in Sec. III-B. As 3) and 4) follow the
+                                                                  standard operations, the problem of interest focuses on the
+                  n(s +d )                                        joint decision on 1) and 2). However, to optimize 1) and 2) for
+                                                                  (17), traditional convex optimization methods (e.g., SCA [31],
+Rj[n] = j[n]d                        Riaj [n],j (t),  (15)        BCD [32]) face several challenges mainly due to time-varying
+                                                                  LEO SAT networks.
+               t=(n-1)(s +d )+d
+                                                                     To this end, we utilize MADRL algorithm in the eRACH
+where ik  Ik denotes the most closest SAT from UT j among         protocol. While training the MADRL, we only use locally
+all SATs on the orbital plane k  K. Otherwise if aj[n] =          observable information of UT in the LEO SAT networks.
+BACKOFF, Rj[n] = 0. Consequently, the time-average net-           Further, considering the specificity of the LEO SAT networks,
+                                                                  we carefully pick out a piece of essential by extensively testing
+work throughput R within N RA opportunities can be given as       candidates among locally observable information to minimize
+                                                                  the complexity while retaining near-optimality. For applying
+      R= 1 N              Rj [n].                     (16)        the MADRL method, first and foremost, it is necessary to
+            N                                                     design Markov decision process (MDP) model, which includes
+                  n=1 jJ                                          a state, action, and reward function in an environment that
+                                                                  reflects our network scenario, which is discussed next.
+   In what follows, under the LEO SAT RA scenario and with
+the performance metrics including collision rate, access delay,
+and network throughput, we propose an emergent RA protocol
+for LEO SAT networks.
+
+IV. EMERGENT RANDOM ACCESS PROTOCOL FOR LEO
+                     SATELLITE NETWORKS
+
+   This section introduces the emergent contention-based RA B. MADRL Formulation for Emergent RA Protocol
+protocol for LEO SAT networks. Moreover, we explain step-
+
+by-step how the protocol is specifically designed.                In what follows, we first reformulate the problem (17) of
+
+                                                                  eRACH using an MDP model, and then describe how to solve
+
+A. Emergent RA Protocol for LEO SAT                               this problem via MADRL.
+
+   We propose a novel RA solution for LEO SAT networks,              1) MDP Modeling: To recast (17) as an MADRL prob-
+coined emergent random access channel protocol (eRACH).           lem, we model the SAT network scenario using an MDP,
+As illustrated in Fig. 1, the UT on the ground attempts           a discrete-time stochastic control process that mathematically
+to access an SAT by the contention-based RA and then              characterizes decision-making in a random environment. In the
+transmits a data frame only when it successfully accesses         MDP model, for a given state, a policy  refers to the
+to intended LEO SAT. To specifically discuss and evaluate         probability of choosing an action, and  is the optimal policy
+our proposed eRACH protocol, the following optimization           maximizing the long-term average reward, which is the goal
+problem is mathematically formulated. This problem aims to        of MADRL.
+maximize the throughput while minimizing the collision rate
+under the constraints related to the practical conditions of LEO        a) Environment: As illustrated in Fig. 3, the MADRL
+SAT networks:                                                     framework under study consists of multiple UTs interacting
+                                                                  with an environment that follows an MDP model. At each
+           N                                                      time t, each UT j is an agent observing a state sj[n]  S,
+                                                                  and takes an action aj [n]  A based on a state-action policy
+max            Rj[n] - cj[n], j  J ,                  (17)        . Given this action, the state of the agent j transitions from
+                                                                  sj[n] to sj[n + 1], and in return receives a reward rj[n] that
+aj [n] n=1                                                        reinforces the agent follows an optimal policy . How to
+
+s.t. (1), (9),
+
+where  denotes a normalization coefficient, which strikes define these states, actions, and rewards significantly affects
+
+a balance between throughput and collision rate, and N the performance, communication, and computing costs of
+
+represents one orbital cycle of SAT. Here, the constraint in (1) eRACH as we shall elaborate next.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+262  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+                                                                         Fig. 4. Comparison of cumulative rewards with different information included
+                                                                         in the state sj[n].
+
+Fig. 3. An illustration of the proposed eRACH training process based on
+multi-agent Actor-Critic method.
+
+      b) State: In the aforementioned MDP model, we consider
+the following state of UT j:
+
+  sj[n] = {n, qi1 [n], . . . , qiK [n], Rj[n], cj[n], aj[n-1]}, (18)     Fig. 5. Robustness to SAT BS positioning errors, where shaded regions
+                                                                         identifies the three different regimes: (a) same reward and convergence
+where qik [n]  RI×3, i  I, k  K denotes the position                     speed, (b) same reward, slower convergence, and (c) lower reward, slower
+of SAT i in the orbital plane k, Rj[n] is the throughput,                convergence. Specific reward values and convergence times are reported in
+cj[n] is a binary indicator function of an RA collision event,           Table IV.
+and aj[0] and sj[1] are initial values chosen randomly at
+the beginning of Algorithm 1. Here, each information in are              training of eRACH, which highlights eRACH does not even
+observable. While the RA signaling, the SATs send feedback               require cheap talks between agents.
+to UTs, such that the UT can obtain the throughput and
+collision information. Also, n and the aj[n - 1] are are                    While training eRACH, we validate that the expected
+inherently observable information. Besides, the LEO SAT's                SAT location contains sufficient information on the network
+periodic orbiting pattern can be given by the global navigation          topology, as long as the variance between the expected and
+satellite system (GNSS).                                                 actual SAT position is less than 1 [km] as shown in Fig. 5.
+                                                                         Moreover, it is confirmed that the collision event incorporates
+   Here, the previous action aj[n - 1] and current time slot             sufficient information on the local environment, e.g., how
+n are used as a fingerprint, adopting the fingerprint-based              crowded the network is, as will be elaborated in Sec V.
+method proposed in [33] to stabilize experience replay in                As the LEO SAT periodically orbits a pre-designed trajectory,
+the MADRL. Note that the non-stationarity of the multi-                  MADRL frequently revisits the same environment of SAT-UT
+agent environment is dealt with by the fingerprinting that               RA, which facilitates the discovery of emergency protocols
+disambiguates the age of training samples and stabilizes the             that perform SAT-UT connections and RA decisions without
+replay memory.                                                           communication overhead between agents.
+
+   The state of an agent should contain sufficient information                 c) Action: The action space A in our environment is
+for carrying out decision-making. Meanwhile such information             related to RA. Among SATs ik in orbital plane k, the agent
+should be minimal to reduce any additional data collection               UT j chooses one SAT to access by using the access action
+overhead from the environment or other agents and to pro-                aj[n] in (7). For the set of access action, A, we define an
+mote MADRL training convergence. To screen for important                 one-hot encoded action as follows
+
+information to be included in the state among locally observ-                                                                           K
+able information, we extensively test possible local informa-
+                                                                         aj [n] = {a0, a1, a2, · · · , aK}, s.t. a = 1, (19)
+
+tion candidates and their impacts on eRACH performance.                  =0
+
+In this regard, we provide an ablation study of Fig. 4 which where a for = 0 denotes the association with the -th orbital
+
+presents the contribution of each information to the overall plane, and a0 implies backoff. Note that it is assumed that
+system. Each information in sj[n] has a different importance. the UT attempts to access the nearest SAT among SATs Ik in
+
+As shown in this figure, eRACH mainly exploits the following orbital plane k, i.e., UT attempts to SATs in its field-of-view
+
+information: 1) the expected SAT locations that are known a (FoV).
+
+priori owing to the pre-determined LEO SAT orbiting pattern;             d) Reward: Our reward function is supposed to reinforce
+
+and 2) the collision that are inherently observable. Such two UTs to carry out optimal access actions that maximize the
+
+locally observable information significantly contributes to the network throughput while penalizing access collision. The
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS                                                                     263
+
+objective function (17) captures this goal, although it is not                   Hereafter, the index j identifies different actors for multi-
+suitable for the reward function. Indeed, if there is no collision,              agent scenarios, which can be omitted for a single agent case.
+(17) gives positive throughput without penalty, and otherwise                    Consequently, the Actor NN model parameters are updated as
+imposes only collision penalty with zero throughput. This
+incurs too significant and frequent reward variation, hindering                  dj  dj + j log (sj[n]|sj[n]; j)(R - V j (sj[n]; j)).
+the training convergence. To mitigate this issue, following [34],                                                                                       (24)
+[35], we normalize (17), and consider the reward function of
+UT j as follows                                                                  where H() is the entropy of the policy and e is the
+                                                                                 hyperparameter of controlling the relative contributions of the
+                 rj [n] = g(Rj[n] - cj[n]).                             (20)     entropy regularization term. The NN parameters are updated
+                                                                                 via gradient descent and backpropagation through time, using
+Note  that  the  normalization   function     is  given  by  g(Y  )  =  Y  -  ,  Advantage Actor-Critic as detailed by [37]. We summarize the
+                                                                                 eRACH training process for each UT agent j in Algorithm 1.
+where  and  are parameters for scale which shrinks the
+
+output value Y between -1 and 1 and for mean value, respec-
+
+tively. Here, the mean value corresponds with the network
+
+throughput of the RACH baseline in Sec. V.                                       Algorithm 1 eRACH Training Algorithm
+
+    It is worth noting that the state and reward of each UT                      Initialize step counter n  1
+
+agent are all locally observable information and thus the MDP                    Initialize episode counter E  1
+
+model for RA protocol can be trained and executed in a fully                     repeat
+
+distributed manner.                                                              Reset gradients: dj  0 and dj  0
+                                                                                 nstart = n
+    2) Actor-Critic MADRL: Following the standard RL set-                        Get state sj [n]
+
+tings, the aforementioned SAT-UT RA environment is con-                          repeat
+
+sidered in which many agents interact for a given number of                          Perform access action aj [n] according to policy
+                                                                                     (sj[n]|sj [n]; j )
+discrete time steps. At each time step n, the agent j receives                       Receive reward rj[n] and new state sj [n + 1]
+                                                                                     n  n+1
+a state sj[n] and selects an action aj[n] from some set of
+                                                                                 ´ until terminal sj[n];
+possible actions A according to its policy j , where j is                                0,        for terminal sj [n]
+a mapping from states sj[n] to actions sj[n]. In return, the                     R=
+                                                                                         V j (sj [n]; j), for non-terminal sj[n]
+agent receives the next state sj[n + 1] and receives a scalar
+
+reward rj[n]. The process continues until the agent reaches                      for i  {n - 1, . . . , nstart} do
+                                                                                     R  rj [n] + R
+a terminal state after which the process restarts. The return
+                                                                                 Accumulate gradients w.r.t. j :
+r~j[n] =    k=0    k  rj  [n  +  k]  is  the  total  accumulated        return
+                                                                                         
+from time step n with discount factor   (0, 1].                                  dj      + j  log  (aj[i]|sj [i];   j )(R  -  V  j  (sj [i];  j ))
+                                                                                 dj
+
+    For our multi-agent scenario, we employ an Actor-Critic                      +eH((aj[i]|sj [i]; j)/
+
+RL framework [36], which combines the benefits of both                               dAcjcumudlatje+gracd(iRen-tsVw.r.jt.(sjj[:i]; j))j V j (sj [i]; j)
+                                                                                 end
+policy gradient and value-based methods. The Actor-Critic
+
+framework comprises a pair of two neural networks (NNs):                             Perform update of j using dj and of j using dj
+                                                                                     E E+1
+an Actor NN seeks to take actions to obtain higher rewards                       until E > Emax;
+
+based on the policy gradient method; and its paired Critic
+
+NN aims to approximate value functions more accurately via
+
+the value-based method. In particular, each UT agent j has                                         V. NUMERICAL EVALUATIONS
+
+an Actor NN and a Critic NN and follows the synchronous                             This section validates the proposed emergent RA methods
+                                                                                 of eRACH for LEO SAT networks with respect to average
+advantage Actor-Critic operation [36], [37], in which the Critic                 throughout, collision rate, and delay.
+
+NN updates its model parameters j according to the policy                        A. Simulation Settings
+j given by the Actor NN. Meanwhile, the Actor NN updates
+its model parameters j according to the value functions                             Unless otherwise stated, UTs under study are located
+V j (sj[n]; j) approximated by the Critic NN. Specifically,                      in the ground uniformly at random within an area of
+the Critic NN aims to minimize the loss function                                 1000 × 1000 [m2], while two orbital planes K = 2 circulate
+                                                                                 over UTs at the altitude of 550 [km]. Each orbital lane consists
+                      LCj ritic(j ) = j[n]2,                            (21)     of 22 SATs with the orbital lane circumference of 43486 [km],
+                                                                                 resulting in an inter-SAT distance of 1977 [km]. Since the
+where sj[n] = rj[n + 1] + V j (sj[n + 1]; j) -                                   orbital lane circumference is much larger than the area of
+V j (sj[n]; j) is referred to as the advantage of an                             interest, each orbital lane is approximated as a line segment
+action [38]. The Critic NN model parameters are then updated                     at the altitude of 550 [km] [3], in which 22 SATs orbit
+                                                                                 with the orbital speed 7.59 [km/s], are separated with the
+as                                                                               inter-SAT distance 1977 [km], and perturbed with i. Here,
+                                                                                 the orbital period and speed are calculated using the relations
+dj  dj + c(R - V j (sj [n]; j))j V j (sj [n]; j()2,2)                            42(rE)3 = T 2GM and V 2rE = GM , respectively, where
+
+where c is the hyperparameter of Critic NN, which is related
+to the value estimate loss. Meanwhile, the Actor NN aims to
+minimize the loss function
+
+          LjActor(j) = -j[n] log (sj[n]|sj[n]; j).                      (23)
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+264                                             IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+rE is the radius of orbit in metres; T , the orbital period in
+
+seconds; V , the orbital speed in [m/s]; G, the gravitational
+constant, approximately 6.673 × 10-11 [m3/kg1/s2]; M , the
+
+mass of Earth, approximately 5.98 × 1024 [kg].
+
+   Unless otherwise stated, the simulation environments and
+
+parameters are as follows: each RA opportunity is opened in
+
+every  = s + d = 100 [ms]; the RA signaling duration
+and data transmission duration are set as s = 10 [ms] and
+d = 90 [ms], respectively; data transmission is conducted for
+d time only if the attempt of the access succeeds; the objective
+
+function in our MDP model corresponds to the un-discounted
+
+accumulated rewards with  = 1 over an episode up to N =
+
+T    = 2604, which corresponds to   the  RA  opportunity; and
+I
+J = 5 five UT agents are considered wherein two orbital
+
+planes K = 2 circulate over UTs with resources P = 2, given
+
+the MADRL environment mentioned above.                            Fig. 6. The convergence of eRACH for each UT agent (J = 5).
+
+   Throughout this section, we consider two benchmark RA                 UT agents. Note that each agent has its own Actor-Critic
+                                                                         network and decide the optimal access action for itself
+schemes and our proposed eRACH with or without coopera-                  via trained policy. Here, cheap talk is necessary during
+                                                                         both the training and exploitation phases.
+tion among agents as listed below.                                   4) eRACH is our proposed RA scheme with using Actor-
+                                                                         Critic framework, wherein each UT agent optimizes its
+   1) Slotted ALOHA is a traditional contention-based chan-              access action in the environment in a fully distributed
+       nel access protocol. UTs agree upon the discrete slot             manner. Each UT has partial state observability. The
+       boundaries. At the beginning of the access slot, i.e., s,         agents interact through the environment but do not
+       each UT uniform-randomly chooses the SAT to access.               communicate with other agents. The learning can be cast
+       For each SAT, if more than one UT attempts to access              as a partially observable MDP (POMDP).
+       at the beginning of a slot, collisions occur.
+                                                                  It is worth noting that in eRACH-Coop, each UT utilizes
+   2) RACH is another conventional contention-based chan-         information from other UTs (see (25) and (26)) unlike the
+       nel access protocol used in NR and LTE. RACH               other baselines. Accordingly, eRACH-Coop can achieve better
+       uniform-randomly selects a SAT to access and addi-         performance by using additional information. Here, one can
+       tionally chooses the preamble pj[n] at the beginning       regard its performance as an upper-bound result.
+       of the access slot, i.e., s. When a collision occurs,
+       UT waits for a uniformly distributed backoff time and         The following conditions are considered comparing the
+       again repeats the process from the beginning. Here, the    baselines: 1) all UTs have enough data to be transmitted; 2) if
+       backoff range follows a discrete uniform distribution as   collisions occur at a time slot for an SAT, all attempted UTs
+       b  DU (1, W  ), where W is the backoff window              fail to access at the time slot to the SAT; and 3) the RA
+       size assumed fixed at 10. As in Release 16 of NR [40],     signaling is done in a two step procedure (see Sec. III-B).
+       we consider that RA signaling is done in two steps, i.e.,
+       2-step RACH.                                               B. Model Architecture and Training
+
+   3) eRACH-Coop is another variant of our proposed RA               For all Actor and Critic NNs, we identically consider
+       scheme, in which each UT can select an optimal             a 4-layer fully-connected multi-layer perceptron (MLP) NN
+       action while cooperatively communicating with other        architecture. Each MLP has 2 hidden layers, each of which has
+       UT agents. Unlike eRACH where each distributed UT          the 128 × 128 dimension with the rectified linear unit (ReLU)
+       agent uses partially observable information, for eRACH-    activation functions. Both Actor and Critic NNs are trained
+       Coop, cooperative UT agents use the full observability     using RMSprop with the learning rate 0.0001, batch size
+       through cheap-talk with other agents.                      2604, 2604 iterations per episode, training episodes 1000, and
+       In particular, the cooperative UT agents use the network   2604 iterations per update. The simulations are implemented
+       throughput as a corresponding reward by the previous       using TensorFlow Version 2.3. Main parameters on simulation
+       access action of each agent, and the collision rate which  settings are summarized in Table I.
+       involves all the collision information of each UT as
+       state. The reward and state for the cooperative agent         Figs. 6 and 7 plot the convergence of eRACH. Firstly,
+       j is given by                                              in Fig. 6, it is provided the training convergence behavior
+                                                                  of Actor and Critic NNs for the five UT agents, in which
+     rjC[n] = g( jJ R[n]),                      (25)              the solid curves denote cumulative reward for each UT
+                                                                  agent. The results show that each Actor and Critic NN for
+     sjC[n] = {sj[n], jJ Rj[n], jJ cj[n]}. (26)                   J = 5 converge within about 500 episodes. Besides, Fig. 7
+                                                                  compares eRACH and eRACH-Coop with conventional RACH
+     Here, this reward structure is used in the centralized
+     training and decentralized execution (CTDE). During the
+     centralized training, the centralized reward can be used
+     to observe the throughput and the collision event of other
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS  265
+
+Fig. 7. Network throughput for different RA schemes.             Next, in terms of RA collision, the average collision rate
+                                         TABLE I              of eRACH is 1.41x lower than slotted ALOHA, yet is
+                                                              4.94x higher than RACH. As opposed to other model-based
+                              SIMULATION PARAMETERS           protocols, eRACH is willing to risk collisions for yielding
+                                                              higher throughput and lower access latency in a given network
+                                                              and channel environment. This fact suggests that eRACH
+                                                              optimizes access flexibly according to the importance of
+                                                              throughput-collision in the LEO SAT network. Such flexibil-
+                                                              ity is advantageous to best-effort services such as enhanced
+                                                              mobile broadband (eMBB) applications, but becomes a down-
+                                                              side for mission-critical applications such as ultra-reliable and
+                                                              low-latency communication (URLLC). For the latter case,
+                                                              investigating the emergent protocols that strictly abide by a
+                                                              collision constraint are interesting and deferred to future work.
+
+                                                                 Lastly, comparing the performance between eRACH and
+                                                              eRACH-Coop in Table II, we conclude that eRACH is a fairer
+                                                              protocol that achieves 1.24x higher Jain's fairness than that of
+                                                              eRACH-Coop. The rationale is because the fully distributed
+                                                              operations of eRACH inherently hide the information that
+                                                              may promote selfish actions. Meanwhile, there is also a
+                                                              room to improve the fairness of eRACH-Coop by applying a
+                                                              fairness-aware reward function during training and/or learning
+                                                              fairness-aware representations for cheap talk communication,
+                                                              which could be an interesting direction for future research.
+
+and slotted ALOHA over the number of training episodes,       D. SAT Association and RA Operations
+in which shaded areas correspond to the maximum deviations
+during 5 simulation runs. Note that our cumulative reward        As shown in Table III, eRACH efficiently utilizes resources
+corresponds to the average network throughput, such that we   by optimizing the association of SAT-UT while considering the
+can validate the convergence of the proposed Actor-Critic     non-stationary LEO SAT network. Besides, as shown in Fig. 8,
+MADRL-based method in Algorithm 1 with this figure.           eRACH backs off flexibly thereby avoiding the collision under
+                                                              consideration of the given local environment, whereas when
+   As identified in this figure, eRACH and eRACH-Coop         collision occurs, RACH backs off more than necessary due to
+converge and outperform the conventional RACH scheme          a randomly selected backoff window.
+only within around 200 training episodes. It suggests that
+the observed data during only one day is enough to train the     In particular, eRACH-Coop in Fig. 8c shows that a certain
+eRACH UT agent.                                               UT agent continuously backs off. Here, since the cooperative
+                                                              UT agents consider the network throughput rather than the
+C. RA Performance Analysis                                    throughput of itself in the reward function, the sacrifice by
+                                                              this certain agent is reasonable. In contrast, for eRACH in
+   Fig. 7 and Table II compare eRACH with other baselines,    Fig. 8b, each agent takes turns and decides to backoff. The
+in terms of network throughput, collision rate, and access    distributed UT agents also learn how to sacrifice for the entire
+delay. The results validate that eRACH achieves higher aver-  network even without exchanging information between agents.
+age network throughput with lower average access delay than   It suggests that the distributed eRACH protocol is able to
+the baselines. In particular, compared to RACH, eRACH and     emerge from a given local environment during the training
+eRACH-Coop achieve 31.18 % and 54.61 % higher average         process.
+network throughput, which is equivalent to 5.08x and 6.02x
+higher average network throughput of slotted ALOHA, respec-      We, however, are aware of a few limitations of eRACH
+tively. Moreover, the results show that eRACH achieves 1.49x  and eRACH-Coop, which are marked by a dotted purple line
+and 7.31x lower average access latency compared to RACH       in Figs. 8b and 8c. In eRACH and eRACH-Coop, there are
+and slotted ALOHA, respectively.                              unnecessary backoff decisions that seem to be throughput-wise
+                                                              inefficient. It underlines that 1) DRL-based method occasion-
+                                                              ally decides a poor action, especially when dealing with time-
+                                                              series data, like our environment, and 2) the fairness issue can
+                                                              arise in Cooperative, during the certain agent sacrifice for the
+                                                              sake of the entire network.
+
+                                                                 Despite the few limitations, we observe from such compari-
+                                                              son results that eRACH can emerge from a local environment
+                                                              with the following remarkable features: 1) eRACH flexibly
+                                                              avoids unnecessary backoff with an understanding of the given
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+266  IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+Fig. 8. RA snapshots under eRACH, eRACH-Coop, and RACH for 10 consecutive time slots, where {SAT1, SAT2} identifies SAT BS associations, and
+the red color of each box indicates the collision rate (the darker, the higher). For the first 4 consecutive time slots in (a) and (b), the SAT BS association
+snapshots are illustrated in Fig. III (K = 2, I = 22, J = 5, P = 2).
+
+                                                                                           TABLE II
+         THROUGHPUT, COLLISION RATE, AND ACCESS LATENCY OF ERACH, COMPARED WITH ERACH-COOP, RACH, AND SLOTTED ALOHA
+
+                                                                                          TABLE III
+TOP-VIEW SNAPSHOTS OF SAT BS ASSOCIATIONS AND PREAMBLE RESOURCE UTILIZATION (RESOURCE UTIL.) UNDER ERACH AND RACH FOR
+
+    4 CONSECUTIVE TIME SLOTS, WHERE ASSOCIATED AND BACKED-OFF UTS ARE DRAWN WITH OR WITHOUT SOLID LINES, RESPECTIVELY
+                           (K = 2, I = 22, J = 5, P = 2). FOR THE SAME PERIOD, THE RA SNAPSHOTS ARE ILLUSTRATED IN FIG. 8
+
+network conditions, and 2) eRACH access the optimal LEO         precisely. In this regard, to examine whether easy-to-acquire
+SAT considering the periodicity of the LEO SAT constellation.   prior information can be used instead of actual observed
+                                                                information, we present Fig. 9 and Table IV.
+E. Ablation Study of Key Hyper Parameters
+   1) Impact of SAT Location Precision: While training             Specifically, various physical forces perturb SAT, e.g., Earth
+                                                                oblateness, solar and lunar gravitational effects, and gravita-
+eRACH, the information of SAT location affects dominantly       tional resonance effects [27]. In actual SAT communication
+the reward and convergence, as explained in Fig. 4 of           systems, various methods are used to track the location of
+Sec. IV-B. However, it is challenging to find the SAT location  perturbed SAT, such as PAT mechanism [41] and global
+                                                                navigation satellite system (GNSS). Even with the tracking
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS  267
+
+                                        TABLE IV
+
+IMPACT OF SAT LOCATION PRECISION ON NORMALIZED REWARD AND
+      THE NUMBER EPISODES UNTIL CONVERGENCE. THIS TABLE IS
+                             ALSO VISUALIZED IN FIG. 5
+
+                                                                        Fig. 10. Impact of UT distribution on access action policy of eRACH. Here,
+                                                                        dj,j represents the average distance between UTs in [m].
+
+Fig. 9. Impact of SAT location precision on average network throughput
+(2 = 100).
+
+and navigation systems, some orbital positioning error of LEO           Fig. 11. Impact of the collision aversion factor  on access action policy of
+SAT is inevitable. In this regard, we demonstrate the validity          eRACH.
+of the LEO SAT periodic location information, which is prior
+knowledge, in eRACH in Fig. 9 and Table IV.                             UTs is relatively close compared to the distance between SAT
+                                                                        and UTs.
+   As shown in Fig. 9, eRACH trained with the periodic
+LEO SAT position information converges within around                       For the sparse case of Fig. 10a, eRACH does not backoff
+600 episodes. It closely approaches the one trained with actual         during the entire time slot. In contrast, in the dense case
+LEO SAT position information. However, the periodic SAT                 of Fig. 10b, eRACH backoff up to about 30 % of the total
+position is not always effective for training eRACH, as shown           time slot and focuses on backoff action rather than optimal
+in Table IV. The number of episodes for convergence, which              association. Notably, eRACH in both cases achieves similar
+corresponds to the training time, increases as the positional           performance even though they chose different aspects of
+error goes. Besides, the overall reward decreases as the                access action. This fact further corroborates that eRACH,
+positional error goes. Nevertheless, information of periodic            which flexibly decides the access action, can emerge from a
+SAT position can still be used effectively for eRACH until              given local network scenario without communication between
+the divergence point at around 2 = 104. These results                   agents.
+suggest that eRACH can be sufficiently trained with only prior
+information, and this emphasize that eRACH can be trained                  3) Impact of the Collision Aversion Factor : In the LEO
+by not only online RL but also offline RL [42].                         SAT network, which suffers from a long one-way propagation
+
+   2) Impact of UT Distribution: The performance of the
+access protocol depends not only on the available resources
+and the number of UTs which attempt to access but also on the
+deployment scenario, e.g., sparse and dense networks. In this
+regard, we present Fig. 10 to demonstrate the impact of UT
+distribution on eRACH.
+
+   In the sparse networks, each UT experiences different chan-
+nel conditions for SAT; thus, each UT has a particular advan-
+tageous SAT to connect to. Here, eRACH mainly focuses on
+designing the optimal association with SAT rather than backoff
+action. Whilst, in the dense networks, the channel difference
+between each UT is not noticeable since the distance between
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+268                           IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 22, NO. 1, JANUARY 2023
+
+                                                                                            REFERENCES
+
+                                                                   [1] N. Saeed, A. Elzanaty, H. Almorad, H. Dahrouj, T. Y. Al-Naffouri,
+
+                                                                   and M.-S. Alouini, "CubeSat communications: Recent advances and
+
+                                                                   future challenges," IEEE Commun. Surveys Tuts., vol. 22, no. 3,
+
+                                                                   pp. 1839­1862, 3rd Quart., 2020.
+
+                                                                   [2] M. Handley, "Delay is not an option: Low latency routing in space," in
+
+                                                                   Proc. 17th ACM Workshop Hot Topics Netw., Nov. 2018, pp. 85­91.
+
+                                                                   [3] Starlink. Accessed: Sep. 2021. [Online]. Available: https://www.
+
+                                                                   starlink.com/
+
+                                                                   [4] N. Pachler, I. del Portillo, E. F. Crawley, and B. G. Cameron,
+
+                                                                   "An updated comparison of four low earth orbit satellite constellation
+
+                                                                   systems to provide global broadband," in Proc. IEEE Int. Conf. Commun.
+
+                                                                   Workshops (ICC Workshops), Jun. 2021, pp. 1­7.
+
+                                                                   [5] Federal Communication Commission (FCC). (Jul. 2020).
+
+Fig. 12. Comparison of eRACH over the collision aversion factor .  FCC Authorizes Kuiper Satellite Constellation. [Online].
+
+                                         TABLE V                   Available:         https://www.fcc.gov/document/fcc-authorizes-kuiper-
+    IMPACT OF  ON AVERAGE NETWORK THROUGHPUT AND AVERAGE
+                                                                   satelliteconstellation
+       COLLISION RATE OF ERACH (K = 2, I = 22, J = 5, P = 2)
+                                                                   [6] O. Kodheli, "Satellite communications in the new space era: A survey
+
+                                                                   and future challenges," IEEE Commun. Surveys Tuts., vol. 23, no. 1,
+
+                                                                   pp. 70­109, 4th Quart., 2021.
+
+                                                                   [7] M. Giordani and M. Zorzi, "Non-terrestrial networks in the 6G era:
+
+                                                                   Challenges and opportunities," IEEE Netw., vol. 35, no. 2, pp. 244­251,
+
+                                                                   Mar./Apr. 2021.
+
+                                                                   [8] M. Mozaffari, W. Saad, M. Bennis, Y. Nam, and M. Debbah, "A tutorial
+
+                                                                   on UAVs for wireless networks: Applications, challenges, and open
+
+                                                                   problems," IEEE Commun. Surveys Tuts., vol. 21, no. 3, pp. 2334­2360,
+
+delay, the contention resolution is challenging, as discussed in   3rd Quart., 2019.
+Sec. II. Hence, consideration for collision can be another sig-
+nificant issue. Regarding this, we further present the numerical   [9] Y. Zeng, R. Zhang, and T. J. Lim, "Wireless communications with
+results of the collision aversion case.
+                                                                   unmanned aerial vehicles: Opportunities and challenges," IEEE Com-
+   To clearly see the collision aversion case, we additionally
+present Rate Max, which only considers the throughput while        mun. Mag., vol. 54, no. 5, pp. 36­42, May 2016.
+training of eRACH by setting  = 0. Here, the reward function
+in (20) is rewritten for Rate Max case as follows.                 [10] E. Yaacoub and M.-S. Alouini, "A key 6G challenge and
+
+                                                                   opportunity--Connecting the base of the pyramid: A survey on rural
+
+                                                                   connectivity," Proc. IEEE, vol. 108, no. 4, pp. 533­582, Apr. 2020.
+
+                                                                   [11] N. Saeed, H. Almorad, H. Dahrouj, T. Y. Al-Naffouri, J. S. Shamma,
+
+                                                                   and M.-S. Alouini, "Point-to-point communication in integrated satellite-
+
+                                                                   aerial 6G networks: State-of-the-art and future challenges," IEEE Open
+
+                                                                   J. Commun. Soc., vol. 2, pp. 1505­1525, 2021.
+
+     rj[n] = g(Rj[n]), j, n.  (27)                                 [12] J. Foerster, Y. Assael, N. de Freitas, and S. Whiteson, "Learning to
+
+                                                                   communicate with deep multi-agent reinforcement learning," in Proc.
+
+   As shown in Table V and Figs. 11 and 12, the eRACH agent        Int. Conf. Neural Inf. Process. (NIPS), 2016, pp. 2145­2153.
+learns mainly maximizing throughput or mainly minimizing
+collision, depending on the collision aversion factor . Those      [13] A. Valcarce and J. Hoydis, "Towards joint learning of optimal MAC
+results verify that eRACH method can be flexibly applied to
+various applications.                                              signaling and wireless channel access," 2020, arXiv:2007.09948.
+
+                                                                   [14] M. P. Mota, A. Valcarce, J.-M. Gorce, and J. Hoydis, "The emergence
+
+                                                                   of wireless MAC protocols with multi-agent reinforcement learning,"
+
+                                                                   2021, arXiv:2108.07144.
+
+                                                                   [15] R. De Gaudenzi and O. del Rio Herrero, "Advances in random access
+
+                                                                   protocols for satellite networks," in Proc. Int. Workshop Satell. Space
+
+                                                                   Commun., Sep. 2009, pp. 331­336.
+
+                          VI. CONCLUSION                           [16] G. Choudhury and S. Rappaport, "Diversity ALOHA--A random
+
+   In this article, we proposed a novel RA for LEO SAT             access scheme for satellite communications," IEEE Trans. Commun.,
+networks. To cope with the challenges incurred by its wide
+coverage and time-varying network topology, we proposed a          vol. COM-31, no. 3, pp. 450­457, Mar. 1983.
+model-free RA protocol that emerges from the given LEO
+SAT network environment via MADRL, dubbed eRACH.                   [17] E. Casini, R. De Gaudenzi, and O. del Rio Herrero, "Contention reso-
+By simulations, we validated that eRACH better reflects the
+time-varying network topology than model-based ALOHA and           lution diversity slotted ALOHA (CRDSA): An enhanced random access
+RACH baselines, thereby achieving higher average network
+throughput with lower collision rates. Furthermore, eRACH is       scheme for satellite access packet networks," IEEE Trans. Wireless
+robust to SAT BS positioning errors, enabling its operations
+with known periodic patterns of SAT BS locations. Lastly,          Commun., vol. 6, no. 4, pp. 1408­1419, Apr. 2007.
+eRACH can flexibly adjust and optimize throughput-collision
+objectives in various user population scenarios. Extending         [18] Study on New Radio (NR) to Support Nonterrestrial Networks, 3GPP,
+the current throughput and collision objectives, considering
+a fairness-aware objective could be an interesting topic for       document TR38.811 v15.4.0, Oct. 2020.
+future research. It is also worth investigating highly scalable
+MADRL frameworks to address complicated scenarios with             [19] J.-H. Lee, J. Park, M. Bennis, and Y.-C. Ko, "Integrating LEO satellite
+more orbital lanes and users at different altitudes, such as high
+altitude platform systems (HAPS) and other GEO and MEO             and UAV relaying via reinforcement learning for non-terrestrial net-
+SATs.
+                                                                   works," in Proc. IEEE Global Commun. Conf. (GLOBECOM), Taipei,
+
+                                                                   Taiwan, Dec. 2020, pp. 1­6.
+
+                                                                   [20] NR; Medium Access Control (MAC) Protocol Specification, 3GPP,
+
+                                                                   document TS 38.321 v16.5.0, Jul. 2021.
+
+                                                                   [21] NR; Physical Channels and Modulation, 3GPP,
+
+                                                                   document TS 38.211 v15.9.0, Jun. 2021.
+
+                                                                   [22] NR; Physical Layer Procedures for Control, 3GPP,
+
+                                                                   document TS 38.213 v15.14.0, Jun. 2021.
+
+                                                                   [23] Z. Zhang et al., "User activity detection and channel estimation for
+
+                                                                   grant-free random access in LEO satellite-enabled Internet of Things,"
+
+                                                                   IEEE Internet Things J., vol. 7, no. 9, pp. 8811­8825, Sep. 2020.
+
+                                                                   [24] H. Seo, J.-P. Hong, and W. Choi, "Low latency random access for
+
+                                                                   sporadic MTC devices in Internet of Things," IEEE Internet Things J.,
+
+                                                                   vol. 6, no. 3, pp. 5108­5118, Jun. 2019.
+
+                                                                   [25] J. Foerster, G. Farquhar, T. Afouras, N. Nardelli, and S. Whiteson,
+
+                                                                   "Counterfactual multi-agent policy gradients," in Proc. AAAI Conf. Artif.
+
+                                                                   Intell., 2018, pp. 1­9.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+LEE et al.: LEARNING EMERGENT RANDOM ACCESS PROTOCOL FOR LEO SATELLITE NETWORKS        269
+
+[26] Y. Zeng and R. Zhang, "Energy-efficient UAV communication with                                                   Hyowoon Seo (Member, IEEE) received the B.S.,
+      trajectory optimization," IEEE Trans. Wireless Commun., vol. 16, no. 6,                                         M.S., and Ph.D. degrees from the School of Elec-
+      pp. 3747­3760, Jun. 2017.                                                                                       trical Engineering (EE), Korea Advanced Insti-
+                                                                                                                      tute of Science and Technology (KAIST), Daejeon,
+[27] H. Yoon, "Pointing system performance analysis for optical inter-satellite                                       South Korea, in 2012, 2014, and 2020, respec-
+      communication on CubeSats," Ph.D. dissertation, Massachusetts Inst.                                             tively. He is currently an Assistant Professor with
+      Technol. (MIT), Cambridge, MA, USA, Tech. Rep., 2017, pp. 1­175.                                                the Department of Electronics and Communica-
+                                                                                                                      tions Engineering, Kwangwoon University, Seoul,
+[28] A. Al-Hourani and I. Guvenc, "On modeling satellite-to-ground path-                                              South Korea. He was a Post-Doctoral Research Fel-
+      loss in urban environments," IEEE Commun. Lett., vol. 25, no. 3,                                                low at Seoul National University, Seoul, and the
+      pp. 696­700, Mar. 2021.                                                                                         University of Oulu, Oulu, Finland. His research
+                                                                                       interests include wireless communication, the Internet of Things, physical
+[29] C. Zhan and Y. Zeng, "Energy-efficient data uploading for cellular-               layer security and privacy, vehicle-to-everything (V2X) communications, and
+      connected UAV systems," IEEE Trans. Wireless Commun., vol. 19,                   deep and distributed learning. He received Gold Prize in the 24th Samsung
+      no. 11, pp. 7279­7292, Nov. 2020.                                                Humantech Paper Award in 2018.
+
+[30] Y. Zeng, J. Xu, and R. Zhang, "Energy minimization for wireless                                                  Jihong Park (Senior Member, IEEE) received the
+      communication with rotary-wing UAV," IEEE Trans. Wireless Commun.,                                              B.S. and Ph.D. degrees from Yonsei University,
+      vol. 18, no. 4, pp. 2329­2345, Apr. 2019.                                                                       South Korea. He is currently a Lecturer (an Assistant
+                                                                                                                      Professor) with the School of Information Tech-
+[31] J.-H. Lee, K.-H. Park, Y.-C. Ko, and M.-S. Alouini, "Throughput                                                  nology, Deakin University, Australia. His research
+      maximization of mixed FSO/RF UAV-aided mobile relaying with a                                                   interests include distributed machine learning, con-
+      buffer," IEEE Trans. Wireless Commun., vol. 20, no. 1, pp. 683­694,                                             trol, resource management, their applications to 6G
+      Jan. 2021.                                                                                                      semantic, AI-native, and non-terrestrial communica-
+                                                                                                                      tions. He served as a Conference/a Workshop Pro-
+[32] J.-H. Lee, K.-H. Park, M.-S. Alouini, and Y.-C. Ko, "Optimal resource                                            gram Committee Member for IEEE GLOBECOM,
+      allocation and placement for terrestrial and aerial base stations in mixed                                      ICC, and INFOCOM, and for NeurIPS, ICML, and
+      RF/FSO backhaul networks," in Proc. IEEE Veh. Technol. Conf. (VTC),              IJCAI. He is a member of ACM. He received the IEEE GLOBECOM Student
+      May 2020, pp. 1­5.                                                               Travel Grant and the IEEE Seoul Section Student Paper Contest Bronze Prize
+                                                                                       in 2014, the 6th IDIS-ETNEWS Paper Award, and the FL-IJCAI Best Student
+[33] J. Foerster et al., "Stabilising experience replay for deep multi-agent           Paper Award in 2022. Currently, he is an Associate Editor of Data Science
+      reinforcement learning," in Proc. 34th Int. Conf. Mach. Learn., vol. 70.         for Communications (Frontiers) and Signal Processing for Communications.
+      Sydney, NSW, Australia, Aug. 2017, pp. 1146­1155.
+                                                                                                                      Mehdi Bennis (Fellow, IEEE) is a tenured Full
+[34] V. Mnih et al., "Human-level control through deep reinforcement learn-                                           Professor at the Centre for Wireless Commu-
+      ing," Nature, vol. 518, pp. 529­533, 2015.                                                                      nications, University of Oulu, Finland, and the
+                                                                                                                      Head of the Intelligent Connectivity and Net-
+[35] H. van Hasselt, A. Guez, M. Hessel, V. Mnih, and D. Silver, "Learning                                            works/Systems Group (ICON). He has published
+      values across many orders of magnitude," in Proc. Adv. Neural Inf.                                              more than 200 research papers in international con-
+      Process. Syst., 2016, pp. 4294­4302.                                                                            ferences, journals, and book chapters. His main
+                                                                                                                      research interests are in radio resource management,
+[36] V. R. Konda and J. N. Tsitsiklis, "Actor-critic algorithms," in Proc. Int.                                       game theory, and distributed AI in 5G/6G networks.
+      Conf. Neural Inf. Process. (NIPS), 1999, pp. 1008­1014.                                                         He was a recipient of several prestigious awards,
+                                                                                                                      including the 2015 Fred W. Ellersick Prize from
+[37] V. Mnih et al., "Asynchronous methods for deep reinforcement learning,"           the IEEE Communications Society, the 2016 Best Tutorial Prize from the
+      in Proc. 33rd Int. Conf. Mach. Learn., vol. 48. New York, NY, USA,               IEEE Communications Society, the 2017 EURASIP Best Paper Award of
+      Jun. 2016, pp. 1928­1937.                                                        the Journal of Wireless Communications and Networks, the all-University of
+                                                                                       Oulu Award for research, the 2019 IEEE ComSoc Radio Communications
+[38] Z. Wang et al., "Sample efficient actor-critic with experience replay,"           Committee Early Achievement Award, and the 2020 Clarviate Highly Cited
+      2016, arXiv:1611.01224.                                                          Researcher by the Web of Science. He is an Editor of IEEE TRANSACTIONS
+                                                                                       ON COMMUNICATIONS and a Specialty Chief Editor of Data Science for
+[39] J. Mo and J. Walrand, "Fair end-to-end window-based congestion                    Communications (Frontiers) and Journal of Communications and Networks.
+      control," IEEE/ACM Trans. Netw., vol. 8, no. 5, pp. 556­567, Oct. 2000.
+
+[40] Release 16 Description; Summary of REL-16 Work Items, 3GPP,
+      document TR 21.916 v0.5.0, Sep. 2021.
+
+[41] M. Scheinfeild, N. S. Kopeika, and R. Melamed, "Acquisition system
+      for microsatellites laser communication in space," Proc. SPIE, vol. 3932,
+      pp. 166­175, May 2000.
+
+[42] J. Schrittwieser, T. Hubert, A. Mandhane, M. Barekatain, I. Antonoglou,
+      and D. Silver, "Online and offline reinforcement learning by planning
+      with a learned model," 2021, arXiv:2104.06294.
+
+                               Ju-Hyung Lee (Member, IEEE) received the B.S.                                          Young-Chai Ko (Senior Member, IEEE) received
+                               and Ph.D. degrees from the School of Electronic                                        the B.Sc. degree in electrical and telecommunica-
+                               Engineering, Korea University, Seoul, South Korea,                                     tion engineering from Hanyang University, Seoul,
+                               in 2016 and September 2021, respectively. He is cur-                                   South Korea, and the M.S.E.E. and Ph.D. degrees
+                               rently a Visiting Post-Doctoral Researcher in electri-                                 in electrical engineering from the University of
+                               cal and computer engineering with the University of                                    Minnesota, Minneapolis, MN, in 1999 and 2001,
+                               Southern California (USC), Los Angeles, CA, USA,                                       respectively. He was with Novatel Wireless as a
+                               and a Research Professor in electrical engineering                                     Research Scientist from January 2001 to March
+                               with Korea University. His research focuses include                                    2001. In March 2001, he joined the Texas Instru-
+                               optimization and algorithm design for non-terrestrial                                  ments Inc., Wireless Center, San Diego, CA, as a
+                               networks (NTN), machine learning (ML) for wire-                                        Senior Engineer. He is currently with the School of
+less communications, free space optical communications (FSO), and signal               Electrical Engineering, Korea University, as a Professor. His current research
+processing techniques. He has received awards, including best paper awards             interests include the design and evaluations of multi-user cellular systems,
+in IEEE ICTC 2021, Travel Grant in IEEE GLOBECOM 2020, Bronze Prize                    MODEM architecture, mm-wave, and Tera Hz wireless systems.
+in IEEE Seoul Section Student Paper Contest 2020, and Graduate Research.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:35 UTC from IEEE Xplore. Restrictions apply.
+

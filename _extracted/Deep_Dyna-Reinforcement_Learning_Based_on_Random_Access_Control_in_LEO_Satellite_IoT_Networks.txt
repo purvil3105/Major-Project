@@ -1,0 +1,875 @@
+14818                                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+       Deep Dyna-Reinforcement Learning Based on
+               Random Access Control in LEO
+                     Satellite IoT Networks
+
+          Xiangnan Liu, Haijun Zhang , Senior Member, IEEE, Keping Long , Senior Member, IEEE,
+               Arumugam Nallanathan , Fellow, IEEE, and Victor C. M. Leung , Life Fellow, IEEE
+
+   Abstract--Random access schemes in satellite Internet-of-                      I. INTRODUCTION
+Things (IoT) networks are being considered a key technology of
+new-type machine-to-machine (M2M) communications. However,                        W ITH the exponential growth of machine-
+the complicated situations and long-distance transmission can                     type-communication            devices  (MTCDs),
+make the current random access schemes not suitable for the
+satellite IoT networks. The random access problem in the satel-                   machine-to-machine (M2M) communication has been
+lite IoT networks is studied in this article. A novel random
+access scheme for machine-type-communication devices (MTCDs)                      widely utilized in various fields in the era of the Internet of
+is proposed, to maximize the efficiency of random access for
+contention-based and contention-free random access. Under the                     Things (IoT) [1]. Traditional terrestrial networks involving
+set of random access opportunities (RAOs) and limited delay,
+the random access control model is designed via maximizing                        cellular networks and WiFi networks have encountered
+efficiency of random access. The model-free deep reinforcement
+learning (DRL) algorithm is proposed to tackle the problem                        challenges in capacity and data rate. Economic growth driven
+based on the random access model. Subsequently, the deep Dyna-
+Q learning algorithm is introduced to deal with the proposed                      by M2M communication will rely on technological break-
+random access control model. In this proposed scheme, the
+random access model-free DRL algorithm is developed using sim-                    throughs in existing communication systems to effectively
+ulated experience. The proposed algorithms' performances are
+discussed, and simulation results show the desirable performance                  relay large volumes of M2M traffic. If this is the case, the
+of the proposed DRL methods on different system parameters.
+                                                                                  low earth orbit (LEO) satellite constellation system will
+   Index Terms--Deep Dyna-Q learning, efficiency of random
+access, machine-type-communication devices (MTCDs), random                        serve as an indispensable slice for future mobile networks.
+access opportunities (RAOs), satellite Internet-of-Things (IoT)
+networks.                                                                         The industry employs it for its shorter orbit altitude, lower
+
+   Manuscript received 1 June 2021; accepted 10 September 2021. Date of           transmission latency, and smaller path loss [2]. It forms
+publication 15 September 2021; date of current version 8 August 2022.
+This work was supported in part by the National Key Research and                  a cellular service cell on the surface of the earth with a
+Development Program of China under Grant 2020YFB1806103; in part by
+the National Natural Science Foundation of China under Grant 61822104             synthesis of LEO satellite constellation, the ground gateway,
+and Grant 61771044; in part by the Fundamental Research Funds for the
+Central Universities under Grant FRF-TP-19-002C1 and Grant RC1631; and            the network control center, and user units. Covered by at
+in part by the Beijing Top Discipline for Artificial Intelligent Science and
+Engineering, University of Science and Technology Beijing. (Corresponding         least one LEO satellite, the MTCDs in the service area
+author: Haijun Zhang.)
+                                                                                  enable time-unlimited access to the system. In recent years,
+   Xiangnan Liu, Haijun Zhang, and Keping Long are with the Beijing
+Engineering and Technology Research Center for Convergence Networks and           3GPP has launched a research project on nonterrestrial
+Ubiquitous Services, Institute of Artificial Intelligence, University of Science
+and Technology Beijing, Beijing 100083, China (e-mail: xiangnan.liu@              networks, aiming to deploy satellite systems as standalone
+xs.ustb.edu.cn; haijunzhang@ieee.org; longkeping@ustb.edu.cn).
+                                                                                  solutions to integrating with terrestrial cellular networks in
+   Arumugam Nallanathan is with the School of Electronic Engineering and
+Computer Science, Queen Mary University of London, London E1 4NS, U.K.            MTC scenarios. Substantial projects by the European Space
+(e-mail: a.nallanathan@qmul.ac.uk).
+                                                                                  Agency have been in progress on enhancement of M2M and
+   Victor C. M. Leung is with the College of Computer Science and Software
+Engineering, Shenzhen University, Shenzhen 518060, China, and also with the       IoT technologies in satellite networks. Researchers, satellite
+Department of Electrical and Computer Engineering, The University of British
+Columbia, Vancouver, BC V6T 1Z4, Canada (e-mail: vleung@ieee.org).                operators, and Internet corporations have been contributing
+
+   Digital Object Identifier 10.1109/JIOT.2021.3112907                            on the incorporation of the existing IoT developed protocols
+
+                                                                                  into satellite networks [3].
+
+                                                                                  It is recommended that the random access technology to
+
+                                                                                  substantial low-power devices in the broadcast region be
+
+                                                                                  adopted. Realizing the signal transmission in the IoT networks
+
+                                                                                  via LEO satellites constellation. Random access technology
+
+                                                                                  is to allocate system resources, which plays a vital role
+
+                                                                                  in improving system resource utilization, reducing terminal
+
+                                                                                  usage, and saving terminal power consumption. Under the
+
+                                                                                  pretext of the existing protocol, the access class barring
+
+                                                                                  (ACB) framework is a typical random access protocol frame-
+
+                                                                                  work in the MTC scenario [4]. In the ACB mechanism,
+
+                                                                                  when the terminal load exceeds the carried traffic, some
+
+                                                                                  terminals' access requests can be limited, and the physical
+
+                                                                                  random access channels' (PRACHs) load can be reduced.
+
+                                                                                  Likewise, the collision of the preamble sequences can be
+
+                                  2327-4662 c 2021 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                                       See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: DEEP DYNA-REINFORCEMENT LEARNING BASED ON RANDOM ACCESS CONTROL  14819
+
+reduced accordingly. Underpinned by the ACB mechanism,            has also been proposed to be applied to congestion control
+a set of control parameters for a new type of terminal (or        in the satellite IoT networks [17]. The employment of DRL
+business) is configured while the levels of random access are     assists to attain better performance under the - greedy algo-
+not extended. The enhanced access barring (EAB) mechanism         rithm. However, the modeling of random access in satellite
+has been put on the agenda [5]. As an innovative concept          networks, especially the LEO satellite constellation system,
+states, the random access opportunity (RAO) represents the        is little-researched. Lin et al. [18] proposed a joint beam-
+preamble sequences sent in the same random access time slot       forming and power distribution algorithm for nonorthogonal
+and frequency band [6]. RAO is the product of a sum total of      multiple access in the air­space­ground-integrated networks.
+preamble sequences and the available PRACHs. In terms of          This iterative multiplication algorithm improves computational
+performance evaluation of random access, it has a wide range      efficiency in contrast to the original one. With the regard to the
+of applications in the current wireless communication system.     case of minimizing the control channel flow in the LEO satel-
+                                                                  lite communication system, Usaha and Barria [19] proposed a
+   Due to a joint result of the long distance, increasing trans-  mechanism of low-power resource allocation. Huang et al. [20]
+mission rate, and frequent mobility management, devices           focused on collecting data from geographically distributed IoT
+have to simultaneously access the network to preempt radio        via LEO satellites. The method ensures queue stability and
+resources. On the one hand, the preamble sequences are lim-       maximizes the total amount of uploaded data while minimiz-
+ited, resulting in a lower access success rate and higher         ing energy consumption. It suggests that a genetic algorithm
+network congestion. On the other hand, PRACHs could be            for joint power and bandwidth allocation in a multibeam
+overburden with too many MTCDs to be reconnected [7].             satellite system exhibits greater flexibility in changing circum-
+Slotted ALOHA is applied to satellite communications, and         stances [21]. Premised on the current LTE system, the random
+this access method produces higher throughput [8]. In slotted     access scheme in LEO satellite networks therefore is worthy
+ALOHA, the time axis is divided into several slots. MTCDs         of further study.
+can send packets in the scheduled slots. When congestion
+happens, the MTCDs will resend packages through the ACK              DRL is important in the field of machine learning, since it
+scheme. Bacco et al. [9] introduced the idea of TCP into          can effectively solve the high computing requirements brought
+the satellite random access link to solve congestion control.     by the vast state space and bolster the algorithm's capac-
+del Rio Herrero and De Gaudenzi [10] analyzed the superiority     ity of learning in unknown environments [22]. At present,
+of the random access protocol in the satellite network, starting  DRL has been commonly used in wireless communication
+with the two technical perspectives of TDMA and CDMA. As          network resource planning and other fields. Supported by
+for real-time transmission, random access can boost the rate      the Markov decision process, incorporated with the function
+than before under the scheme of demand assignment multiple        approximation of deep neural networks (DNNs), a strat-
+access. The CRDSA utilizing contention resolution can reduce      egy is yielded and thereby executes resource optimization.
+the probability of contention and increase the probability of     Reinforcement learning has obtained widespread application
+successful access. Reference [11]. Additionally, CRSDA helps      in dynamic multichannel access. In dynamic multichannel
+restore the packets in congestion by the means of succes-         access, reinforcement learning has a wide range of appli-
+sive interference cancelation, enhancing the total system's       cations. Wang et al. [23] used a partially observed Markov
+throughput to avoid preventable loss of packets. On the basis     process to solve the multichannel access problem in wireless
+of CRDSA, Riccardo et al. studied an asynchronous con-            networks with the help of DQN. On this basis, a distributed
+tention resolution diversity ALOHA, which merely defines          multiuser reinforcement learning using DQN was considered
+the practice and frame boundaries locally on the terminal.        on the issue of multispectrum access [24]. Subsequently,
+Each terminal is completely asynchronous [12]. Sim and            Zhong et al. [25] used Actor­Critic's idea to design an
+Cho [13] designed several ACB factors to increase the proba-      algorithm to deal with the dynamic multichannel access
+bility of successful access and decrease the access time delay.   problem and compared it with the previous DQN method.
+Prashant K et al. proposed a novel analytical model for the       In [26], DRL was used for multiple access in heteroge-
+EAB mechanism to obtain its performance indicators. In addi-      neous wireless networks, which can achieve near-optimal
+tion, they constructed a corresponding energy consumption         performance. In terms of power allocation, Nasir and Guo [27]
+model to satisfy IoT PRACH requests [14].                         proposed a power allocation scheme based on model free
+                                                                  DRL for a distributed execution dynamic system. Based
+A. Motivations and Contributions                                  on previous research, Meng et al. [28] considered cross-
+                                                                  cell channel state information requests and proposed a
+   In recent years, modeling and analyzing satellite IoT          dynamic kilometer allocation method for multiagent DRL.
+networks has been a hot topic in academic research.               The immediate-training concept of DRL is more suitable
+Bacco et al. [15] explored the impact of M2M commu-               for various situations in LEO satellite network random
+nication traffic under the condition of resource-constrained      access.
+random access satellite links. By using CRSDA, a closed-
+loop link congestion control was designed. The throughput            There is limited research on the random access model of the
+estimation model facilitating satellite random access can accu-   LEO satellite IoT networks and the practical solution tool of
+rately adapt to the satellite scenario's simulation [16]. As      DRL. Therefore, the proposal of utilizing the DRL method with
+a promising technology, deep reinforcement learning (DRL)         innovative algorithms is feasible, especially in addressing the
+                                                                  problem of random access in the LEO satellite IoT networks.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+14820                                                              IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+   The present study is a preliminary attempt to explore the       Fig. 1. LEO satellite IoT networks.
+random access mechanism in the LEO constellation system
+satellite environment. It embraces the Markov decision pro-        compose of a discrete set A = {0.5, 1, 2, 3, 5, 10}. So, the allo-
+cess to characterize LEO satellites' current RAO deployment
+in several time slots, on a variety of machine types. It seeks     cated RAOs are {27, 54, 108, 176, 270, 540}. The maximum of
+to optimize access efficiency of RAO and EAB mechanisms.
+The DQN method in DRL is combined with the designed                allocated RAOs amax is 540.
+mechanism to maximize efficiency of random access and it              First, the coverage time of LEO satellite j should be con-
+is compared with existing algorithms.
+                                                                   sidered [29]. The coverage time Tj between satellite j and
+   1) Grounded on Markov's decision process, a novel random        MTCDs is
+       access control mechanism for satellite IoT networks is
+       initiated with an objective of model construction with the  Tj  =          2   arccos            cos max   .        (1)
+       tool of state transition probability. The amount of access                 j                     cos  (t)
+       devices subject to LEO satellites is characterized by the
+       elevation angle and motion trajectory at the moment.        j = js - ej is LEO satellite j's angular velocity. js is
+                                                                   the angular velocity in geocentric inertial coordinate system
+   2) The framework of Dyna-DRL is the pivot of the
+       proposed LEO satellite IoT networks' random access.         satellite j, e is the angular velocity of the earth's autorotation,
+       Through Dyna-Q learning, RAOs are allocated to deliver      and j is the orbital inclination angle.  (t) is the geocentric
+       the maximum efficiency of random access. The DNN is         angle between MTCDs and subsatellite point of satellite at
+       implemented a Q function for strategic planning.
+                                                                   time t. max is the maximal geocentric angle.
+   3) Two random access mechanisms are considered: a) the             MTCDs are randomly distributed on the ground, assuming
+       Dyna mechanism and b) a relatively low-complexity
+       model-free mechanism. In comparison, the proposed           that the subsatellite points' distance follows a uniform dis-
+       deep Dyna-Q learning in random access control of
+       higher efficiency.                                          tribution. Therefore, when the LEO satellite j covers ground
+
+   4) The proposed system identifies the performance of            MTCDs,  (t) satisfies U(0, max) uniform distribution. So,
+       contention-based and contention-free random access           (t) can be derived from
+       mechanisms on two different traffic models, respec-
+       tively. The proposed algorithm demonstrates a stable        f (t)( (t)) =      1 max, 0   (t) < max                 (2)
+       performance when serving both synchronous traffic and
+       asynchronous traffic.                                                          0,                others.
+
+B. Organization                                                       Given that the LEO satellite moves at a low orbit altitude
+
+   The remainder of this article is developed as follows.          and high speed, a quantity of MTCDs on the ground will
+Section II presents the LEO satellite IoT network random
+access system model and the problem formulation of the             realize random access over a specific coverage area of its
+proposed random access system model via the Markov deci-           characteristic time, and the maximum elevation angle jmax
+sion process. Section III reveals a deep Dyna reinforcement        between the LEO satellite j and MTCDs it serves in a specific
+learning method to attain the efficiency of random access at its
+best in the LEO satellite IoT networks. Section IV highlights      period is
+and compares the proposed algorithm with the method with
+relatively low computational complexity, and the performance       jmax = arctan                cos j - re re + hj   .     (3)
+of the proposed algorithm is verified by simulations. Finally,                                           sin j
+Section V concludes this article.
+                                                                   j is the latitude at projection of LEO satellite j on the surface
+     II. SYSTEM MODEL AND PROBLEM FORMULATION                      of the earth. re is the radius of the earth, which is set as
+                                                                   6300 km. hj  [200 km, 2000 km] is the orbital altitude of
+A. System Model                                                    LEO satellite j.
+
+   As shown in Fig. 1, the LEO satellite IoT random access         Then, the inclination j of LEO satellite j coverage is
+networks constitute of J LEO satellites, and j refers to
+the jth LEO. Each LEO satellite will serve the MTCDs in            j =            j,                    j  jmax            (4)
+its broadcast coverage and receive random access requests
+from massive MTCDs. Additionally, The PRACH uses slot-                            2jmax - j, j > jmax.
+ted ALOHA as the current available access method in LEO
+satellite networks. The number of RAOs available is the prod-      The smaller the inclination angle j, the longer the direct dis-
+uct of preamble sequences and PRACHs idle. The maximum             tance. Similarly, the more coverage time it can last, the longer
+preamble sequences available in each LEO is 54, and PARCHs
+                                                                   it takes to achieve access.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: DEEP DYNA-REINFORCEMENT LEARNING BASED ON RANDOM ACCESS CONTROL                                                                                                    14821
+
+B. Problem Formulation                                                                Meanwhile, the next state N(t+1) will change, and idle RAOs
+                                                                                                                                                                               p(idt)le
+   The Markov decision process underpins reinforcement                                can   be obtained    in  the  current frame t. The proportion                                      of
+learning. A typical Markov decision process [S, A, Pa, Ra] is                         idle  RAOs a(idt)le  in  the  previous a(t) will be obtained
+composed of state S, action A, transition probability Pa, and
+reward Ra. The designed random access scheme is mainly                                                         pi(dt)le =     1  -   1                    C(t)                 (12)
+based on the Markov decision process.                                                                                               a(t)
+                                                                                                                                                             .
+   The state space is determined by the number of MTCDs
+requesting access to the LEO satellite constellation system                              The     proportion  p(idt)le of idle RAOs                        can    also be       calculated
+                                                                                      by the     number of   contending MTCDs                             C(t)   and the       number of
+
+                         S = [N1, N2, . . . , NJ].                               (5)  RAOs in the current state a(t)
+
+Nj is the number of users currently requesting access to                                                       pi(dt)le    =  a(t) - C(t)                                      (13)
+LEO satellite j, determined by the type of traffic and satellite                                                                  a(t) .
+coverage time Tj.
+                                                                                      By calculating (12), the number of contending MTCDs C(t)
+   Contention-based random access and the EAB scheme [30]
+                                                                                      in the tth state can be estimated as
+are effective approaches for this kind of random access
+services. When N > amax, the available RAOs are insufficient,                                              C(t) =             log p(idt)le                a(t) .               (14)
+whereupon the EAB scheme implements scheduling                                                                      log       a(t) - 1
+
+                                C = pEAB · N                                     (6)  The final calculation result of random access MTCDs is as
+
+where C is the number of contending MTCDs, which is                                   follows:
+
+faced with congestion in the contention-based random access                                                         N (t+1)         C(t)
+                                                                                                                                    p(EtA) B .
+control.                                                                                                                      =                                                (15)
+
+    The efficiency of random access reff is defined
+
+                                       1               1 C-1                             Contrary to the above case, when N(t)  amax occurs, the
+                      reff = C · a           1-                                  (7)
+                                                  a                                   probability of the EAB mechanism pEAB needs to be calcu-
+
+where a indicates the incidence of utilizing RAOs.                                    lated, and the calculation of pEAB can be run by reff. Therefore,
+                                                                                      it is necessary to process C(t) = N(t+1) · p(EtA) B to get the result
+Furthermore, it suggests the quantity of MTCDs connected                              of MTCDs participating in the contention, and the situation is
+                                                                                      the same as N(t)  amax.
+successfully in a given resource as well as that of contending
+                                                                                         The values of RAOs available are set as actions of the
+MTCDs C, namely, the probability of access to the certain
+
+MTCDs on the fulfilling of the existing RAOs. If there are now                        Markov decision process in the proposed system. It is note-
+
+a RAOs and C contending MTCDs, the problem of random                                  worthy that this action is discrete
+
+access
+
+                                             1     1 - 1 C-1                                               A = [a1, a2, a3, a4, a5, a6].                                       (16)
+                                             a          a
+                  max reff = C ·                                                      The reward is to filter out the low-efficiency random access
+
+                  s.t. a  A                                                           reff  for  the  current  action and        state
+                                                                                                                    
+                             E[D]  Dreq                                          (8)                                  1,            rrrr((eett++ffff11))     rrrr((eett))ffff
+                                                                                                                                                          >
+where E[D] is the time tolerance on average whenever devices                                          R(at+1)  =           0,                             =                    (17)
+access randomly to RAOs. Dreq is the maximum of time tol-                                                                  -1,
+erance for access requests we defined in the context of the                                                                         rr(et+ff1) < rr(et)ff.
+article. E[D] can be calculated by the following formula [31]:
+                                                                                         Regarding transition probability Pa, a mathematical model
+                                                                                      built on previous studies observes the following rules.1 The
+             r=0
+E[D]      =       Tj  ·  (r  +  1)  ·  paccess  ·  (1  -  paccess)r  =    Tj .        mathematical model follows the Poisson process [32] in the
+                                                                        paccess
+                                                                                      contention-based random access mechanism:
+
+                                                                                 (9)                           PaNN        = (T)ae- .                                          (18)
+                                                                                                                                   a!
+Among them, Tj is the time frame, and paccess means that
+the current MTCDs successfully implements random access in                            Accordingly, the contention-free random access mechanism
+competition. When the EAB scheme executes, the successful                             can be explained as [32]
+access probability paccess is
+                                                                                                               PaNN  =        60t2(T -                    t)3 .                (19)
+                         paccess = pEAB · psucc                             (10)                                                    T6
+
+where psucc is the probability of MTCDs successfully con-                                To facilitate understanding, a glossary of the mathematics
+necting with other contending MTCDs. psucc can be calculated                          notation involved in the formulation is shown in Table I.
+
+as                                                                                       1For simplicity of subscript in the formula, N stands for the current state,
+                                                                                      and it stands for N(t) in some formula's subscript. N stands for the next
+        psucc = a ·          1  1- 1         C-1          1- 1       C-1    (11)      state, and it also stands for N(t + 1) in some formula's subscript. Action and
+                             a            a                   a                       reward are consistent with the situation of N.
+                                                  =                      .
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+14822                                                              IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+                       TABLE I                                     p(EtA+B1) =  arg maxpEABM(t+1) re(tf+f 1),    M(t+1) = 
+       EXPLANATION OF ABBREVIATIONS                                             amax N(t+1),                     M(t+1) = 
+
+                                                                   a(t+1) = amax.                                             (24)
+
+                                                                      The synchronous and highly related MTCDs initiate random
+                                                                   access in a centralized manner periodically. There emerges
+
+C. Random Access Scheme                                            a short-lived upsurge in the communication traffic, tightly
+                                                                   followed by a sharp decline. The contention-free mode pro-
+   Random access can be divided into two types: 1) contention-     vides low-latency services for high-priority users in situations,
+based random access control and 2) contention-free random          such as downlink data arrival, handover, or positioning. The
+access control. Two types of random access schemes are clas-       contention-free random access control is adopted herein to
+sified according to the set M2M traffic characteristics and the
+coverage time of the LEO satellites. In the contention-based       process the synchronous traffic. That is, to say, it is an
+random access procedure, random access preamble sequences          energy-saving option in long propagation delays.
+are maximally available, while the others can be used in the
+contention-free random access procedure.                              3GPP proposes to approximate a burst M2M service with
+                                                                   the assistance of a Beta distribution and that enormous MTCDs
+   The M2M traffic is classified by its traffic characteristics,   simultaneously initiate random access requests at a certain
+namely, asynchronous traffic and synchronous traffic in pro-       moment. According to the 3GPP TR37.868 [32], the probabil-
+cession. To be specific, asynchronous traffic represents M2M       ity density of the reference model for communication traffic
+conventional traffic, and synchronous traffic denotes M2M
+burst traffic. For averting unnecessary signaling overhead,        that simulates M2M terminals is
+asynchronous traffic is assigned to correspond to contention-
+based random access. Spontaneously, synchronous traffic cor-                       f (t)  =   60t2   Tj - t  3                (25)
+responds to contention-free random access.                                                           Tj6
+                                                                                                              .
+   In the cases of traditional asynchronous and weakly related
+MTCDs, the interactions with LEO satellites are over the              In this case, the RAOs are sufficient when N  amax. The
+entire range of inclination angles. The terminal device initiates  access probability pEAB in the EAB access control is set as 1.
+random access uniformly within a time period and routinely
+applies the Poisson distribution to modeling                          Then, the optimal number a of RAOs can be obtained as
+
+                                                                   a            =  arg max    reff
+                                                                                    aL
+                                                                                                                 
+                                                                   s.t. L = a                                              
+                                                                                                 Tj        Dreq, a  L .       (26)
+
+                                                                                          1   -  1   C-1
+                                                                                                 a
+
+       P(N = k) = ke- .                                   (20)        If a feasible solution was not available in L, it can be used
+                                       k!                          a = C could serve as a backup.
+
+MTCDs N awaiting random access to be computed in the                  Similar to (24), the solution to contention-free random
+
+                                                                   access control can be obtained
+
+Poisson stochastic process.                                        pE(tA+B1) = 1
+
+Based on (8), a feasible solution M can be obtained                a(t+1) =        arg maxaL (t+1) re(tf+f 1), L (t+1) = 
+
+                                                                                   N (t+1) ,                     L (t+1) = .  (27)
+              
+       M = pEAB pEAB               Tj      pEABN-1  Dreq
+
+                             1  -    1                             III. RANDOM ACCESS CONTROL AND RAOS ALLOCATION
+                                   amax                                               BY DEEP DYNA-Q LEARNING
+
+       0 < pEAB < 1}                                      (21)        In this section, the deep Dyna-Q learning algorithm is
+                                                                   introduced first. Then comes a model-free DRL algorithm
+where a = amax is a fixed value. The reason of introducing         to compare in the performance of deep Dyna reinforcement
+the EAB scheme to deal with the congestion is that the RAOs        learning algorithm. Finally, it notes a deep Dyna-Q learning
+                                                                   algorithm in the system model, by which some latent problems
+are too scarce to support contending MTCDs.                        will be addressed.
+   The optimal pEAB is calculated by the following formula:
+
+       pEAB           =      arg max       reff.          (22)
+
+                                  pEAB M                           A. Deep Dyna-Q Learning Algorithm
+
+   If M was not a feasible solution, the optimal pEAB should          Reinforcement learning algorithms can be categorized into:
+be defined as                                                      the model-free method and the model-based method [33]. The
+                                                                   research on model-free methods is heated because it is not
+       pEAB                  =     amax .                 (23)     indispensable to train the model but to directly obtain the
+                                    N                              policy based on the reward function. This method of reduc-
+                                                                   ing computational complexity makes it convenient to find an
+   Formula (22) combined with (23), whereupon the solution         optimal strategy. Model-based reinforcement learning is more
+to contention-based random access proceeds as follows:
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: DEEP DYNA-REINFORCEMENT LEARNING BASED ON RANDOM ACCESS CONTROL  14823
+
+complicated because the prerequisites are building a world            Fig. 2. Deep Dyna-Q learning framework.
+model and employing dynamic programming based on it.
+                                                                      Wl are the linear weight functions
+   However, a suitable and desirable world model frees the
+agents from following the steps and passively waiting for                      (s,  ) := L(WL(L)WL-1(· · · (1(W1s)))). (30)
+feedback. Especially, in the satellites IoT networks, the con-
+founding factors of long distance transmissions and com-                 After the establishment of the virtual-world model, the next
+plex atmospheric environments may complicate interactions             steps S and A can be accomplished. To generate the Q value,
+between terrestrial MTCDs and satellites. A reliable virtual-         DNN is deployed to import the action and state.
+world model proves to pick out the optimal policy by directly
+predicting the incidence of all the situations. Meanwhile,               If we use deep Q-learning based on the value function,
+it enhances sample efficiency rather than over-training with          the deep Dyna-Q learning algorithm can be obtained. The
+redundant samples in model-free Q-learning.                           world model (P, R) functions in the state transition prediction
+                                                                      model P and the reward prediction model R. As a deep Dyna-
+   Model-based reinforcement learning learns from a model of          Q learning framework is illustrated in Fig. 2, there are two
+the environment's dynamics. As the following models demon-            DNNs approximating the world model (P, R) and Q-function.
+strate: one is the state transition prediction model P, inputting     In round of iteration, the Dyna architecture first reacts to the
+the current state s(t) and action a(t) and predicting the next state  actual environment and updates the state and reward func-
+s(t+1). The other is the reward prediction model R, where the         tion, then forecasts the world model n times and updates the
+operator inputs the current state s(t) and action a(t) to predict     value function. Both the replay experience of interacting with
+the reward r(t+1) of the actual environment. Thus, the world          the environment and the prediction of the world model are
+model can be described as follows:                                    engaged in the deep Dyna-Q learning.
+
+s(t+1)  P s(t+1) s(t), a(t)    (28)                                   B. Solved by Model-Free Deep Q-Learning Network
+
+r(t+1)  R r(t+1) s(t), a(t) .  (29)                                      In the model-free deep Q-learning network, the agent does
+                                                                      not resort to the world model to resolve the problem. Inspired
+   In most instances, model-based reinforcement learning co-          by Q-learning, the agents, namely, the LEO satellites, react
+works with model-free reinforcement learning. Hence, the              to the present environment in each episode of training [34].
+framework of the Dyna algorithm is a common practice. The             The MTCDs N(t) request for random access in the actual
+Dyna architecture is not a specific reinforcement learning algo-      environment. The full utilization of the -greedy policy, LEO
+rithm but a general term for a class of algorithms. The Dyna          satellite selects the allocated RAOs a(t) to react to the cur-
+architecture integrates both methods, learning from the model         rent environment precisely. It also measures N > amax or
+and the experience of interacting with the environment, thereby       N <= amax to consider whether to take the pEAB scheme. If
+updating the value function and policy function.                      N <= amax, LEO satellite j can respond to requests for ran-
+                                                                      dom access from MTCDs as many as possible. In this case, the
+   As for the state transition prediction model P or the reward       EAB scheme does not have to process these requests, i.e., the
+prediction model R including value-based iteration and func-          probability of the EAB scheme pEAB equals 1. Nevertheless,
+tion approximation, the value-based iteration grounded on             when N > amax, LEO satellite j has to start with its EAB
+sample data in the agent's movement can calculate a relatively        scheme to deal with excessive MTCDs. The arrived MTCDs
+simple transition, but it requires overloaded capacity when           N in random access will be transformed into contending
+engaged in a complex environment. The function approxima-             MTCDs C. Then, state N(t) steps into the next state N(t+1),
+tion utilizes the distribution, including the linear model and        which derives from the following random numbers in distribu-
+the Gaussian process [33], to construct the state transition          tion. Subsequently, the LEO satellite j gains the corresponding
+prediction model P or the reward prediction model R. DNNs             reward Reward(t+1) via (25). In the process of direct rein-
+also approximate the state transition prediction model P or the       forcement learning, the LEO satellite interacts with the actual
+reward prediction model R, with the help of its backpropaga-          environment. In each step, LEO satellite j collects observations
+tion approach. DNNs are utilized to approximate the world             regarding the state of the environment and gives the response
+model in the deep Dyna architecture. The incorporation of
+certain model-free reinforcement learning into the framework
+of deep Dyna reinforcement learning can generate different
+algorithms. Within that framework, the deep Dyna-Q learning
+algorithm is realized via deep Q-learning.
+
+   Such attempts to adopt the sampling training method and
+build a virtual model through a calibration hinge on the pre-
+supposition that there is no current-situation-tailored virtual
+model. However, there is a high likelihood that the method
+would complicate the problem and lead to the model bias. At
+this time, DNN can be utilized to train the model to represent
+the environment. l is the activation function of l layer and
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+14824                                                                  IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+Algorithm 1 Model-Free Deep Q-Learning Random Access                   Q L Q = E(N,a,R,N )Du
+
+in Satellites IoT Networks                                                             × R +  max Q N , a ; Q
+
+Initialize: All parameters Q of Q-network are generated                                                            a
+
+from truncated normal distribution randomly, and the value                                       - Q N, a; Q · Q Q s, a; Q . (34)
+
+Q corresponding to all states and actions is initialized based            The utilization of deep Q-learning aims at the development
+                                                                       of Q(·) in each iteration. Thus, the pseudocode of the model-
+on . Clear the set Du of experience replay.                            free deep Q-learning algorithm for random access is concluded
+for i from 1 to Tj:                                                    in Algorithm 1.
+
+       a) Initialize the number of arrived MTCDs N0 as the first
+
+state of the current states;
+
+       b) In the DQN, input N and output Q values of different
+
+RAOs;
+
+       c) Use  -greedy method: with probability  select a ran-
+
+dom    allocated  RAO  a,  or  select  a(t)  =  arg max Q  N, a; Q  ;  C. Solved by Deep Dyna-Q Learning Network
+
+                                                        a                 Of the two DNNs in the deep Dyna-Q learning algorithm,
+       d) Execute selected RAO a, and observe the number of            one approximates the Q-function, and the other stands for the
+                                                                       world model. The deep Dyna-Q learning algorithm can be
+arrived MTCDs N and efficiency of random access reff;                  split into three phases [36]. In phase one, LEO satellite j uti-
+   e) If N > amax:                                                     lizes direct reinforcement learning to gain actual experience
+                                                                       of Du and promotes the Q-function model. In phase two, the
+      1) Compute probability pEAB in EAB scheme in                     world model (P, R) is trained in actual experience Du and
+formula (15);                                                          gains simulated experience Du in the meantime. In phase three,
+                                                                       LEO satellite j takes advantage of simulated experience Du, to
+       2) Compute the number of contending MTCDs C =                   implement the random access policy, which is under continual
+                                                                       improvement.
+pEAB × N;
+                                                                          In the phase of direct reinforcement learning, the agent inter-
+       Else:                                                           acts with the real environment. A solid description of this
+                                                                       process is displayed in Section II-B, and direct reinforcement
+       1) Compute the number of contending MTCDs C = N;                learning utilizes model-free deep Q-learning to train the DQN.
+
+       f) Compute efficiency of random access reff;                       In this phase of world model learning, the world model
+                                                                       (P, R) is parameterized as M(N, a; M). The input of the world
+       g) Update the next number of arrived MTCDs N ;                  model is the current state, i.e., the arrived MTCDs N and the
+                                                                       allocated RAOs a.
+       h) Store (N, a, R, N ) to replay experience Du;
+                                                                          Similar to (32), SGD is deployed to train the world model
+       i) Randomly sample with batch size of them from the             M(N, a; M)
+
+actual experience buffer Du.
+
+end for
+
+Output: The trained model-free deep Q-learning with
+
+parameters Q.
+
+accordingly by utilizing the -greedy policy. Specifically, it          L(M) = E N,a,R,N Ds yi - Q N(t+1), a(t+1); M  .
+selects action a randomly with the probability of . Otherwise,                                                       (35)
+it will follow [35]:
+
+              a(t) = arg max Q      N(t), a; Q  .          (31)
+
+                                 a                                        In the planning process, the established world model (P, R)
+                                                                       facilitates LEO satellite j in making decisions. Supposing that
+Q are the parameters of the deep Q-learning model, and                 the world model can simulate the environment accurately, a
+Q(N(t+1), a; Q) is the approximated value function. Finally,           reasonable planning step K contributes to the LEO satellite
+the actual experience Du consists of (N(t), a(t), R(t), N(t+1)).       in learning policies to interact with the arrived MTCDs from
+The parameters Q in the deep Q-learning model is                       simulated experience Du
+improved by
+
+L Q = E N,a,R,N Du yi - Q N(t+1), a(t+1); Q                (32)        L Q = E N,a,R,N Du yi - Q N(t+1), a(t+1); Q   .
+                                                                                                                     (36)
+
+and the output of deep Q-learning model Q is                          The optimal paths for the world model and DQN in deep
+             yi = R +  max Q N(t+1), a(t+1); Q                     Dyna-Q learning echoes the training principle of model-free
+                                                                   deep Q-learning in (34). Thus, the pseudocode of the deep
+                                     a(t+1)                (33) Dyna-Q learning algorithm for random access is concluded in
+                                                                   Algorithm 2.
+
+where   [0, 1] is an attenuation coefficient. Q(·) is the target               IV. SIMULATION RESULTS AND DISCUSSIONS
+value updated with each training step.
+                                                                          This section verifies the performance of the proposed con-
+   By minimizing the value of the cost function concerning             trol algorithms for random access in the LEO satellite IoT
+Q, the following gradient can be obtained:
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: DEEP DYNA-REINFORCEMENT LEARNING BASED ON RANDOM ACCESS CONTROL  14825
+
+Algorithm 2 Deep Dyna-Q Learning Network Random
+
+Access in Satellite IoT Networks
+
+Initialize: All parameters Q of Q-network and M of world
+
+model are generated from truncated normal distribution ran-
+
+domly, and the value Q corresponding to all states and
+
+actions is initialized based on . Clear the set Du of actual
+experience replay and Ds of stimulated experience replay.
+
+for i from 1 to Iteration:
+
+Direct Reinforcement Learning starts
+
+a) It executes step a) to i) in Algorithm 1.
+
+Direct Reinforcement Learning ends
+
+World Model Learning starts
+
+a) Randomly sampling in minibatches among the trained
+
+samples (N, a, R, N ) from experience replay Du;                 Fig. 3. Loss function of the world model in deep Dyna-Q learning via
+   b) Update M via minibatch SGD.                                iterations.
+
+World Model Learning ends                                        Fig. 4. Reward function for deep Dyna-Q learning in different training steps.
+
+Planning starts
+
+for k from 1 to K:
+
+     1) LEO satellite selects a random-access action a with
+
+probability  ,  or  selects  a(t)  =  arg max Q  N, a; Q  ;
+
+                                              a
+     2) World model responds with reward R and the next
+
+state N ;
+
+     3) Update state to N ;
+
+     4) Store (N, a, R, N ) to stimulated experience replay
+
+Ds.
+
+end for
+
+Planning ends
+
+end for
+
+Output: The trained model-free deep Q-learning with
+
+parameters Q and the trained world model with parameters
+M .
+
+                                         TABLE II                j is derived from the uniform distribution between 0 and
+       TWO DIFFERENT RANDOM ACCESS SIMULATION PARAMETERS         90. The process environment is deployed in PyTorch v1.4.0.
+
+networks, considering contention-based access and contention-       Fig. 3 depicts the loss function for the proposed deep Dyna-
+free access. The simulation parameters of two typical traffic    Q learning algorithm with the training iterations increasing. In
+modes are listed in Table II.                                    training the world model, each DNN is established with one
+                                                                 hidden layer in a size of 50. Additionally, each DNN is given
+   In simulation, there are three latent layers hidden in the    with a ReLU activation function. As shown in Fig. 3, the loss
+world model within the framework of the deep Dyna-Q              function for the virtual-world model converges quickly when
+learning. The output layer outputs two parameters, including     the iteration step reaches 600. Thus, the following discussion
+predicting the state and the corresponding reward. The learning  mainly focuses on the trained world model after 400 iteration
+rate of each DNN is 1×10-3, and the optimizer is deployed as     steps.
+Adam. The Q value function has two hidden layers and their
+sizes are 16. The learning rate is 1 × 10-3. The batch sizes        Fig. 4 shows the total reward of deep Dyna-Q learning with
+of actual experience Du and stimulated experience Ds are 32      increasing training episodes for different training steps K. The
+whose replay memory is 10 000. According to the coverage         simulation settings of the learning rate of the world model and
+time of each LEO satellite, the orbital altitude of LEO satel-   DQN, arrive rate , and amax are the same as in Fig. 3. The
+lite hj is set as 700 km. The latitude at the projection of LEO  simulation results verify the significance of planning steps, and
+satellite j on the earth's surface j is generated from the uni-  it reflects that the trained world model can contribute to learn-
+form distribution between 0 and 60 and the elevation angle       ing. When the training step K = 400, it will better converge
+                                                                 than K = 100 and K = 200. This is because the good virtual
+                                                                 model of deep Dyna-Q learning can be accelerated to obtain
+                                                                 the maximum value of the reward function with planning.
+
+                                                                    Fig. 5 illustrates the training results between the syn-
+                                                                 chronous traffic model and the asynchronous traffic model.
+                                                                 Deep Q-learning is utilized to observe the convergence of two
+                                                                 different traffic models. In Fig. 5, the training steps are set
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+14826                                                                        IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+                                                                             are introduced in Fig. 6. It reflects the advantages of the two
+                                                                             proposed algorithms.
+
+                                                                                Fig. 7 shows the efficiency of random access Reff when
+                                                                             the arrival rate  increases from 1 to 5, especially when
+                                                                             Ppreambles = 30, Ppreambles = 40, or Ppreambles = 50. Reff
+                                                                             decreases as the arrival rate  increases in traffic model
+                                                                             1. It illustrates the random access capacity of the proposed
+                                                                             random-access scheme attenuates when the density of MTCDs
+                                                                             increases. Moreover, a larger maximum of preamble sequences
+                                                                             Ppreambles results in a higher efficiency of random access Reff.
+
+Fig. 5. Reward function with different methods for the asynchronous traffic                             V. CONCLUSION
+model.
+                                                                                This article researched a deep Dyna reinforcement learn-
+Fig. 6. Efficiency of random access versus iterations.                       ing scheme for random access control in LEO satellite IoT
+                                                                             networks. First, the random access control in LEO satellite IoT
+                                                                             networks was formulated based on the Markov decision pro-
+                                                                             cess. Then, contention-based random access and contention-
+                                                                             free random access were explored in the dimensions of M2M
+                                                                             traffic characteristics and the coverage of LEO satellites. In
+                                                                             the settings of RAOs and limited delay, it proposed the con-
+                                                                             trol model for random access via the maximum efficiency of
+                                                                             random access. The model-free deep Q-learning network algo-
+                                                                             rithm aims solve the problem by means of the random access
+                                                                             model. Subsequently, the deep Dyna-Q learning algorithm was
+                                                                             applied to the designed control model for random access. To
+                                                                             be precise, the agent improved the random access model-free
+                                                                             policy by dint of simulation. Since the proposed deep Dyna-Q
+                                                                             learning scheme is based on the established world model, it
+                                                                             presents performance similar to that of the model-free scheme
+                                                                             with low involvement of the entire LEO satellite IoT networks.
+
+Fig. 7. Efficiency of random access versus different arrival rates.                                      REFERENCES
+
+as 100. It suggests that the asynchronous traffic model out-                 [1] W. Zhan and L. Dai, "Massive random access of machine-to-
+performs the synchronous one in readiness and stability. The                      machine communications in LTE networks: Modeling and through-
+characteristics of the asynchronous traffic model, being tradi-                   put optimization," IEEE Trans. Wireless Commun., vol. 17, no. 4,
+tional and weakly related, enable to accelerate the learning in                   pp. 2771­2785, Apr. 2018.
+the proposed schemes.
+                                                                             [2] B. Di, H. Zhang, L. Song, Y. Li, and G. Y. Li, "Ultra-dense LEO:
+   Fig. 6 depicts the convergence of efficiency Reff between                      Integrating terrestrial-satellite networks into 5G and beyond for data
+deep Dyna-Q Learning and deep Q-Learning. Compared to                             offloading," IEEE Trans. Wireless Commun., vol. 18, no. 1, pp. 47­62,
+deep Q-Learning, Reff in deep Dyna-Q Learning tends to be                         Jan. 2019.
+more stable and swift in convergence. The arrival rate  is 3
+and the maximum of available preamble sequences is set as 54.                [3] D. Chen et al., "Resource cube: Multi-virtual resource management for
+Moreover, Dynamic RAO allocation and fixed RAO allocation                         integrated satellite-terrestrial industrial IoT networks," IEEE Trans. Veh.
+                                                                                  Technol., vol. 69, no. 10, pp. 11963­11974, Oct. 2020.
+
+                                                                             [4] S. Lien, T. Liau, C. Kao, and K. Chen, "Cooperative access class bar-
+                                                                                  ring for machine-to-machine communications," IEEE Trans. Wireless
+                                                                                  Commun., vol. 11, no. 11, pp. 27­32, Jan. 2012.
+
+                                                                             [5] S. Y. Lien, K. C. Chen, and Y. Lin, "Toward ubiquitous massive accesses
+                                                                                  in 3GPP machine-to-machine communications," IEEE Commun. Mag.,
+                                                                                  vol. 49, no. 4, pp. 66­74, Apr. 2011.
+
+                                                                             [6] C. Y. Oh, D. Hwang, and T. J. Lee, "Joint access control and resource
+                                                                                  allocation for concurrent and massive access of M2M devices," IEEE
+                                                                                  Trans. Wireless Commun., vol. 14, no. 8, pp. 4182­4192, Aug. 2015.
+
+                                                                             [7] Y. Mehmood, N. Haider, M. Imran, A. T. Giel, and M. Guizani,
+                                                                                  "M2M communications in 5G: State-of-the-art architecture, recent
+                                                                                  advances, and research challenges," IEEE Commun. Mag., vol. 55, no. 9,
+                                                                                  pp. 194­201, Sep. 2017.
+
+                                                                             [8] G. Choudhury and S. Rappaport, "Diversity ALOHA-A random access
+                                                                                  scheme for satellite communications," IEEE Trans. Commun., vol. 31,
+                                                                                  no. 3, pp. 450­457, Mar. 1983.
+
+                                                                             [9] M. Bacco et al., "IoT applications and services in space information
+                                                                                  networks," IEEE Wireless Commun., vol. 26, no. 2, pp. 31­37,
+                                                                                  Apr. 2019.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: DEEP DYNA-REINFORCEMENT LEARNING BASED ON RANDOM ACCESS CONTROL     14827
+
+[10] O. del Rio Herrero and R. De Gaudenzi, "Generalized analytical             [33] S. Sutton, B. Richard, and G. Andrew, Reinforcement Learning: An
+      framework for the performance assessment of slotted random access               Introduction, 2nd ed. Cambridge, MA, USA: MIT Press, 2008.
+      protocols," IEEE Trans. Wireless Commun., vol. 13, no. 2, pp. 809­821,
+      Feb. 2014.                                                                [34] C. Qiu, H. Yao, F. R. Yu, F. Xu, and C. Zhao, "Deep Q-learning aided
+                                                                                      networking, caching, and computing resources allocation in software-
+[11] M. Lee, J. Lee, J. Lee, and J. Lim, "R-CRDSA: Reservation-contention             defined satellite-terrestrial networks," IEEE Trans. Veh. Technol., vol. 68,
+      resolution diversity slotted ALOHA for satellite networks," IEEE                no. 6, pp. 5871­5883, Jun. 2019.
+      Commun. Lett., vol. 16, no. 10, pp. 1576­1579, Oct. 2012.
+                                                                                [35] S. Y. Lien, K. C. Chen, and Y. Lin, "Deep Q-learning-based node
+[12] R. De Gaudenzi, O. del Rio Herrero, G. Acar, and E. Garrido Barrabes,            positioning for throughput-optimal communications in dynamic UAV
+      "Asynchronous contention resolution diversity ALOHA: Making                     swarm network," IEEE Trans. Cogn. Commun. Netw., vol. 5, no. 3,
+      CRDSA truly asynchronous," IEEE Trans. Wireless Commun., vol. 13,               pp. 554­566, Sep. 2019.
+      no. 11, pp. 6193­6206, Nov. 2014.
+                                                                                [36] B. Peng et al., "Deep DYNA-Q: Integrating planning for task-completion
+[13] Y. Sim and D. H. Cho, "Performance analysis of priority-based access             dialogue policy learning," 2018. [Online]. Available: arXiv:1801.06176.
+      class barring scheme for massive MTC random access," IEEE Syst. J.,
+      vol. 14, no. 4, pp. 5245­5252, Dec. 2020.                                                                Xiangnan Liu received the B.S. degree from
+                                                                                                               the School of Computer and Communication
+[14] P. K. Wali and D. Das, "Optimization of barring factor enabled extended                                   Engineering, University of Science and Technology
+      access barring for energy efficiency in LTE-advanced base station," IEEE                                 Beijing, Beijing, China, in 2019, where he is cur-
+      Trans. Green Commun. Netw., vol. 2, no. 3, pp. 830­843, Sep. 2018.                                       rently pursuing the Ph.D. degree.
+
+[15] M. Bacco, P. Cassar, M. Colucci, and A. Gotta, "Modeling reliable                                            His research interests include access control,
+      M2M/IoT traffic over random access satellite links in non-saturated con-                                 beamforming, and resource allocation in 6G wireless
+      ditions," IEEE J. Sel. Areas Commun., vol. 36, no. 5, pp. 1042­1051,                                     communication.
+      May 2018.
+                                                                                                               Haijun Zhang (Senior Member, IEEE) is cur-
+[16] M. Bacco, T. De Cola, G. Giambene, and A. Gotta, "TCP-based M2M                                           rently a Full Professor with the University of
+      traffic via random-access satellite links: Throughput estimation," IEEE                                  Science and Technology Beijing, Beijing, China.
+      Trans. Aerosp. Electron. Syst., vol. 55, no. 2, pp. 846­863, Apr. 2019.                                  He was a Postdoctoral Research Fellow with the
+                                                                                                               Department of Electrical and Computer Engineering,
+[17] C. Zhang, P. Patras, and H. Haddadi, "Deep learning in mobile and                                         the University of British Columbia, Vancouver, BC,
+      wireless networking: A survey," IEEE Commun. Surveys Tuts., vol. 21,                                     Canada.
+      no. 3, pp. 2224­2287, 3rd Quart., 2019.
+                                                                                                                  Prof. Zhang received the IEEE CSIM Technical
+[18] Z. Lin, M. Lin, J. Wang, T. de Cola, and J. Wang, "Joint beamforming                                      Committee Best Journal Paper Award in 2018, IEEE
+      and power allocation for satellite-terrestrial integrated networks with                                  ComSoc Young Author Best Paper Award in 2017,
+      non-orthogonal multiple access," IEEE J. Sel. Topics Signal Process.,                                    and the IEEE ComSoc Asia-Pacific Best Young
+      vol. 13, no. 3, pp. 657­670, Jun. 2019.                                   Researcher Award in 2019. He serves/served as the Track Co-Chair of
+                                                                                WCNC 2020, the Symposium Chair of Globecom'19, the TPC Co-Chair
+[19] W. Usaha and J. A. Barria, "Reinforcement learning for resource allo-      of INFOCOM 2018 Workshop on Integrating Edge Computing, Caching,
+      cation in LEO satellite networks," IEEE Trans. Syst. Man, Cybern. B,      and Offloading in Next Generation Networks, and the General Co-Chair of
+      Cybern., vol. 37, no. 3, pp. 515­527, Jun. 2007.                          GameNets'16. He serves/served as an Editor for IEEE TRANSACTIONS ON
+                                                                                COMMUNICATIONS, IEEE TRANSACTIONS ON GREEN COMMUNICATIONS
+[20] H. Huang, S. Guo, W. Liang, K. Wang, and A. Y. Zomaya, "Green              NETWORKING, and IEEE COMMUNICATIONS LETTERS.
+      data-collection from geo-distributed IoT networks through low-earth-
+      orbit satellites," IEEE Trans. Green Commun. Netw., vol. 3, no. 3,                                       Keping Long (Senior Member, IEEE) received
+      pp. 806­816, Sep. 2019.                                                                                  the M.S. and Ph.D. degrees from the University
+                                                                                                               of Electronic Science and Technology of China,
+[21] F. Rinaldi et al., "Broadcasting services over 5G NR enabled multi-                                       Chengdu, China, in 1995 and 1998, respectively.
+      beam non-terrestrial networks," IEEE Trans. Broadcast., vol. 67, no. 1,
+      pp. 33­45, Mar. 2021.                                                                                       From September 1998 to August 2000, he
+                                                                                                               was a Postdoctoral Research Fellow with the
+[22] H. Zhang, N. Yang, W. Huangfu, K. Long, and V. C. M. Leung,                                               National Laboratory of Switching Technology and
+      "Power control based on deep reinforcement learning for spectrum shar-                                   Telecommunication Networks, Beijing University
+      ing," IEEE Trans. Wireless Commun., vol. 19, no. 6, pp. 4209­4219,                                       of Posts and Telecommunications, Beijing, China,
+      Jun. 2020.                                                                                               where he was an Associate Professor from
+                                                                                                               September 2000 to June 2001. From July 2001 to
+[23] S. Wang, H. Liu, P. H. Gomes, and B. Krishnamachari, "Deep                 November 2002, he was a Research Fellow with the ARC Special Research
+      reinforcement learning for dynamic multichannel access in wire-           Centre for Ultra Broadband Information Networks, University of Melbourne,
+      less networks," IEEE Trans. Cogn. Commun. Netw., vol. 4, no. 2,           Melbourne, VIC, Australia. He is currently a Professor and the Dean of the
+      pp. 257­265, Jun. 2018.                                                   School of Computer and Communication Engineering, University of Science
+                                                                                and Technology Beijing, Beijing. He has published more than 200 papers,
+[24] O. Naparstek and K. Cohen, "Deep multi-user reinforcement learning for     20 keynote speeches, and invited talks at international and local conferences.
+      distributed dynamic spectrum access," IEEE Trans. Wireless Commun.,       His research interests are optical Internet technology, new-generation network
+      vol. 18, no. 1, pp. 310­323, Jan. 2019.                                   technology, wireless information networks, value-added services, and secure
+                                                                                technology of networks.
+[25] C. Zhong, Z. Lu, M. C. Gursoy, and S. Velipasalar, "A deep actor­critic       Prof. Long was awarded by the National Science Fund for Distinguished
+      reinforcement learning framework for dynamic multichannel access,"        Young Scholars of China in 2007 and selected as the Chang Jiang
+      IEEE Trans. Cogn. Commun. Netw., vol. 5, no. 4, pp. 1125­1139,            Scholars Program Professor of China in 2008. He has been a TPC
+      Dec. 2019.                                                                or ISC Member of COIN 2003/04/05/06/07/08/09/10, IEEE IWCN2010,
+                                                                                ICON2004/06, and APOC2004/06/08, the Co-Chair of the organization
+[26] Y. Yu, T. Wang, and S. C. Liew, "Deep-reinforcement learning multiple      Committee for IWCMC2006, the TPC Chair of COIN 2005/08, and the TPC
+      access for heterogeneous wireless networks," IEEE J. Sel. Areas           Co-Chair of COIN 2008/10. He is a member of the Editorial Committees of
+      Commun., vol. 37, no. 6, pp. 1277­1290, Jun. 2019.                        Sciences in China Series F and China Communications.
+
+[27] Y. S. Nasir and D. Guo, "Multi-agent deep reinforcement learning for
+      dynamic power allocation in wireless networks," IEEE J. Sel. Areas
+      Commun., vol. 37, no. 10, pp. 2239­2250, Oct. 2019.
+
+[28] F. Meng, P. Chen, L. Wu, and J. Cheng, "Power allocation in multi-
+      user cellular networks: Deep reinforcement learning approaches," IEEE
+      Trans. Wireless Commun., vol. 19, no. 10, pp. 6255­6267, Oct. 2020.
+
+[29] B. Yang, F. He, J. Jin, and X. Guanghan, "Analysis of coverage time and
+      handoff number on LEO satellite communication systems," J. Electron.
+      Inf. Technol., vol. 36, no. 4, pp. 804­809, 2014.
+
+[30] M. S. Ali, E. Hossain, and D. I. Kim, "LTE/LTE-A random access for
+      massive machine-type communications in smart cities," IEEE Commun.
+      Mag., vol. 55, no. 1, pp. 76­83, Jan. 2017.
+
+[31] T. P. C. De Andrade, C. A. Astudillo, L. R. Sekijima, and
+      N. L. S. Da Fonseca, "The random access procedure in long term evolu-
+      tion networks for the Internet of Things," IEEE Commun. Mag., vol. 55,
+      no. 3, pp. 124­131, Mar. 2017.
+
+[32] "Study on RAN improvements for machine type communications,"
+      3GPP, Sophia Antipolis, France, Rep. TR 37.868, 2011.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+14828                                                                              IEEE INTERNET OF THINGS JOURNAL, VOL. 9, NO. 16, 15 AUGUST 2022
+
+                               Arumugam Nallanathan (Fellow, IEEE) has been                                       Victor C. M. Leung (Life Fellow, IEEE) is currently
+                               a Professor of Wireless Communications and the                                     a Distinguished Professor of Computer Science and
+                               Head of the Communication Systems Research                                         Software Engineering with Shenzhen University,
+                               Group, School of Electronic Engineering and                                        Shenzhen, China. He is also an Emeritus Professor
+                               Computer Science, Queen Mary University of                                         of Electrical and Computer Engineering and the
+                               London, London, U.K., since September 2017. He                                     Director of the Laboratory for Wireless Networks
+                               was with the Department of Informatics, King's                                     and Mobile Systems, The University of British
+                               College London, London, from December 2007 to                                      Columbia, Vancouver, BC, Canada. His research is
+                               August 2017, where he was a Professor of Wireless                                  in the broad areas of wireless networks and mobile
+                               Communications from April 2013 to August 2017                                      systems. He has published widely in archival jour-
+                               and a Visiting Professor from September 2017. He                                   nals and refereed conference proceedings in these
+was an Assistant Professor with the Department of Electrical and Computer          areas; several of his papers have won Best Paper Awards.
+Engineering, National University of Singapore, Singapore, from August 2000            Mr. Leung was a recipient of the 1977 APEBC Gold Medal, Natural
+to December 2007. He has published nearly 500 technical papers in scientific       Sciences and Engineering Research Council of Canada Postgraduate
+journals and international conferences. His research interests include artificial  Scholarships from 1977 to 1981, the 2012 UBC Killam Research Prize, the
+intelligence for wireless systems, beyond 5G wireless networks, Internet of        IEEE Vancouver Section Centennial Award, the 2017 Canadian Award for
+Things, and molecular communications.                                              Telecommunications Research, and the 2018 IEEE TCGCC Distinguished
+   Prof. Nallanathan received the IEEE Communications Society SPCE                 Technical Achievement Recognition Award. He has coauthored articles that
+Outstanding Service Award 2012 and the IEEE Communications Society RCC             won the 2017 IEEE ComSoc Fred W. Ellersick Prize, the 2017 IEEE
+Outstanding Service Award 2014. He was a co-recipient of the Best Paper            Systems Journal Best Paper Award, the 2018 IEEE CSIM Best Journal
+Awards presented at the IEEE International Conference on Communications            Paper Award, and the 2019 IEEE TCGCC Best Journal Paper Award.
+2016 (ICC'2016), the IEEE Global Communications Conference 2017                    He is serving on the Editorial Boards of the IEEE TRANSACTIONS ON
+(GLOBECOM'2017), and the IEEE Vehicular Technology Conference 2018                 GREEN COMMUNICATIONS AND NETWORKING, the IEEE TRANSACTIONS
+(VTC'2018). He is an IEEE Distinguished Lecturer. He has been selected             ON CLOUD COMPUTING, the IEEE TRANSACTIONS ON COMPUTATIONAL
+as a Web of Science Highly Cited Researcher in 2016. He is an Editor               SOCIAL SYSTEMS, IEEE NETWORK, and IEEE ACCESS. He has previously
+for IEEE TRANSACTIONS ON COMMUNICATIONS and a Senior Editor for                    served on the Editorial Boards of the IEEE JOURNAL ON SELECTED
+IEEE WIRELESS COMMUNICATIONS LETTERS. He was an Editor for IEEE                    AREAS IN COMMUNICATIONS Wireless Communications Series and Series
+TRANSACTIONS ON WIRELESS COMMUNICATIONS from 2006 to 2011,                         on Green Communications and Networking, the IEEE TRANSACTIONS ON
+IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY from 2006 to 2017,                       WIRELESS COMMUNICATIONS, the IEEE TRANSACTIONS ON VEHICULAR
+and IEEE SIGNAL PROCESSING LETTERS. He served as the Chair of the                  TECHNOLOGY, the IEEE TRANSACTIONS ON COMPUTERS, and the IEEE
+Signal Processing and Communication Electronics Technical Committee of             WIRELESS COMMUNICATIONS LETTERS. He is named in the current
+IEEE Communications Society and the Technical Program Chair and a                  Clarivate Analytics list of "Highly Cited Researchers." He has provided lead-
+member of Technical Program Committees in numerous IEEE conferences.               ership to the Technical Program Committees and Organizing Committees of
+                                                                                   numerous international conferences. He is a Fellow of the Royal Society
+                                                                                   of Canada, Canadian Academy of Engineering, and Engineering Institute of
+                                                                                   Canada.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:59:40 UTC from IEEE Xplore. Restrictions apply.
+

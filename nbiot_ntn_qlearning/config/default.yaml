@@ -1,0 +1,106 @@
+# =============================================================================
+# NB-IoT NTN Q-Learning RACH Controller — Master Configuration
+# =============================================================================
+# Every value is tagged by provenance:
+#   [3GPP]   = from a 3GPP specification
+#   [paper]  = from a cited research paper
+#   [design] = design choice justified in 02_Methodology.md
+#   [sweep]  = deliberately varied in experiments
+# =============================================================================
+
+# --- FIXED (3GPP) ---
+carrier_hz: 2.0e9              # S-band n256 UL 1980–2010 MHz   [3GPP TR 38.811 V16.1.0]
+scs_hz: 3750                   # NPRACH format 0/1 subcarrier    [3GPP TS 36.211 V16.6.0]
+n_preambles: 48                # 48 contention subcarriers       [3GPP TS 36.211 V16.6.0]
+preamble_trans_max: 10         # max attempts per CE level        [3GPP TS 36.321 V16.6.0]
+rar_window_ms: 24              # realistic NB-IoT NTN RAR window  [3GPP TS 36.321 V16.6.0]
+rar_window_ntn_ms: 40          # NTN-extended RAR window          [3GPP TR 38.821 V16.1.0]
+processing_time_ms: 3          # gNB processing before RAR        [3GPP TS 36.321 V16.6.0]
+
+# ACB barring factor levels from TS 36.331 ac-BarringFactor
+acb_levels: [0.1, 0.3, 0.5, 0.7, 1.0]
+
+# Backoff Indicator values (ms) from TS 36.321 Table 7.2-2
+bi_levels_ms: [256, 1024, 4096, 16384]
+
+# NPRACH repetition levels mapping to CE0/CE1/CE2
+nrep_levels: [2, 8, 32]
+
+# --- DERIVED (SGP4 / Physics & Link Budget) ---
+altitude_km: 600.0             # TLE-consistent LEO orbit         [3GPP TR 38.811]
+elev_mask_deg: 10.0            # minimum elevation angle           [3GPP TR 38.821]
+earth_radius_km: 6371.0        # WGS-84 mean radius
+
+# Link budget parameters (3GPP TR 38.811 / Sateliot 6U/12U payload)
+p_tx_dbm: 23.0                 # NB-IoT Class 3 UE Tx power (200 mW)
+g_tx_dbi: 0.0                  # UE isotropic antenna gain
+g_rx_zenith_dbi: 6.0           # LEO satellite antenna gain (6 dBi for small sat)
+antenna_3db_beamwidth_deg: 65.0 # Satellite beamwidth
+noise_figure_db: 5.0           # Satellite receiver noise figure
+temperature_k: 290.0           # System noise temperature
+
+# Ground station (AMI site) — Ahmedabad, India
+ground_lat_deg: 23.0225
+ground_lon_deg: 72.5714
+ground_elev_m: 53.0
+
+# TLE file
+tle_file: "data/tle/sateliot.tle"
+tle_satellite_name: "SATELIOT_2"  # primary satellite for experiments
+
+# Detection model calibration in operating range [-5 to +5 dB] (Chougrani et al.)
+gamma_th_db: -1.0              # Effective SNR threshold for 50% detection probability
+k_slope: 0.60                  # Operating slope
+
+# --- SWEPT (the experiment) ---
+device_counts: [200, 1000, 3000]            # rural → congested → beyond-capacity
+residual_doppler_hz: [10, 250]              # nominal → stress [3GPP R1-2100601 / Lee 2026]
+rao_period_ms: [320, 640]                   # 320ms fits 32 reps (179.2ms) [3GPP TS 36.211]
+default_rao_period_ms: 320                  # repetition-feasible RAO period
+
+# 20 independent random seeds for statistical rigor
+seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219]
+pretrain_seed: 42                           # Fixed deterministic pre-training seed
+
+# Traffic model: pass-spanning multi-phase traffic to stimulate full elevation arc
+traffic_model: "multiphase"                 # "multiphase" spans horizon -> zenith -> horizon
+activation_window_s: 10.0                   # duration per burst phase
+access_deadline_s: 45.0                     # access delay deadline for success-within-deadline
+
+# --- LEARNING (Q-learning hyperparameters) ---
+alpha: 0.12                    # learning rate
+gamma: 0.9                     # discount factor
+eps0: 1.0                      # initial exploration rate
+eps_min: 0.05                  # minimum exploration rate
+eps_decay: 0.995               # exploration decay per RAO
+
+# Reward weights (cause-separated)
+w_s: 1.0                       # success reward
+w_c: 0.8                       # collision penalty (dominant)
+w_m: 0.2                       # miss penalty (prevents false barring)
+w_t: 0.5                       # timeout penalty
+w_d: 0.1                       # delay regulariser
+d_ref_ms: 2000.0               # reference delay for normalisation
+use_estimated_misses: true     # observable reward estimator (no ground-truth cheat)
+
+# State discretisation
+load_bins: 4                   # low / moderate / high / overload
+elev_bins: 3                   # low (<20°) / mid / high (>60°)
+doppler_bins: 2                # nominal / degraded
+pass_phase_bins: 3             # early / mid / late
+
+# State bin boundaries
+load_thresholds: [0.3, 0.6, 0.85]      # fraction of preambles used
+elev_thresholds: [20, 60]               # degrees
+doppler_threshold: 50                    # Hz — above this = degraded
+pass_phase_thresholds: [0.33, 0.66]     # fraction of pass elapsed
+
+# --- EXPERIMENT DEFAULTS ---
+default_n_devices: 1000
+default_residual_doppler_hz: 10
+default_rao_period_ms: 320
+default_seed: 200
+
+# Warm-start pre-training
+warmstart_terrestrial_raos: 500          # RAOs to pre-train on terrestrial
+warmstart_file: "results/warmstart_qtable.npy"

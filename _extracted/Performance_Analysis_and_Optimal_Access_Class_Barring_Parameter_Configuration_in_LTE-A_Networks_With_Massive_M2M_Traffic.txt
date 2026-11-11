@@ -1,0 +1,1018 @@
+IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018                                         3505
+
+  Performance Analysis and Optimal Access Class
+Barring Parameter Configuration in LTE-A Networks
+
+               With Massive M2M Traffic
+
+ Luis Tello-Oquendo , Student Member, IEEE, Israel Leyva-Mayorga , Vicent Pla , Jorge Martinez-Bauset ,
+                Jose´-Ramo´n Vidal , Vicente Casares-Giner , Life Member, IEEE, and Luis Guijarro
+
+   Abstract--Over the coming years, it is expected that the number                   so-called Internet-of-Things (IoT). Recognizing the value of the
+of machine-to-machine (M2M) devices that communicate through                         IoT to the industry and the benefits this technological innovation
+long term evolution advanced (LTE-A) networks will rise signifi-                     brings to the public, enormous efforts are being made towards
+cantly for providing ubiquitous information and services. However,                   its standardization, which includes the development of projects
+LTE-A was devised to handle human-to-human traffic, and its cur-                     and the organization of events that are directly related to create
+rent design is not capable of handling massive M2M communica-                        the environment needed for a vibrant IoT [1]. In coming years, a
+tions. Access class barring (ACB) is a congestion control scheme                     massive number of interconnected devices will provide ubiqui-
+included in the LTE-A standard that aims to spread the accesses of                   tous access to information and services [2], [3]. These devices,
+user equipments (UEs) through time so that the signaling capabil-                    known as user equipments (UEs), are set to exchange informa-
+ities of the evolved Node B are not exceeded. Notwithstanding its                    tion autonomously in M2M applications such as smart metering,
+relevance, the potential benefits of the implementation of ACB are                   e-healthcare, smart transportation, environmental monitoring,
+rarely analyzed accurately. In this paper, we conduct a thorough                     among others [4]­[6]. In those scenarios, the network conges-
+performance analysis of the LTE-A random access channel and                          tion is expected to occur sparingly over time whenever a bulk
+ACB as defined in the 3GPP specifications. Specifically, we seek to                  of UEs transmit in a highly synchronized manner. There is a
+enhance the performance of LTE-A in massive M2M scenarios by                         growing consensus that cellular networks are the best option
+modifying certain configuration parameters and by the implemen-                      for UE interconnection, as they provide ubiquitous coverage
+tation of ACB. We observed that ACB is appropriate for handling                      thanks to a widely deployed infrastructure, global connectiv-
+sporadic periods of congestion. Concretely, our results reflect that                 ity, high QoS, well-developed charging and security solutions
+the access success probability of M2M UEs in the most extreme                        [7]­[9]. Nevertheless, cellular technology was developed to han-
+test scenario suggested by the 3GPP improves from approximately                      dle human-to-human (H2H) traffic, where few devices (com-
+30%, without any congestion control scheme, to 100% by imple-                        pared to the billions of M2M devices expected by 2020 [3]) com-
+menting ACB and setting its configuration parameters properly.                       municate simultaneously. Hence, severe congestion is likely to
+                                                                                     occur when a massive number of M2M devices attempt to access
+   Index Terms--Access class barring (ACB), cellular-systems,                        the base stations (known as evolved Node Bs, eNBs, in long term
+machine-to-machine communications, performance analysis.                             evolution advanced (LTE-A)), resulting in performance degra-
+                                                                                     dation for both M2M and H2H communications [10], [11].
+                           I. INTRODUCTION
+                                                                                        Recent studies have demonstrated that the current random
+T HE world is moving beyond standalone devices into a                                access procedure deployed in LTE-A networks is not efficient
+      new technological age in which everything is connected.                        enough for managing massive M2M communications because
+Machine-to-Machine (M2M) communication stands for the                                the random access channel (RACH) suffers from overload in
+ubiquitous and automated exchange of information between                             these scenarios [12], [13]. Building on this, the access class
+devices on the edge of networks such as mobile devices, com-                         barring (ACB) scheme has been included in the LTE-A radio
+puters, sensors, actuators or cars inside a common network, the                      resource control specification [14] as a viable congestion control
+                                                                                     scheme. In ACB, each UE may randomly delay the beginning
+   Manuscript received November 17, 2016; revised June 30, 2017; accepted            of its random access procedure according to a barring rate and a
+October 29, 2017. Date of publication November 23, 2017; date of current             barring time, which are parameters broadcast by the eNB. As a
+version April 16, 2018. This work was supported in part by the Ministry of           result, ACB spreads the UE accesses through time; hence, ACB
+Economy and Competitiveness of Spain under Grants TIN2013-47272-C2-1-R               may be effective whenever the congestion occurs sparingly and
+and TEC2015-71932-REDT. The work of L. Tello-Oquendo was supported in                during short periods (in the order of a few seconds). This fact
+part by Programa de Ayudas de Investigacio´n y Desarrollo (PAID), Universitat        goes in line with the M2M bursty traffic behavior described
+Polite`cnica de Vale`ncia. The work of I. Leyva-Mayorga was supported in part        in [15], [16].
+by Grant 383936 CONACYT-Gobierno del Estado de Me´xico 2014. The review
+of this paper was coordinated by Dr. F. Gunnarsson. (Corresponding author:              In this paper, we perform a thorough performance analy-
+Luis Tello-Oquendo.)                                                                 sis of both the LTE-A random access procedure and the ACB
+
+   The authors are with the ITACA Institute, Universitat Polite`cnica de Vale`ncia,
+Valencia 46022, Spain (e-mail: luiteloq@upv.es; isleyma@upv.es; vpla@upv.
+es; jmartinez@upv.es; jrvidal@upv.es; vcasares@upv.es; lguijar@upv.es).
+
+   Color versions of one or more of the figures in this paper are available online
+at http://ieeexplore.ieee.org.
+
+   Digital Object Identifier 10.1109/TVT.2017.2776868
+
+0018-9545 © 2017 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+      See http://www.ieee.org/publications standards/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3506                                                                 IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+congestion control scheme in scenarios with a massive number         evaluate the performance of LTE-A under M2M traffic. For
+of M2M UEs that attempt to access the eNB in a highly syn-           instance, there is no consensus regarding the moment of the
+chronized manner. Specifically, the main contributions of this       random access procedure in which collisions occur. It is often-
+article are:                                                         times assumed that all the collisions occur at the first step of
+                                                                     the random access procedure [20]­[22] (at the transmission of
+   1) Analysis of the steady-state capacity of the LTE-A physi-      Msg1 as suggested by the 3GPP in [16]). But studies such as
+       cal RACH.                                                     [23]­[26], assume that all the collisions occur at the transmis-
+                                                                     sion of Msg3 (the random access procedure will be explained
+   2) The identification of the combinations of RACH parame-         in detail in Section III). It is evident that the performance of
+       ters that enhance the access success probability in scenar-   LTE-A can be affected by these assumptions, but no study has
+       ios with massive M2M traffic.                                 yet compared them directly. However, regardless of the assumed
+                                                                     outcome of the random access procedure, it has been demon-
+   3) A thorough analysis of the ACB scheme for properly tun-        strated that, in its current form, it is not capable of handling
+       ing its parameters according to the network load. We eval-    massive M2M communications [13], [15], [16], [23], [24].
+       uate the performance of LTE-A under the ACB scheme
+       for a wide range of barring rates and barring times. Fur-        The 3GPP has provided a list of parameters which describe
+       thermore, we identify the optimal parameter configuration     a typical configuration for the RACH and serve as initial
+       of ACB for the most congested scenario suggested by the       guidelines for its performance analysis [16]. But commonly the
+       3GPP [16].                                                    performance of the LTE-A RACH is only evaluated with this
+                                                                     particular configuration. Hence, the impact of parameters such
+   4) The comparison of the KPIs obtained for two possible           as the backoff time of UEs and the maximum number of pream-
+       backoff implementations at UE side                            ble transmissions allowed per UE on the network performance
+          a) a uniform backoff (as stated in the LTE-A MAC           have been largely overlooked. Such is the case of [15], where a
+              specification [17]);                                   thorough mathematical analysis of the random access procedure
+          b) an exponential backoff, where the backoff time of       is performed. Specifically, the authors assess the performance
+              each UE depends on the number of transmissions         of LTE-A when a bulk of UEs attempt to access the eNB in
+              attempted previously.                                  a highly synchronized manner (as expected in most M2M
+                                                                     applications) and obtain several KPIs specified by the 3GPP;
+   5) The comparison of the access success probability obtained      however, only the typical RACH configuration is evaluated.
+       for two collision models for the LTE-A random access
+       procedure:                                                       In [27], authors define the capacity of the physical random ac-
+          a) Collision model 1: collisions occur only at the trans-  cess channel (PRACH), c(R), as the maximum expected number
+              mission of Msg1;                                       of successful UE access requests per random access opportunity
+          b) Collision model 2: collisions occur only at the trans-  (RAO), being R the number of available preambles in the sys-
+              mission of Msg3.                                       tem, and propose a dynamic congestion-control solution. The
+       Please refer to Section III for more specific details of the  performance of this solution is compared with the implemen-
+       random access procedure.                                      tation of ACB. However, since the ACB analysis is performed
+                                                                     for a very limited selection of barring rates and barring times,
+   During this study, we closely follow the 3GPP recommenda-         the advantages of the proposed solution are magnified. Further-
+tions, as we have identified that the behavior of ACB is often-      more, the authors assume a constant barring time for all ACB
+times misinterpreted [18]. Specifically, we have observed that       checks, whereas the 3GPP states in [19] that the barring time is
+most studies analyzing the performance of ACB assume a fixed         calculated randomly for each ACB check. The use of a constant
+barring time, whereas the 3GPP specifies that this parameter is      barring time reduces the performance of ACB. The latter is a
+selected randomly for each barring check (process in which the       common problem in ACB analysis which is also present in [21],
+UE determines its barring status, please refer to Section III-C      where a dynamic approach for selecting the optimal barring
+for specific details of ACB and the barring checks) [14], [19].      rate is presented. Here, authors select a constant barring time of
+Hence, our study is one of the few that evaluates the ACB per-       one access opportunity, which highly differs from the protocol
+formance with a randomly selected barring time.                      specification [14], [19]. Besides, it is assumed that the eNB is
+                                                                     capable of updating and broadcasting the optimal barring rate at
+   The rest of the paper is organized as follows. In Section II,     the beginning of each access opportunity, which is clearly not
+we conduct a review of the literature regarding the performance      possible because the updating period of the system information
+analysis of LTE-A and ACB. Then, we describe the random              blocks is much longer.
+access in LTE-A, the physical RACH capacity, and the ACB
+scheme in Section III. The selected traffic model, the configu-         The implementation of a static barring scheme affects the ac-
+ration parameters, and the performance metrics for the RACH          cess delay of every UE, even in cases of no congestion, when
+evaluation are presented in Section IV. Our most relevant re-        the scheme is not needed at all. In these cases, the dynamic
+sults including the performance analysis of LTE-A and ACB are        adaptation of barring parameters may be desirable, but its im-
+shown in Sections V and VI, respectively. Finally, we present        plementation is not straightforward. Specifically, the activation
+our conclusions in Section VII.                                      and deactivation of dynamic barring schemes are based on the
+                                                                     collection of network congestion statistics (such as the ratio of
+                          II. RELATED WORK
+
+   The complexity of the random access procedure and the
+wide variety of configuration parameters make it challenging to
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS  3507
+
+Fig. 1. Resource allocation in a random access cycle. (a) Physical uplink resources for initial transmission. (b) Examples of six PRACH configurations, determined
+by prach-ConfigIndex; frame structure type 1 [28].
+
+transmitted preambles to successful accesses), which are dra-      periodicity of the RAOs ranges from a minimum of 1 RAO every
+matically altered whenever the barring scheme is active [21],      two frames to a maximum of 1 RAO every subframe, i.e., from
+[29]. This fact, in combination with the lack of knowledge         1 RAO every 20 ms to 1 RAO every 1 ms [13], [30], [14], [28].
+regarding the behavior of ACB, makes it extremely tough to
+develop an effective adaptive ACB scheme. As such, in this            As mentioned before, the PRACH carries a preamble (sig-
+study, we focus on the performance analysis of an ACB scheme       nature) for initial access to the network; up to R = 64 orthog-
+whose barring parameters remain static for the entire period in    onal preambles are available per cell. In the contention-free
+which the accesses of the UEs to the eNB are studied. A major      mode, collision is avoided through the coordinated assignment
+difference with many other studies is that we evaluate the per-    of preambles, but eNBs can only assign these preambles during
+formance of the ACB scheme considering that its parameters         specific slots to specific UEs. In the contention-based mode,
+can take any values within the whole range suggested by the        preambles are selected in a random fashion by the UEs, so there
+3GPP, avoiding the restriction of these parameters only to the     is a risk of collision, i.e., multiple UEs in the cell might pick the
+typical ones. This approach provides us with a wider perspective   same preamble signature in the same RAO; therefore, contention
+of the operation of the ACB scheme and enables the selection       resolution is needed. In the sequel, we focus on the analysis of
+of optimal parameter configurations.                               the contention-based random access procedure.
+
+                  III. RANDOM ACCESS IN LTE-A                      A. Contention-Based Random Access Procedure
+
+   This section provides a general overview of the random ac-         Before initiating the random access procedure, the UEs must
+cess procedure in LTE-A networks. Two modes are defined for        first obtain some basic configuration parameters such as the slots
+the random access: contention-free and contention-based. The       in which the transmission of preambles is allowed (RAOs). The
+former is used for critical situations such as handover, down-     eNB broadcasts this information periodically through Master
+link data arrival or positioning. The latter is the standard mode  Information Block (MIB) and System Information Blocks (SIBs).
+for network access; it is employed by UEs to change the radio      Once the UE has acquired this information, it may proceed
+resource control state from idle to connected, to recover from a   with the four-message handshake illustrated in Fig. 2. Next, we
+radio link failure, to perform uplink synchronization or to send   describe the four-message handshake of the contention-based
+scheduling requests [17].                                          random access and the backoff procedures. The interested reader
+                                                                   is referred to [14], [17], [31], [32] for further details.
+   Random access attempts of UEs are allowed in predefined
+time/frequency resources herein called RAOs. Two uplink chan-         RACH preamble (Msg1): Whenever a UE attempts transmis-
+nels are required; namely, the physical random access channel      sion, it sends a randomly chosen preamble in a RAO, Msg1.
+(PRACH) for preamble transmission and the physical uplink          Due to the orthogonality of the different preambles, multiple
+shared channel (PUSCH) for data transmission, see Fig. 1(a).       UEs can access the eNB in the same RAO, using different
+The PRACH is used to signal a connection request when a UE         preambles. The eNB can, without a doubt, decode a preamble
+attempts to access the cellular network. In the frequency do-      transmitted (with sufficient power) by exactly one UE and
+main, the PRACH is designed to fit in the same bandwidth as six    estimate the transmission timing of the terminal. However, if
+resource blocks of normal uplink transmission (6 × 180 kHz);       two or more UEs transmit the same preamble, two outcomes
+this fact makes it easy to schedule gaps in normal uplink trans-   are possible: in the first one, the transmitted preamble cannot be
+mission to allow for RAOs. In the time domain, the periodicity     decoded by the eNB, i.e., a collision occurs at the transmission
+of the RAOs is determined by the parameter prach-ConfigIndex,      of Msg1 (see Fig. 3(a)) and, in the second one, the transmitted
+provided by the eNB; a total of 64 PRACH configurations are        preambles are correctly decoded by the eNB. The main reason
+available, Fig. 1(b) illustrates some examples [28]. Thus, the     behind this second outcome is that the received power from
+                                                                   one of the transmitted preambles may be much higher than the
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3508                                                               IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+Fig. 2. LTE-A contention-based random access procedure.               Connection request (Msg3): After receiving the correspond-
+                                                                   ing RAR, the UE adjusts its uplink transmission time according
+others (capture effect [33] whose quantitative evaluation is out   to the received TA and transmits a scheduled message, Msg3, to
+of the scope of this study); hence, the different signals may      the eNB using the reserved PUSCH resources; hybrid automatic
+appear as a single transmission going through multiple fading      repeat request (HARQ) is used to protect the message transmis-
+paths. The preamble transmission may also fail because the UE      sion. Recall that, if the eNB correctly decoded the preambles
+is too far away from the eNB (insufficient transmission power).    transmitted by multiple UEs, these UEs will transmit their Msg3
+                                                                   over the same physical resources, thus generating a collision at
+   Random access response (Msg2): The eNB computes an              this point (see Fig. 3(b)). Therefore, the eNB will not be able to
+identifier for each successfully decoded preamble, ID =            decode the transmitted messages.
+f (preamble, RAO), and sends the random access response
+(RAR) Msg2 through the physical downlink control channel              Contention resolution (Msg4): The eNB transmits Msg4 as
+(PDCCH). It includes, among other data, information about the      an answer to Msg3. The eNB also applies an HARQ process
+identification of the detected preamble (ID), time alignment       to send Msg4 back to the UEs. If a UE does not receive Msg4
+(TA), uplink grants (reserved PUSCH resources) for the trans-      within the contention resolution timer, then it declares a failure
+mission of Msg3, the backoff indicator (BI), and the assignment    in the contention resolution and schedules a new access attempt
+of a temporary identifier.                                         according the considerations detailed in the next paragraph.
+
+   Exactly two subframes after the preamble transmission has          If an access failure occurs at any of the steps previously de-
+ended (this is the time needed by the eNB to process the received  scribed (due to insufficient transmission power or to a collision
+preambles), the UE begins to wait for a time window, RAR           or to the expiration of the contention resolution timer), then
+window (WRAR), to receive an uplink grant from the eNB.            the failed UEs ramp up their power and re-transmit a new ran-
+                                                                   domly chosen preamble in a new RAO, based on a uniform
+   There can be up to one RAR message in each subframe, but        backoff scheme (explained next) that uses the BI. Note that
+it may contain up to three uplink grants. Each uplink grant is     each UE keeps track of its preamble transmissions. When a UE
+associated to a successfully decoded preamble. The length of       has transmitted a certain number of preambles without success,
+the WRAR (in subframes) is broadcast by the eNB through the        preambleTransMax (notified by the eNB through a SIB), the
+SIB Type 2 (SIB2) [14]. Hence, there is a maximum number of        network is declared unavailable by the UE, a random access
+uplink grants that can be sent within the WRAR. Only the UEs       problem is indicated to upper layers, and the random access
+that receive an uplink grant can transmit the Msg3. In case the    procedure is terminated.
+eNB is not capable of decoding the preambles transmitted by
+multiple UEs, these UEs will not receive an uplink grant (failed      Backoff procedure: According to the LTE-A standard [17], if
+UEs).                                                              the random access attempt of a UE fails, regardless of the cause,
+                                                                   the UE has to start the random access procedure all over again.
+                                                                   For doing so, the UE should first perform a backoff procedure as
+                                                                   illustrated in Fig. 4. In this process, the UE waits for a random
+                                                                   time, TB O [ms], until it can attempt a new preamble transmission
+                                                                   as follows
+
+                                                                   TB O = U (0, BI),         (1)
+
+                                                                   where U(·) stands for uniform distribution, BI is the backoff
+                                                                   indicator defined by the eNB, and its value ranges from 0 to
+                                                                   960 ms. The value of BI is sent in the RAR (Msg2), which is
+                                                                   read by all the UEs that sent a RACH preamble in the previous
+                                                                   RAO. This means that every UE that did not get a Msg2, i.e.,
+                                                                   failed attempt, receives the BI.
+
+                                                                      Herein, we also studied the potential benefits of implementing
+                                                                   an exponential backoff scheme, where the backoff time, TB O ,
+                                                                   depends on the number of preamble transmissions of each UE,
+                                                                   k  {1, 2, . . . , kmax }, as follows
+
+                                                                   TB O = U (0, 10 × 2k-1),  (2)
+
+                                                                   where the value of kmax is defined by the parameter preamble-
+                                                                   TransMax, broadcast by the eNB through the SIB2 [14].
+
+                                                                   B. RACH Capacity
+
+                                                                      The capacity of the LTE-A RACH for the support of M2M
+                                                                   communications is determined by two network parameters:
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS                        3509
+
+Fig. 3. Collision outcomes in the LTE-A contention-based random access procedure. (a) Collision at the transmission of Msg1. (b) Collision at the transmission
+
+of Msg3. Ri , Rh , and Rk are the preambles transmitted at the i th, h th, and kth RAO, respectively, TA represents the time alignment provided by the eNB, and
+Uplink grant is the reserved physical uplink shared channel (PUSCH) resources for Msg3 transmission.
+
+                                                                      a significant amount of memory (around 4.9 Mbits for a pool of
+                                                                      64 preambles).
+
+                                                                         In [27], it is found that the capacity of the PRACH, c(R),
+                                                                      defined as the maximum expected number of preambles se-
+                                                                      lected by exactly one UE in a RAO, i.e., the maximum value
+                                                                      of the expected number of UEs that access successfully in a
+                                                                      RAO, approximately coincides with the maximum number of
+                                                                      stationary UE arrivals per RAO that the PRACH can handle ef-
+                                                                      ficiently, c^(R). In other words, the performance of the PRACH
+                                                                      drops whenever the number of UEs that begin the random ac-
+                                                                      cess procedure at each and every RAO is N  c^(R). If R is
+                                                                      the number of available preambles and Ni is the number of
+                                                                      UEs accessing at the ith RAO, it can be easily shown [27] that
+                                                                      the expected number of preambles selected by exactly one UE
+                                                                      is Ni (1 - 1/R)Ni -1 (see Fig. 5) and its maximum, c(R), is
+                                                                      achieved when Ni = [log (R/ [R - 1])]-1  R, given as fol-
+                                                                      lows
+
+Fig. 4. Backoff procedure performed by the failed UEs.                                                             R    -1
+                                                                                                                  R -1
+   1) Number of available preambles: According to the LTE-                           R  -1 1 - 1             log            -1
+A physical layer standard [28], preambles are constructed using                    R-1            R
+Zadoff-Chu (ZC) sequences [34]. These sequences possess good          c(R) =  log                                             , (3)
+periodic correlation properties, i.e., a negligible time is required
+to calculate its correlation, which allows the LTE-A system to        which, for instance, when R = 54 yields c(54) = 20.05 suc-
+efficiently support a large number of users per cell. Nevertheless,   cessfully transmitted preambles per RAO, see Fig. 6. Further-
+ZC sequences are difficult to generate in real-time due to the        more, c(R) can be approximated as follows
+nature of their construction [35], [36] and storing them requires
+                                                                              c(R)  R 1 - 1           R -1        R         (4)
+                                                                                        R                           .
+                                                                                                                  e
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3510                                                                        IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+                                                                                                      TABLE I
+                                                                                   ACCESS CLASSES DEFINED BY 3GPP [19]
+
+                                                                            Access class numbers M2M device
+
+                                                                            0­9    Normal UEs
+                                                                            10     Indicates network access for Emergency Calls
+                                                                            11­15  Higher priority UEs
+
+Fig. 5. Expected number of preambles selected by exactly one UE at the         The performance of LTE-A plummets whenever the number
+ith RAO for the given number of available preambles, R, and the number of   of UE arrivals per RAO, N , exceeds either the PRACH capacity,
+preamble transmissions, Ni [27, Fig. 3].                                    c(R), or the number of uplink grants that the eNB can send
+                                                                            between two consecutive RAOs, NU L . Thus, the main objective
+                                                                            of congestion control schemes should be to spread UE arrivals
+                                                                            through time to maintain the number of UE arrivals per RAO,
+                                                                            N , below NU L and c(R), i.e., N  min{NU L , c(R)}.
+
+Fig. 6. Maximum expected number of UEs that access successfully in a RAO,   C. Access Class Barring
+c(R), calculated as [27] and the R/e approximation for the given number of
+available preambles, R.                                                        Access Class Barring (ACB) is a congestion control scheme
+                                                                            designed for limiting the number of simultaneous access at-
+   The first approximation is highly accurate for practical values          tempts from certain UEs according to their traffic characteris-
+of R, and both of them turn out to be lower bounds of c(R) as               tics. For doing so, all UEs are assigned to 16 mobile populations,
+well. Please refer to the Appendix for more details on this matter.         defined as access classes (ACs) 0 to 15 (see Table I). The popu-
+                                                                            lation number is stored in UE's SIM/USIM. Each UE belongs to
+   Hence, assuming a typical PRACH configuration (prach-                    one out of the first 10 ACs (from ACs 0 to 9) and can also belong
+ConfigIndex 6, in conformance to the LTE-A specification [16],              to one or more out of the five special categories (ACs 11 to 15).
+[17]), the PRACH can handle a maximum of c^(R)  20.05 sta-                  Thus, M2M devices may be assigned an AC between 0 and 9,
+tionary UE arrivals per RAO and, given that RAOs occur every                and if a higher priority is needed, other classes may be used. In
+TRAO = 5 ms, a maximum of c^(R) = c^(R)/TRAO = 4010 sta-                    particular embodiments, AC 10 is used for an emergency call,
+tionary UE arrivals per second.                                             while AC 11 to AC 15 are special high priority classes [37],
+                                                                            [38]. Under the ACB scheme, the network operator may pre-
+   2) Number of available uplink grants per RAO: Up to                      vent certain UEs from making access attempts or responding
+NRAR = 3 uplink grants can be sent at each subframe in a RAR                to paging messages in specific areas of a public land mobile
+message, as the length of a downlink control message is 16                  network (PLMN) based on the corresponding AC [19], [39].
+control channel elements (CCEs), the size of uplink grant and
+contention resolution messages is 4 CCEs and, at least, 4 CCEs                 The main purpose of ACB is to redistribute the access re-
+are reserved in each subframe for a contention resolution mes-              quests of UEs through time to reduce the number of access re-
+sage, Msg4. In the prach-ConfigIndex 6, RAOs occur every                    quests per RAO. This fact helps to avoid massive-synchronized
+5 ms (subframes) and the RAR window size (the time a UE is                  accesses demands to the PRACH, which might jeopardize the
+set to wait for the RAR) is set to WRAR = 5 subframes. As a                 accomplishment of QoS objectives. Fig. 7 illustrates the ACB
+result, the maximum number of uplink grants that can be sent                process [14], [19]. Note that ACB is applied to the UEs be-
+within the selected WRAR is NU L = NRAR × WRAR = 15.                        fore they perform the random access procedure explained in
+                                                                            Section III-A.
+
+                                                                               If ACB is not implemented, all ACs are allowed to access
+                                                                            the PRACH. When ACB is implemented, the eNB broad-
+                                                                            casts (through SIB2) mean barring times, TACB  {4, 8, 16,
+                                                                            . . . , 512 s}, and barring rates, PACB  {0.05, 0.1, . . . ,
+                                                                            0.3, 0.4, . . . , 0.7, 0.75, 0.8, . . . , 0.95}, that are applied to ACs
+                                                                            0­9. Then, at the beginning of the random access procedure,
+                                                                            each UE determines its barring status with the information
+                                                                            provided from the eNB. For this, the UE generates a random
+                                                                            number between 0 and 1, U[0, 1). If this number is less than
+                                                                            or equal to PACB, the UE selects and transmits its preamble.
+                                                                            Otherwise, the UE waits for a random time calculated as
+                                                                            follows
+
+                                                                                   Tbarring = [0.7 + 0.6 × U [0, 1)] × TACB.  (5)
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS                                     3511
+
+                                                                                                     TABLE III
+                                                                                              RACH CONFIGURATION
+
+                                                                   Parameter                                             Setting
+
+                                                                   PRACH Configuration Index                   prach-ConfigIndex = 6
+
+                                                                   Periodicity of RAOs                                   5 ms
+
+                                                                   Subframe length                                       1 ms
+
+                                                                   Available preambles for contention-based              R = 54
+                                                                   random access
+
+                                                                   Maximum number of preamble transmissions preambleTransMax = 10
+
+                                                                   RAR window size                                WRAR = 5 subframes
+
+                                                                   Maximum number of uplink grants per                NRAR = 3
+                                                                   subframe
+
+                                                                   Maximum number of uplink grants per RAR     NU L = WRAR × NRAR = 15
+                                                                   window
+
+                                                                   Preamble detection probability for the kth     Pd  =  1-   1    [16]
+                                                                   preamble transmission                                     ek
+
+                                                                   Backoff Indicator                                  BI = 20 ms
+
+                                                                   Re-transmission probability for Msg3 and               0.1
+                                                                   Msg4
+
+                                                                   Maximum number of Msg3 and Msg4                        5
+                                                                   transmissions
+Fig. 7. Access class barring scheme.
+                                                                   Preamble processing delay                          2 subframes
+                                         TABLE II
+              M2M TRAFFIC MODELS FOR RACH EVALUATION [16]          Uplink grant processing delay                      5 subframes
+
+                                                                   Connection request processing delay                4 subframes
+
+                                                                   Round-trip time (RTT) of Msg3                      8 subframes
+
+                                                                   RTT of Msg4                                        5 subframes
+
+Characteristics              Traffic model 1 Traffic model 2
+
+Number of M2M UEs (NM )      1000, 3000, 5000,  1000, 3000, 5000,  M2M UEs with different access request intensities. The access
+                               10000, 30000       10000, 30000     attempts of H2H UEs are distributed uniformly over time with
+Arrival distribution over T       Uniform           Beta(3, 4)     an arrival rate of H = 1 arrivals/s. Regarding the M2M UEs,
+Distribution period, T           60 seconds         10 seconds     NM = 30000 UEs (unless otherwise stated) access the eNB as
+                                                                   described in traffic model 2 (see Table II). As such, we evaluate
+   It is worth noting that ACB is only useful for relieving spo-   the performance of the RACH in the most congested scenario
+radic periods of congestion, i.e., when a massive number of        suggested by the 3GPP.
+UEs attempt transmission at a given time but the system is not
+continuously congested. In other words, ACB spreads the load          In this study, we assume a typical PRACH configuration,
+offered to the system through time, but the total offered load is  prach-ConfigIndex 6, where the subframe length is 1 ms and
+not affected.                                                      the periodicity of RAOs is 5 ms. R = 54 out of the 64 available
+                                                                   preambles are used for contention-based random access and
+                       IV. RACH EVALUATION                         the maximum number of preamble transmissions of each UE,
+                                                                   preambleTransMax, is set to 10. Table III lists the parameters
+   Comparing novel congestion control schemes is not straight-     used throughout our analysis (unless otherwise stated).
+forward due to the large number of variables and test scenarios.
+For that reason, 3GPP TR 37.868 [16] has defined two different        The five KPIs for the purpose of RACH capacity evaluation
+traffic models, see Table II, and five key performance indicators  are the following [16]:
+(KPIs) to assess the efficiency of the LTE-A random access pro-
+cedure with M2M communications. These directives allow for            1) Collision probability, defined as
+a fair comparison of novel congestion solution proposals.
+                                                                   Pc         =  Number  of   preambles transmitted   by  multiple  UEs
+   Regarding the traffic models for M2M communications, traf-                                          R × NRAOs                         ,
+fic model 1 can be considered as a typical scenario in which
+the arrivals of NM M2M UEs are uniformly distributed over a                                                                              (6)
+period, i.e., in a non-synchronized manner. Traffic model 2 can
+be seen as an extreme scenario in which a vast number of M2M       where NRAOs is the number of consecutive RAOs that
+UE arrivals occur in a highly synchronized manner, e.g., after     compose the measurement period.
+an application alarm that activates them.
+                                                                   2) Access success probability, Ps, defined as the fraction of
+A. Simulation Assumptions, PRACH Configuration, and
+Performance Metrics                                                UEs that successfully complete the random access proce-
+
+   A single cell environment is assumed to evaluate the net-       dure.
+work performance. The system accommodates both H2H and
+                                                                   3) Statistics of the number of preamble transmissions for
+
+                                                                   the UEs that successfully complete the random access
+
+                                                                   procedure. We assess this KPI in terms of its mean value,
+
+                                                                   E [k].
+
+                                                                   4) Statistics of the access delay, i.e., the time elapsed between
+
+                                                                   the first access attempt (preamble transmission or ACB
+
+                                                                   check) and the successful completion of the random access
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3512                                                                  IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+                                     TABLE IV
+COMPARISON OF THE ACCESS SUCCESS PROBABILITY, Ps , FOR COLLISION
+
+                      MODEL 1 AND COLLISION MODEL 2
+
+      UEs Collision model 1 Collision model 2
+
+      M2M  31.305%  16.426%
+      H2H  61.335%  48.091%
+
+       procedure. To assess this KPI we obtain its cumulative         Fig. 8. Access success probability of UEs, Ps , given the number of UE
+       distribution function (CDF) and the 10th, 50th and 95th        accesses per RAO, N  {1, 2, . . . , 40}, and the number of available preambles,
+       percentile, D10, D50 and D95, respectively.                    R  {20, 30, 40, 54, 64}.
+   5) Statistics of the simultaneous preamble transmissions. We
+       assess this KPI in terms of the maximum number of total        UEs, which will cause a collision during the transmission of
+       preamble transmissions per RAO.                                Msg3 and leads to (i) the waste of the limited uplink grants,
+   To obtain these KPIs, we developed two independent discrete-       and (ii) the increase of the number of contending UEs in future
+event simulators that allow us to corroborate our results. The        RAOs.
+first one is coded in Matlab and the second one is C-based. In
+each simulation, NM UE arrivals are distributed within a period          Hereafter, we select collision model 1 to conduct the perfor-
+of T seconds (see Table II), and the contention-based random          mance analysis of LTE-A as suggested by the 3GPP [16] because
+access procedure described in Section III-A is replicated with        selecting collision model 2 would magnify the increase in the
+the parameters listed in Table III. Simulations are run j times       performance provided by the implementation of ACB. Please
+until each and every one of the cumulative KPIs obtained at           note that if a different collision model is used, the performance
+the jth simulation differed from those obtained at the (j - 1)th      of the RACH will differ from the one presented in this study.
+simulation by less than 0.1 percent; different simulation seeds
+are used.                                                                          V. PERFORMANCE ANALYSIS OF LTE-A
+
+B. Collision Model                                                       In this section, we present some relevant results derived from
+                                                                      our performance analysis of the LTE-A random access pro-
+   As mentioned in Section III-A, if two or more UEs transmit         cedure. We begin our analysis by evaluating the capacity of
+the same preamble simultaneously, two outcomes are possible.          the PRACH. For this, we generate a stationary distribution of
+In the first one, see Fig. 3(a), a collision occurs at the transmis-  N  {1, 2, . . . , 40} new UE arrivals per RAO and study the
+sion of Msg1 and, in the second one, see Fig. 3(b), a collision       effect of the number of available preambles, R, on the access
+occurs at the transmission of Msg3. To evaluate the impact of         success probability of UEs, Ps. To overcome the limitations
+these two possible outcomes on the network performance, we            of the PDCCH and evaluate the PRACH on its own, we as-
+have defined two collision models, namely collision model 1           sume that NU L = R. Fig. 8 illustrates the evolution of Ps for
+and collision model 2. In collision model 1, all the collisions       R  {20, 30, 40, 54, 64}. It can be observed that for each R,
+occur at the transmission of Msg1, i.e., the eNB is not capable       Ps  1 up to a maximum value of N and then plummets. For
+of decoding any of the preambles transmitted by multiple UEs,         example, when R = 54, Ps  1 until N  20, then Ps drops
+so the uplink grants are only sent to the preambles transmit-         rapidly as N increases. Note that, c^(R) = {max(N )|Ps  1}
+ted by exactly one UE. In collision model 2, Msg1 is always           in a complex real scenario like the one studied is close to the
+correctly decoded (the eNB successfully decodes the preambles         PRACH capacity per RAO, c(R), defined by (3), that was ob-
+transmitted by multiple UEs), and all the collisions occur at the     tained using relatively simple arguments. Hence, there is a max-
+transmission of Msg3. Note that, in practice, both types of colli-    imum stationary UE arrival rate, c^(R)  c(R), for which UEs
+sions might occur. However, our interest is to study and compare      can efficiently access the PRACH.
+the behavior of the RACH in these extreme operation scenarios.
+Then, the performance of real scenarios will be bounded by that          Once we have studied the behavior of the PRACH in steady
+of the extreme ones.                                                  state, we proceed to investigate the performance of the LTE-A
+                                                                      random access procedure according to the assumptions and the
+   We have simulated the random access procedure with the             simulation parameters detailed in Section IV-A and Table III, re-
+selected traffic characteristics (traffic model 2 and NM = 30000      spectively. As a baseline, Fig. 9 illustrates the expected number
+M2M UEs) using, on the one hand, the collision model 1 and            of UE arrivals per RAO (number of UEs that begin its ran-
+on the other hand, the collision model 2. The obtained access         dom access procedure at the ith RAO), preambles with collision
+success probability, Ps, of both M2M and H2H UEs is shown             (collided preambles), successful accesses (UEs that complete
+in Table IV. It can be clearly observed that the Ps obtained
+under collision model 2 is much lower than the one obtained
+under collision model 1. This drastic reduction in Ps is mainly
+because in collision model 2 some uplink grants are sent in
+response to the transmission of a given preamble by multiple
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS  3513
+
+                                                                               As mentioned in Section III-B, preambles are constructed
+                                                                            using Zadoff-Chu sequences that are difficult to generate in
+                                                                            real-time due to the nature of their construction and storing them
+                                                                            requires a significant amount of memory. Hence, such a dramatic
+                                                                            increase in the number of available preambles (R  90) may
+                                                                            not be possible. Instead of increasing the number of available
+                                                                            preambles, R, studies such as [40]­[43] propose schemes for a
+                                                                            more efficient utilization of preambles as a better solution for
+                                                                            relieving PRACH congestion.
+
+Fig. 9. Temporal distribution of M2M UE arrivals, total preamble transmis-  B. Impact of Modifying the Backoff Scheme
+sions, collided preambles, and successful accesses; traffic model 2, NM =
+30000.                                                                         According to the standard [17], UEs perform a uniform
+                                                                            backoff, TB O = U (0, BI = 20) ms, after a collision. We have
+the random access procedure successfully), and total preamble               previously observed that the use of this backoff scheme is not
+transmissions per RAO. Note that when NM = 30000, traffic                   sufficient for relieving the congestion in the random access chan-
+model 2 leads to network congestion, as the Beta(3, 4) distribu-            nels. On this basis, we investigate the use of an exponential back-
+tion of UE arrivals exceeds the PRACH capacity (c(54) = 20.05               off scheme, where the backoff time of each M2M UE depends on
+UE arrivals per RAO as calculated using (3) and NU L = 15)                  the number of preamble transmission being attempted by that
+from the 343rd to the 1329th RAO. This massive number of                    specific UE, k  preambleTransMax, and is given by (2). As
+UE arrivals results in a congestion period of Tc = 4.93 s, where            mentioned in Section IV-A, the H2H UE arrivals are distributed
+up to 300 average preamble transmissions per RAO occur at                   uniformly over time, with an arrival rate of H = 1 arrivals/s.
+the 800th RAO. As a result, the average number of successful
+accesses sharply decreases during this period, and the access                  Fig. 10(b) shows the Ps of M2M and H2H UEs when im-
+success probability is severely affected: Ps = 31.305 %.                    plementing the uniform and the exponential backoff schemes.
+                                                                            On the one hand, it can be observed that the maximum num-
+   For the remainder of this paper, we focus on increasing the              ber of M2M UEs that leads to Ps  0.95 is approximately
+performance of the LTE-A random access procedure (assessed                  NM  16000 given the implementation of the uniform back-
+in terms of the KPIs defined in Section IV-A) when a massive                off and is NM  19000 when implementing the exponential
+number of M2M UEs, NM = 30000, access the eNB according                     backoff scheme. Hence, the use of an exponential backoff in-
+to traffic model 2. In the following, we investigate:                       creases the number of UEs that can efficiently access the eNB.
+                                                                            Nevertheless, the use of an exponential backoff is insufficient
+   1) The number of available preambles, R, required to achieve             in cases of severe congestion, e.g., when NM  20000. On the
+       a Ps  1.                                                             other hand, it can also be observed from Fig. 10(b) that, in most
+                                                                            cases, H2H UEs obtain a higher Ps than M2M UEs; this fact oc-
+   2) The impact of the implementation of an exponential                    curs because H2H UEs are distributed uniformly through time
+       backoff scheme instead of the standard uniform backoff               whereas the arrivals of M2M UEs are highly concentrate in a
+       scheme on the network performance.                                   short time interval, i.e., between the 343rd and the 1329th RAOs.
+                                                                            As a result, most of the H2H UEs begin its random access pro-
+   3) The impact of the manipulation of preambleTransMax on                 cedure in RAOs with a low number of preamble transmissions,
+       the network performance.                                             where the access success probability is high. On the contrary,
+                                                                            most of the M2M UEs begin its random access procedure in
+   Next, we detail the analysis and the results of modifying the            RAOs with a high number of preamble transmissions, where
+three configuration parameters mentioned above.                             the access success probability is low.
+
+A. Impact of Increasing the Number of Available Preambles                   C. Impact of Modifying the Maximum Number of Preamble
+                                                                            Transmissions
+   To investigate whether increasing the number of available
+preambles can relieve congestion, we obtained the Ps of M2M                    In Section V, we have observed that severe congestion occurs
+UEs for several values of R, see Fig. 10(a). Note that we as-               when NM = 30000 UEs attempt to access the eNB according to
+sume NU L = R. Here we observe that Ps  0.9 is only achieved                traffic model 2. Specifically, during the period of congestion, up
+when R  90. In other words, a dramatic increase in the num-                 to 300 preamble transmissions per RAO occur, see Fig. 9. Such
+ber of available preambles, R, is needed to avoid PRACH con-                a high number of preamble transmissions is the consequence of
+gestion considering the most severely congested test scenario               the fact that the higher the number of preamble transmissions in
+suggested by the 3GPP.                                                      a RAO, the lower the probability of a successful preamble trans-
+                                                                            mission. This fact, in turn, increases the probability of preamble
+                                                                            re-transmissions in the following RAOs, hence the probabil-
+                                                                            ity of a successful preamble transmission is further reduced.
+                                                                            Therefore, during periods of congestion, the total number of
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3514                                                                       IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+Fig. 10. Access success probability, Ps , of M2M and H2H UEs (H = 1 arrivals/s). (a) Ps of M2M UEs only given the number of available preambles, R,
+
+(b) Ps of M2M and H2H UEs given the number of M2M UEs, NM , and (c) Ps of M2M and H2H UEs given the maximum number of preamble transmissions,
+kmax = preambleTransMax. In (a) and (c) the number of M2M UEs is NM = 30000 and the uniform backoff is used.
+
+Fig. 11. Temporal distribution of M2M UE arrivals, decoded preambles       probability, reducing the number of preamble transmissions also
+and successful UE accesses, traffic model 2, NM = 30000, uniform backoff,  reduces the energy consumption of UEs in highly congested sce-
+kmax = preambleTransMax  {3, 10}.                                          narios. This is highly desirable because the UEs are oftentimes
+                                                                           battery supplied.
+preamble transmissions per RAO is highly influenced by the
+parameter preambleTransMax (maximum number of preamble                        It is worth noting that by selecting preambleTransMax = 3
+transmissions). Hence, we now evaluate whether the congestion              the average number of successful accesses per RAO during con-
+of the LTE-A random access channels can be reduced by the                  gestion is close to the maximum number of uplink grants per
+modification of this parameter. In Fig. 10(c) we show the Ps of            RAO that can be sent by the eNB, NU L = 15. Hence, a high per-
+M2M and H2H UEs when preambleTransMax  {1, . . . , 10}.                    centage of the system capacity is being utilized. Nevertheless,
+Note that the highest Ps for both M2M and H2H UEs is achieved              the available uplink grants per RAO, NU L , are insufficient for
+when preambleTransMax = 3, despite the fact that the UEs in-               assigning resources to the vast number of UE arrivals. Note that
+crease their transmission power at each preamble transmission,             combining the use of an exponential backoff with the reduction
+which in turn increases the preamble detection probability, Pd .           of preambleTransMax would not be effective, i.e., in the expo-
+These results highlight the importance of reducing congestion              nential backoff, the upper limit of the backoff time increases
+in order to enhance performance.                                           with the number of failed preamble transmissions. Thus, the
+                                                                           backoff time for the first few preamble transmissions is low.
+   To observe more closely the behavior of LTE-A
+when preambleTransMax = 3, the average number of de-                          In Sections V-B and V-C we have shown that either im-
+coded preambles, and successful accesses per RAO given                     plementing an exponential backoff or reducing the maximum
+preambleTransMax  {3, 10} are shown in Fig. 11. It can be                  number of preamble transmissions increases the performance
+seen that a higher number of successful accesses per RAO is                of the LTE-A RACH. However, the manipulation of neither of
+achieved when preambleTransMax = 3, which is due to a lower                those parameters can prevent the system capacity from being
+number of preamble transmissions per RAO. In addition to low-              exceeded. Yet another parameter that can be manipulated in an
+ering congestion, which in turn increases the access success               attempt to relieve PRACH congestion is the number of RAOs
+                                                                           scheduled per frame. For instance, increasing the number of
+                                                                           RAOs per frame would reduce the number of contending UEs
+                                                                           per RAO. Nevertheless, this approach has several drawbacks: (i)
+                                                                           it implies a reduction of the number of resources available for
+                                                                           data transmission and, hence, a contraction of the data transport
+                                                                           capacity of the uplink channel; (ii) the total number of RAOs
+                                                                           that can be allocated in an LTE-A frame is limited; and (iii)
+                                                                           the maximum number of uplink grants that can be sent by the
+                                                                           eNB per frame is fixed, so the limitations of the PDCCH remain
+                                                                           constant.
+
+                                                                              Consequently, a congestion control scheme with configurable
+                                                                           parameters that can efficiently spread the UE arrivals through
+                                                                           time must be implemented to drastically enhance the perfor-
+                                                                           mance of the LTE-A. Next, we investigate the impact of the
+                                                                           ACB congestion control scheme on the network performance.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS  3515
+
+                                                                          Fig. 13. Temporal distribution of M2M UE arrivals, first preamble transmis-
+                                                                          sions, total preamble transmissions, collided preambles and successful accesses,
+                                                                          given PACB = 0.5 and TACB = 4 s, uniform backoff.
+
+Fig. 12. Access success probability of (a) M2M and (b) H2H UEs under the  Fig. 14. Mean number of preamble transmissions for the successfully accessed
+ACB scheme.                                                               M2M UEs under the ACB scheme.
+
+              VI. PERFORMANCE ANALYSIS OF ACB                             the implementation of an exponential backoff, see Fig. 12(a),
+                                                                          we observe that, for the latter, shorter barring times are needed
+   In this section, we study the impact of the implementa-                to achieve the same Ps. Please note that the H2H UEs always
+tion of the access class barring (ACB) scheme on the perfor-              perform a uniform backoff. Therefore, implementing an expo-
+mance of LTE-A networks with massive M2M traffic. For the                 nential backoff in the M2M UEs does not lead to a noticeable
+sake of simplicity, we assess the performance of LTE-A with               increase in the Ps of H2H UEs, so these results have been omit-
+an implemented ACB in terms of three KPIs, namely the access              ted in Fig. 12(b).
+success probability, Ps, the access delay, and the average num-
+ber of preamble transmissions, E [k], which is closely related               Also note that Ps  0.95 for M2M UEs is only achieved when
+to energy consumption. Our main objective is to identify the              selecting PACB  0.5. The effect of ACB on the UE arrivals can
+configuration of ACB parameters that result in an acceptable              be closely observed in Fig. 13, where the average number of
+Ps. Specifically, we aim to identify the combinations of barring          UE arrivals, preamble transmissions, collided preambles, and
+rates, PACB, and barring times, TACB, that result in Ps  0.95             successful accesses per RAO given PACB = 0.5 and TACB = 4 s
+for the M2M UEs.                                                          are shown. This particular combination of barring parameters
+                                                                          leads to Ps = 97.44 % for the M2M UEs. Such a high Ps is
+   Fig. 12 shows the Ps of M2M and H2H UEs, given PACB                    achieved because ACB reduces the UE arrivals per RAO from
+{0.3, 0.5, 0.7, 0.9} and TACB  {1, 2, 3, 4, 5, 8, 16} s. It can be        a maximum of 31.104 to 16.347, which is close to NU L = 15
+seen that, for every one of the given barring rates PACB, the             and below c^(R) = 20.05. As a result, we observe a dramatic re-
+access success probability, Ps, increases with the barring time,          duction in the number of collisions and preamble transmissions
+TACB. Nevertheless, for each PACB there exists a maximum value            per RAO when compared with those of Fig. 9.
+of Ps that is achieved at a certain TACB. Once this maximum
+Ps for each PACB is reached, further increasing TACB has no                  Next, we proceed to investigate the number of preamble trans-
+observable effect on Ps.                                                  missions, k, performed by the UEs that successfully complete
+                                                                          the random access procedure. In Fig. 14, we show the mean
+   If we compare the Ps of the M2M UEs achieved with the im-
+plementation of a uniform backoff with the one achieved with
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3516                                                                             IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+                                                                                                            TABLE V
+                                                                                 ACCESS DELAY OF H2H UES UNDER THE ACB SCHEME
+
+                                                                                 PACB  TACB [s]  D10 [ms]  D50 [ms]  D95 [ms]
+                                                                                 0.3
+                                                                                           2      15.195    20.385    56.823
+                                                                                 0.5       3      15.203    20.109    55.171
+                                                                                           4      15.202    18.286    51.187
+                                                                                           5      15.204    18.865    51.951
+                                                                                           8      15.198    16.536    50.785
+                                                                                          16      15.197    15.997    50.730
+                                                                                           2      15.160    20.369    61.278
+                                                                                           3      15.183    20.321    60.685
+                                                                                           4      15.195    20.323    60.235
+                                                                                           5      15.193    19.304    55.264
+                                                                                           8      15.196    19.424    54.080
+                                                                                          16      15.196    17.827    50.915
+
+Fig. 15. (a) Percentiles of access delay of M2M UEs under the ACB scheme,        needed for a UE to successfully complete its random access pro-
+in logarithmic scale, for the combinations of PACB and TACB that result in Ps    cedure, is not viable when performing ACB because this value
+0.95. (b) Cumulative distribution function of access delay for the combinations  is not upper bounded. In other words, there is no upper limit
+that lead to the shortest D50 and D95, given Ps  0.95.                           for the number of ACB checks to be performed by a UE, hence
+                                                                                 the maximum delay, limNM  D100 = . As such, Fig. 15(a)
+number of preamble transmissions, E [k], given PACB                              illustrates the 10th percentile, D10, the 50th percentile, D50, and
+{0.3, 0.5} as those barring rates lead to Ps  0.95 (except for                   the 95th percentile, D95, given that Ps  0.95.
+the lowest values of TACB, see Fig. 12). It can be seen that both
+high values of PACB and low values of TACB increase E [k]. From                     As expected, a combination of low values of TACB with high
+Fig. 12 we observed that the implementation of an exponential                    PACB reduces the access delay. Also, though selecting a long
+backoff increases Ps in cases where a Ps < 0.95 is achieved by                   TACB does not greatly affect Ps , see Fig. 12(a), it sharply in-
+the use of a uniform backoff. On the other hand, from Fig. 14 we                 creases the access delay, as shown in the y-axis of Fig. 15(a)
+observe that, in the mentioned cases, E[k] also increases. Thus,                 in logarithmic scale. Hence, a long TACB should be avoided.
+implementing an exponential backoff scheme may slightly in-                      In Fig. 15(a) it can also be seen that, for the cases of interest,
+crease Ps at the cost of increasing the energy consumption. In                   the delay experienced by the M2M UEs is almost the same
+cases where both backoff schemes would lead to Ps  0.95,                         when either a uniform or an exponential backoff scheme is im-
+E [k] is almost identical.                                                       plemented. Also, note that the combination of TACB = 3 s and
+                                                                                 PACB = 0.5 with the exponential backoff leads to Ps  0.95. It
+   Finally, we studied the access delay when ACB is imple-                       is in this case that the overall shortest D50 and D95 are achieved.
+mented; Fig. 15 illustrates these results. We calculate the ac-                  On the other hand, the shortest delay percentiles for the uni-
+cess delay as the time elapsed between the arrival of a UE                       form backoff are achieved by the selection of TACB = 4 s and
+and the successful completion of its random access procedure,                    PACB = 0.5. Note that shorter delay percentiles are obtained by
+according to the timing values illustrated in Fig. 2 [32, Table                  selecting TACB = 3 s and PACB = 0.5 with the uniform backoff;
+16.2.1-1]. For the sake of simplicity, we evaluate the access                    however, the desired Ps  0.95 is not met as can be seen in
+delay in terms of percentiles, defined as the maximum delay                      Fig. 12(a). It is worth mentioning that the effect of ACB in the
+experienced by the N UEs with the lowest delay, for the given                    access delay of H2H UEs is almost negligible, as can be seen in
+  {0.1, 0.5, 0.95}. It is worth noting that evaluating delay in                  Table V for PACB  {3, 5}.
+terms of its maximum achievable value, i.e., the maximum time
+                                                                                    In Fig. 15(b) we compare the CDF of access delay between the
+                                                                                 selection of a uniform backoff along with TACB = 4 s, PACB =
+                                                                                 0.5 with that of an exponential backoff along with TACB = 3 s,
+                                                                                 PACB = 0.5. In the former, the initial growth is much more rapid.
+                                                                                 Nevertheless, in the latter, shorter D50 and D95 are achieved.
+
+                                                                                 A. Optimal ACB Parameter Configuration
+
+                                                                                    In this section, we evaluate the performance of ACB in terms
+                                                                                 of delay and energy consumption. Recall that, if a large num-
+                                                                                 ber of devices try to access the RACH in a short period, the
+                                                                                 preamble collisions increase significantly, resulting in huge ac-
+                                                                                 cess delays. Besides, in such a congested scenario, the repeated
+                                                                                 transmission attempts increase the energy consumption of M2M
+                                                                                 devices, most of which will be energy-constrained. To mini-
+                                                                                 mize the adverse effects of congestion mentioned above, the
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS                                                                       3517
+
+Fig. 16.  ACB optimal parameter  configuration that  leads to Ps    0.95. (a)  TACB  defined  as (7),  (b) E  [k]  =  E [k]  when  TACB  ,  and  (c)  D      =  D95  when  T ACB ,
+                                                                                                                                                         95
+for the given PACB.
+
+configuration parameters of ACB, PACB, and TACB, have to be                                                    VII. CONCLUSION
+adjusted adequately. Here, we determine the optimal selection
+                                                                                        We have performed a thorough study of the massive access
+of PACB and TACB among those pairs that yields an acceptable Ps                      of M2M UEs in LTE-A cellular networks. As a baseline, we
+for traffic model 2 and NM = 30000. For doing so, we first iden-                     obtained several key performance indicators (KPIs) to evaluate
+tify the minimum value of TACB  {0.05, 0.1, . . .} [s] for a given                   the performance of LTE-A when M2M arrivals follow either
+PACB that leads to an access success probability higher than 0.95,                   a uniform or a Beta(3, 4) distribution as described by traffic
+that is,                                                                             models 1 and 2, respectively.
+
+          TACB = min{TACB | Ps (PACB, TACB)  0.95},                 (7)                 We observed that traffic model 2, which describes the bursty
+                                                                                     arrivals of a massive number of M2M UEs to an evolved Node B
+then we assess the provided QoS in terms of the expected                             (eNB), leads to severe congestion if the eNB lacks a congestion
+                                                                                     control scheme. We observed that severe congestion persists re-
+number of preamble transmissions for the successfully ac-                            gardless of the modification of network parameters such as the
+cessed UEs, E [k], and the 95th percentile of access delay,                          maximum number of allowed preamble transmissions, pream-
+D95 for the given TACB. The obtained TACB, E [k], and D95 for                        bleTransMax, and the selected backoff scheme. Furthermore,
+each PACB  {0.01, 0.02, . . . , 0.99} are shown in Fig. 16(a),                       the severity of congestion increases in cases where collisions
+Fig. 16(b), and Fig. 16(c), respectively, with the uniform and                       occur during the transmissions of Msg3.
+
+exponential backoff. The variability in the curves is caused by                         As such, we have studied the access class barring (ACB)
+                                                                                     scheme for dealing with PRACH overload and analyzed the
+the granularity of both PACB and TACB.                                               impact of its configuration parameters on the network perfor-
+   The results presented in Fig. 16(a) confirm that, if the ex-                      mance. We assume that access success probability, Ps, is the
+                                                                                     main KPI; hence, we first focus on identifying the combina-
+ponential backoff is selected, shorter barring times are needed                      tions of barring rates and barring times for which the system
+to achieve Ps  0.95 when compared to those of the uniform                            achieves a Ps  0.95. Then, we studied other KPIs such as the
+backoff. It can also be seen that there exists a maximum PACB                        number of preamble transmissions and the access delay, where
+for each backoff scheme that can be selected in order to achieve                     we identified a trade-off. Specifically, low barring rates and long
+Ps  0.95:0.56 for the uniform backoff and 0.64 for the expo-                         barring times increase the access delay but reduce the number of
+nential backoff. Hence, the exponential backoff increases the                        preamble transmissions, hence reducing energy consumption.
+
+range of PACB (and also that of TACB) that can be selected to                           It is worth noting that the relevance of energy consumption
+achieve an acceptable Ps .                                                           and access delay highly depends on the traffic characteristics,
+                                                                                     e.g., the frequency of random access congestion. For instance, if
+   If we compare the average number of preamble transmissions,                       the studied scenario occurs sparingly, these KPIs are not highly
+E [k] (see Fig. 16(b)), with the 95th percentile of access delay,                    relevant, as slight increases in energy consumption will not
+D95 (see Fig. 16(c)), we clearly observe the trade-off between                       highly affect the battery life. On the other hand, when this sce-
+these KPIs; i.e., the access delay is high with configurations in                    nario occurs frequently, battery life may be compromised, and
+                                                                                     highly delayed accesses might cause congestion in subsequent
+which a low number of preamble transmissions are performed                           UE accesses.
+
+and vice versa.                                                                         We also compared the KPIs obtained by implementing a uni-
+   It is worth noting that selecting TACB when PACB  [0.1, 0.6]                      form backoff scheme, as described in the LTE-A standard [17],
+                                                                                     with that of an exponential backoff scheme along with ACB.
+only causes a slight variation in both E [k] and D95, which
+is highly desirable. In addition, we can observe that the im-
+
+plementation of the exponential backoff increases the number
+
+of preamble transmissions but reduces the access delay when
+
+compared to the implementation of the uniform backoff.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3518                                                             IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+Results show that an exponential backoff leads to a slightly                             TABLE VI
+higher success probability but also increases the mean number    ACCURACY OF THE APPROXIMATIONS AND BOUNDS
+of preamble transmissions. Therefore, implementing an expo-
+nential backoff may enhance the access success probability at                  Rel. error (%)
+the cost of a higher energy consumption. Moreover, the increase
+in Ps provided by the exponential backoff allows the selection   R c(R)  0(R)  2(R) 1(R) u(R)
+of lower barring times when compared to a uniform backoff.
+This fact, in turn, may slightly reduce the access delay.        10 3.8796 10.1248 5.1755 0.1386 10.9571
+                                                                 20 7.5496 5.0312 2.5427 0.0329 5.2285
+   Finally, by adequately selecting the ACB barring rates and    30 11.2256 3.3472 1.6855 0.0144 3.4334
+barring times, network congestion may be relieved, even for the  40 14.9030 2.5078 1.2605 0.0080 2.5559
+most congested scenario defined by the 3GPP. As such, ACB        50 18.5810 2.0050 1.0067 0.0051 2.0356
+was shown to be an efficient scheme for congestion control in    60 22.2593 1.6701 0.8380 0.0035 1.6913
+the RACH.                                                        70 25.9377 1.4311 0.7177 0.0026 1.4466
+
+                               APPENDIX                          and the approximations given in (4), i.e., c(R)  1(R) 
+       RACH CAPACITY: APPROXIMATIONS AND BOUNDS                   2(R). As can be seen in Table VI, 1(R) provides an extremely
+                                                                 accurate approximation, while 2(R), which is a simpler expres-
+   Here we derive some approximations and bounds for the         sion, can be considered as sufficiently accurate for all practical
+system capacity, c(R), defined in [27].
+                                                                 purposes (see also Fig. 6).
+   First, we recall that
+                                                                                                  REFERENCES
+            1 - 1 < log(x) < x - 1, for x > 0.            (8)
+            x                                                     [1] I. S. Association, "Internet of things," 2017. [Online]. Available: http://
+                                                                       standards.ieee.org/innovate/iot/
+From (8), it follows immediately that
+                                                                  [2] Ericsson, "Ericsson mobility report," Jun. 2017. [Online]. Available:
+            R-1<     log      R        -1                 (9)          https://www.ericsson.com/mobility-report
+                            R-1
+                                          < R.                    [3] Cisco, "Cisco visual networking index (VNI): Global mobile data
+                                                                       traffic forecast update, 2016-2021," Mar. 2017. [Online]. Available:
+Applying the inequalities in (9) to (3) we obtain                      http://www.cisco.com/c/en/us/solutions/collateral/service-provider/visu
+                                                                       al-networking-index-vni/mobile-white-paper-c11-520862.html
+                  0(R) < c(R) < u(R),                     (10)
+                                                                  [4] "Service requirements for machine-type communications," 3GPP, TS
+where                                                                  22.368, Mar. 2017.
+
+      0(R)  (R - 1) 1 - 1   R -1       1- 1        R      (11)    [5] P. K. Verma et al., "Machine-to-machine (M2M) communications: A
+                     R                 R                               survey," J. Netw. Comput. Appl., vol. 66, pp. 83­105, 2016.
+                                 =R                 ,
+                                                                  [6] Y. Mehmood, C. Go¨rg, M. Muehleisen, and A. Timm-Giel, "Mobile M2M
+      u(R)  R 1- 1   R -2                                 (12)         communication architectures, upcoming challenges, applications, and fu-
+                  R                                                    ture directions," EURASIP J. Wireless Commun. Netw., vol. 2015, no. 1,
+                         .                                             pp. 1­37, 2015.
+
+From (11) and (12) for R > 0, it can be easily seen that          [7] "Architecture enhancements to facilitate communications with packet data
+                                                                       networks and applications," 3GPP, TS 23.682, Mar. 2016.
+                  0(R) < 1(R) < u(R),                     (13)
+                                                                  [8] F. Ghavimi and H.-H. Chen, "M2M communications in 3GPP LTE/LTE-
+where                                                                  A networks: Architectures, service requirements, challenges, and appli-
+                                                                       cations," IEEE Commun. Surveys Tuts., vol. 17, no. 2, pp. 525­549,
+            1(R)  R 1- 1       R -1                       (14)         May 2015.
+                            R
+                                     c(R).                        [9] A. Lo, Y. Law, and M. Jacobsson, "A cellular-centric service architecture
+                                                                       for machine-to-machine (M2M) communications," IEEE Wireless Com-
+Now, by observing that (1 - 1/R)R is increasing and tends to           mun. Mag., vol. 20, no. 5, pp. 143­151, Oct. 2013.
+e-1, and (1 - 1/R)R-1 is decreasing and tends to e-1, we can
+                                                                 [10] S.-Y. Lien, K.-C. Chen, and Y. Lin, "Toward ubiquitous massive accesses
+see that                                                               in 3GPP machine-to-machine communications," IEEE Commun. Mag.,
+                                                                       vol. 49, no. 4, pp. 66­74, Apr. 2011.
+               0(R) < 2(R) < 1(R),                        (15)
+                                                                 [11] M.-Y. Cheng, G.-Y. Lin, H.-Y. Wei, and A. C.-C. Hsu, "Overload con-
+where                                                                  trol for machine-type-communications in LTE-advanced system," IEEE
+                                                                       Commun. Mag., vol. 50, no. 6, pp. 38­45, Jun. 2012.
+                     2(R)      R                          (16)
+                                 .                               [12] L. Ferdouse, A. Anpalagan, and S. Misra, "Congestion and overload
+                                                                       control techniques in massive M2M systems: A survey," Trans. Emerg.
+                               e                                       Telecommun. Technol., vol. 25, no. 3, pp. 1­17, Mar. 2015.
+
+From the above observations, it can also be deduced that if      [13] A. Laya, L. Alonso, and J. Alonso-Zarate, "Is the random access chan-
+R is sufficiently large, 0(R)  2(R)  1(R). Besides, by                 nel of LTE and LTE-A suitable for M2M communications? A survey
+numerical evaluation we have verified that 1(R) < c(R).                of alternatives," IEEE Commun. Surveys Tuts., vol. 16, no. 1, pp. 4­16,
+                                                                       Jan. 2014.
+   Finally, combining the previous derivations we have
+                                                                 [14] "Radio resource control (RRC), protocol specification," 3GPP, TS 36.331,
+            0(R) < 2(R) < 1(R) < c(R) < u(R)              (17)         Sep. 2017.
+
+                                                                 [15] C. H. Wei, G. Bianchi, and R. G. Cheng, "Modeling and analysis of random
+                                                                       access channels with bursty arrivals in OFDMA wireless networks," IEEE
+                                                                       Trans. Wireless Commun., vol. 14, no. 4, pp. 1940­1953, Apr. 2015.
+
+                                                                 [16] "Study on RAN improvements for machine type communications," 3GPP,
+                                                                       TR 37.868, Sep. 2011.
+
+                                                                 [17] "Medium access control (MAC) protocol specification," 3GPP, TS 36.321,
+                                                                       Sep. 2017.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+TELLO-OQUENDO et al.: PERFORMANCE ANALYSIS AND OPTIMAL ACB PARAMETER CONFIGURATION IN LTE-A NETWORKS  3519
+
+[18] I. Leyva-Mayorga, L. Tello-Oquendo, V. Pla, J. Martinez-Bauset, and           [43] M. Shirvanimoghaddam, M. Dohler, and S. J. Johnson, "Massive multiple
+      V. Casares-Giner, "Performance analysis of access class barring for han-           access based on superposition raptor codes for cellular M2M communi-
+      dling massive M2M traffic in LTE-A networks," in Proc. IEEE Int. Conf.             cations," IEEE Trans. Wireless Commun., vol. 16, no. 1, pp. 307­319,
+      Commun., May 2016, pp. 1­6.                                                        Jan. 2017.
+
+[19] "Service accessibility," 3GPP, TS 22.011, V13.1.0, Sep. 2017.                                                Luis Tello-Oquendo (S'08) received the B.E.
+[20] C. Y. Oh, D. Hwang, and T. J. Lee, "Joint access control and resource                                        (Hons.) degree in electronic and computer engineer-
+                                                                                                                  ing from Escuela Superior Polite´cnica de Chimbo-
+      allocation for concurrent and massive access of M2M devices," IEEE                                          razo (ESPOCH), Riobamba, Ecuador, in 2010, and
+      Trans. Wireless Commun., vol. 14, no. 8, pp. 4182­4192, Aug. 2015.                                          the M.Sc. degree in telecommunication technologies,
+[21] M. Tavana, V. Shah-Mansouri, and V. W. S. Wong, "Congestion control for                                      systems, and networks from Universitat Polite`cnica
+      bursty M2M traffic in LTE networks," in Proc. IEEE Int. Conf. Commun.,                                      de Vale`ncia (UPV), Valencia, Spain, in 2013. He
+      Jun. 2015, pp. 5815­5820.                                                                                   is currently working toward the Ph.D. degree in
+[22] O. Arouk and A. Ksentini, "General model for RACH procedure per-                                             telecommunications engineering. In 2011, he was a
+      formance analysis," IEEE Commun. Lett., vol. 20, no. 2, pp. 372­375,                                        Lecturer with the Facultad de Ingenier´ia Electro´nica,
+      Feb. 2016.                                                                                                  ESPOCH. From 2016 to 2017, he was a Visiting Re-
+[23] P. Osti, P. Lassila, S. Aalto, A. Larmo, and T. Tirronen, "Analysis of        search Scholar with the Broadband Wireless Networking Laboratory, Georgia
+      PDCCH performance for M2M traffic in LTE," IEEE Trans. Veh. Technol.,        Institute of Technology, Atlanta, GA, USA. He is currently a Graduate Re-
+      vol. 63, no. 9, pp. 4357­4371, Nov. 2014.                                    search Assistant with the Broadband Internetworking Research Group, UPV. His
+[24] G.-Y. Lin, S.-R. Chang, and H.-Y. Wei, "Estimation and adaptation for         research interests include mobile and wireless communication networks, ran-
+      bursty LTE random access," IEEE Trans. Veh. Technol., vol. 65, no. 4,        dom access protocols, machine-to-machine communications, wireless software-
+      pp. 2560­2577, Apr. 2016.                                                    defined networks, LTE-A and beyond cellular systems, Internet-of-Things, and
+[25] J. J. Nielsen, D. M. Kim, G. C. Madueno, N. K. Pratas, and P. Popovski,       machine learning. He is a member of the ACM. He was the recipient of the Best
+      "A tractable model of the LTE access reservation procedure for machine-      Academic Record Award from the Escuela Te´cnica Superior de Ingenieros de
+      type communications," in Proc. IEEE Global Commun. Conf., Dec. 2015,         Telecomunicacio´n, UPV, in 2013, and the IEEE ComSoc Award for attending the
+      pp. 1­6.                                                                     IEEE ComSoc Summer School, The University of New Mexico, Albuquerque,
+[26] Z. Zhang, H. Chao, W. Wang, and X. Li, "Performance analysis and UE-          NM, USA, in 2017.
+      side improvement of extended access barring for machine type communi-
+      cations in LTE," in Proc. IEEE Veh. Technol. Conf., May 2014, pp. 1­5.                                      Israel Leyva-Mayorga received the B.Sc. degree in
+[27] T. M. Lin, C. H. Lee, J. P. Cheng, and W. T. Chen, "PRADA: Prioritized                                       telematics engineering and the M.Sc. degree in mo-
+      random access with dynamic access barring for MTC in 3GPP LTE-A                                             bile computing systems from the Instituto Polite´cnico
+      networks," IEEE Trans. Veh. Technol., vol. 63, no. 5, pp. 2467­2472,                                        Nacional (IPN) in Mexico City, Mexico, in 2012 and
+      Jun. 2014.                                                                                                  2014, respectively. Since 2015, he has been work-
+[28] "Physical channels and modulation," 3GPP, TS 36.211, Sep. 2017.                                              ing toward the Ph.D. degree in telecommunications
+[29] R. G. Cheng, J. Chen, D. W. Chen, and C. H. Wei, "Modeling and analysis                                      at the Department of Communications, Universitat
+      of an extended access barring algorithm for machine-type communications                                     Polite`cnica de Vale`ncia, Valencia, Spain, where he
+      in LTE-A networks," IEEE Trans. Wireless Commun., vol. 14, no. 6,                                           was a Visiting Researcher in 2014. He is currently a
+      pp. 2956­2968, Jun. 2015.                                                                                   Visiting Researcher at the Deutsche Telekom Chair
+[30] A. Biral, M. Centenaro, A. Zanella, L. Vangelista, and M. Zorzi, "The                                        of Communication Networks, Technische Universita¨t
+      challenges of M2M massive access in wireless cellular networks," Digit.      Dresden, Dresden, Germany. His research interests include wireless sensor net-
+      Commun. Netw., vol. 1, no. 1, pp. 1­19, 2015.                                works, communication systems, random access protocols, M2M communica-
+[31] "Physical layer procedures," 3GPP, TS 36.213, Dec. 2014.                      tions, along with 5G and LTE/LTE-A networks. He received an Honorable
+[32] "Feasibility study for further advancements for E-UTRA," 3GPP, TR             mention for the M.Sc. degree.
+      36.912, Mar. 2017.
+[33] J. E. Wieselthier, A. Ephremides, and L. A. Michaels, "An exact analysis                                     Vicent Pla received the B.E. and M.E. degrees
+      and performance evaluation of framed ALOHA with capture," IEEE Trans.                                       in telecommunication engineering in 1997 and the
+      Commun., vol. 37, no. 2, pp. 125­137, Feb. 1989.                                                            Ph.D. degree in 2005 from the Universitat Polite`cnica
+[34] D. C. Chu, "Polyphase codes with good periodic correlation properties,"                                      de Vale`ncia (UPV), Valencia, Spain, and the B.Sc. de-
+      IEEE Trans. Inf. Theory, vol. IT-18, no. 4, pp. 531­532, Jul. 1972.                                         gree in mathematics from the Universidad Nacional
+[35] M. M. Mansour, "Optimized architecture for computing Zadoff-Chu se-                                          de Educacio´n a Distancia, Madrid, Spain, in 2015. In
+      quences with application to LTE," in Proc. IEEE Global Telecommun.                                          1999, he joined the Department of Communications,
+      Conf., vol. 2, no. 1, 2009, pp. 1­6.                                                                        UPV, where he is currently a Professor. His research
+[36] F. A. P. De Figueiredo, F. S. Mathilde, F. A. C. M. Cardoso, R. M. Vilela,                                   interest includes modeling and performance analy-
+      and J. P. Miranda, "Efficient frequency domain Zadoff-Chu generator with                                    sis of communication networks. During the past few
+      application to LTE and LTE-A systems," in Proc. Int. Telecommun. Symp.,                                     years, most of his research activity has focused on
+      2014, pp. 1­5.                                                               traffic and resource management in wireless networks. In these areas, he has
+[37] C. L. Taylor, D. Nolan, and S. Wainberg, "Priority capabilities in LTE        authored or coauthored numerous papers in refereed journals and conference
+      supporting national security and emergency preparedness next generation      proceedings, and has been an active participant in several research projects.
+      network priority services," in Proc. IEEE Int. Conf. Technol. Homeland
+      Security, Nov. 2013, pp. 584­588.                                                                           Jorge Martinez-Bauset received the Ph.D. degree
+[38] D. Nolan, S. Wainberg, J. R. Wullert, and A. R. Ephrath, "National security                                  from the Universitat Polite`cnica de Vale`ncia (UPV),
+      and emergency preparedness communications: Next generation priority                                         Valencia, Spain, in 1997. He is currently a Professor
+      services," in Proc. IEEE Int. Conf. Technol. Homeland Security, Nov. 2013,                                  with the UPV. From 1987 to 1991, he was with QPSX
+      pp. 106­112.                                                                                                Communications, Perth, Australia, working with the
+[39] L. Segura, "Access control for M2M devices," U.S. Patent App.                                                team that designed the first IEEE 802.6 MAN. Since
+      13/028,093, Aug. 18, 2011.                                                                                  1991, he has been with the Department of Commu-
+[40] H. Thomsen, N. K. Pratas, C . Stefanovic´, and P. Popovski, "Code-                                           nications, UPV. His research interests include perfor-
+      expanded radio access protocol for machine-to-machine communica-                                            mance evaluation and traffic control for multiservice
+      tions," Trans. Emerg. Telecommun. Technol., vol. 24, no. 4, pp. 355­365,                                    networks. He was the recipient of the 1997 Alcatel
+      2013.                                                                                                       Spain Best Ph.D. Thesis Award in access networks.
+[41] M. Condoluci, M. Dohler, G. Araniti, A. Molinaro, and J. Sachs, "En-
+      hanced radio access and data transmission procedures facilitating industry-
+      compliant machine-type communications over LTE-based 5G networks,"
+      IEEE Wireless Commun. Mag., vol. 23, no. 1, pp. 56­63, Feb. 2016.
+[42] M. Condoluci, G. Araniti, M. Dohler, A. Iera, and A. Molinaro, "Virtual
+      code resource allocation for energy-aware MTC access over 5G systems,"
+      Ad Hoc Netw., vol. 43, pp. 3­15, 2016.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+3520                                                                                    IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 67, NO. 4, APRIL 2018
+
+                   Jose´-Ramo´n Vidal received the Ph.D. degree in                                                     Luis Guijarro received the M.Eng. and Ph.D. de-
+                   telecommunication engineering from the Universitat                                                  grees in telecommunications from the Universitat
+                   Polite`cnica de Vale`ncia (UPV), Vale`ncia, Spain. He is                                            Polite`cnica de Vale`ncia (UPV), Vale`ncia, Spain. He is
+                   currently an Associate Professor with the Department                                                currently an Associate Professor with the Department
+                   of Telematics, Higher Technical School of Telecom-                                                  of Communications, UPV. He has coauthored the
+                   munication Engineering, UPV. His current research                                                   book The Electronic Communications Policy of the
+                   interest includes the application of game theory to                                                 European Union (Universitat Polite`cnica de Vale`ncia,
+                   resource allocation in cognitive radio networks and                                                 2011). He researched in traffic management in ATM
+                   to economic modeling of telecommunication service                                                   networks and in e-Government. His current research
+                   provision. In these areas, he has authored or coau-                                                 interest focuses on economic modeling of telecom-
+                   thored several papers in refereed journals and confer-                                              munication service provision. He has contributed in
+                                                                                        the areas of peer-to-peer interconnection, cognitive radio networks, search en-
+ence proceedings.                                                                       gine neutrality, wireless sensor networks, and 5G.
+
+                               Vicente Casares-Giner (M'75­LM'17) received the
+                               Telecommunication Engineering degree from Es-
+                               cuela Te´cnica Superior de Ingenieros de Tele-
+                               comunicacio´n-Universidad Polite´cnica de Madrid
+                               (ETSIT-UPM), Madrid, Spain, and the Ph.D. de-
+                               gree in telecommunication engineering from ETSIT-
+                               Universitat Polite`cnica de Catalunya (ETSITUPC),
+                               Barcelona, Spain, in October 1974 and September
+                               1980, respectively. He became an Assistant Profes-
+                               sor in 1974, an Associate Professor in 1985, and a Full
+                               Professor in 1991. During the period 1974­1983, he
+worked on problems related to signal processing, image restoration, and propa-
+gation aspects of radio-link systems. In the first half of 1984, he was a Visiting
+Scholar with the KTH Royal Institute of Technology, Stockholm, dealing with
+digital switching and concurrent programming for stored program control tele-
+phone systems. From September 1, 1994 to August 31, 1995, he was a Visiting
+Scholar with WINLAB-Rutgers University-USA, working with random access
+protocols in wireless networks, wireless resource management, and land mobile
+trunking system. During the 1990s, he worked in traffic and mobility models
+in several European Union (EU) projects. Since September 1996, he has been
+with ETSIT-Universitat Polite`cnica de Vale`ncia (ETSIT-UPV), Valencia, Spain.
+During the 2000s and 2010s, he has been involved in several national and EU
+projects. His main research interests include performance evaluation of wireless
+systems, particular random access protocols, system capacity and dimension-
+ing, mobility management, cognitive radio, and wireless sensor networks. He
+has authored several papers in international magazines and conferences, such
+as IEEE, Electronic Letters, Signal Processing, EURASIP-EUSIPCO, Interna-
+tional Teletraffic Conference (ITC), Wireless conferences, IEEE (ICASSP, ICC,
+ICUPC, ICNC, etc.). He was the General Co-Chair in the ISCC 2005, in the
+NGI-2006, and the TPC member in several conferences and workshops (Net-
+working 2011, GLOBECOM 2013, ICC 2015, VTC 2016, etc.).
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 10:55:02 UTC from IEEE Xplore. Restrictions apply.
+

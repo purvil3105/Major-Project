@@ -1,0 +1,1037 @@
+3424                                                                         IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+A Unified Random Access Procedure for an NB-IoT
+Protocol in Nonterrestrial and Terrestrial Networks
+
+                                               Jia-Chin Lin , Senior Member, IEEE
+
+   Abstract--For rapid deployment, Internet of Things (IoT)                  Earth orbit (MEO), and low Earth orbit (LEO)] or airborne
+technology operating in nonterrestrial networks (NTNs) usually               [such as unmanned aircraft system (UAS) and high-altitude
+follows 3GPP specifications. The 3GPP aims to establish unified              platform stations (HAPSs)], which function either as relay
+specifications for global narrowband IoT (NB-IoT) operations.                nodes or base stations (BSs) in either transparent or regen-
+This article investigates a unified random access (RA) process               erative satellite architectures. Beyond servicing areas where
+for an NB-IoT protocol seamlessly operating between NTNs                     TNs are not cost effective, 5G NTNs ensure service continuity
+and terrestrial networks without global navigation satellite                 for machine-to-machine (M2M) or Internet of Things (IoT)
+system (GNSS) connectivity. For high accuracy and backward                   devices and for individuals on moving platforms, thereby
+compatibility, the common Doppler shift is employed for pre-                 ensuring service availability in critical communications and
+and post-compensations at a narrowband physical RA channel                   emerging sectors, such as the maritime, aeronautical, and
+(NPRACH) receiver; meanwhile, a common propagation delay                     railway sectors.
+is employed for pretime advance (Pre-TA) and RA opportu-
+nity (RAO) postponement at the NPRACH receiver on the                           The 3GPP initiated studies on integrating satellite commu-
+satellite. Derivations of joint maximum likelihood estimation                nications with 5G terrestrial wireless communications in 2019,
+result in a bank of matched filters (MFs), whose outputs are                 with technical reports TR 38.811 [1] and TR 38.821 [2] being
+employed to test for the presence of user equipment (UE). The                introduced in Releases 15 and 16, respectively. A working
+squared magnitudes of the symbol-level MF (SLMF) outputs                     item (WI) for 5G new radio (NR) in NTNs was subsequently
+are coherently accumulated to improve the signal-to-interference-            sanctioned in 3GPP Release 17 [3], alongside a new study
+plus-noise ratio performance of the proposed NPRACH detector,                item for supporting the narrowband IoT (NB-IoT) protocol in
+instead of the conventional extension of the length of the MF                NTNs [4].
+impulse response. The residual frequency error and excess timing
+delay are detected at half of the subcarrier spacing and half                   The NB-IoT is an emerging application framework within
+of the symbol duration, respectively, via a grid search. The                 the 3GPP specifications designed to support many user equip-
+false alarm and miss probabilities are derived in the presence               ment (UE) units in massive machine-type communication
+of a high Doppler frequency, long differential delay, random                 (mMTC) scenarios. In this framework, the UE in the NB-IoT
+initial phase errors, and different channel gains through which              context transmits preambles via a narrowband physical random
+the preambles of multiple UEs propagate. Computer simulations                access channel (NPRACH), similar to how the UE in a mobile
+confirm the theoretical analyses and show that the proposed                  communication network requests resources via a random
+technique performs effective RA tasks with low miss probabilities.           access (RA) procedure. NPRACH, which is composed of
+                                                                             consecutive subcarriers allocated for preamble transmission, at
+   Index Terms--Detection, Doppler shift, false alarm, matched               the serving BS, must discern signals transmitted from various
+filter (MF), narrowband IoT (NB-IoT), narrowband physical ran-               active UE units with different channel impairments, identify
+dom access channel (NPRACH), nonterrestrial network (NTN),                   these active UE units, and estimate the channel parameters for
+random access (RA).                                                          each uplink.
+
+                          I. INTRODUCTION                                       A previous study [5] thoroughly described the physical-
+                                                                             layer specifications of the NB-IoT. Other studies have focused
+T HE EVOLUTION of telecommunication technologies,                            on designing effective time of arrival (ToA) estimation
+      driven by the escalating demand for new services and the               methods [6] and optimizing medium access control (MAC)
+rapid expansion of smart devices, has guided the development                 parameters to increase access success probability under latency
+of nonterrestrial networks (NTNs) as a viable complement                     constraints [7]. Notably, one study [8] proposed a technique
+to existing terrestrial networks (TNs). NTNs are particularly                for NPRACH detection and ToA estimation, evaluating the
+effective at providing service coverage for areas that are not               2-D cross-correlation function via a digital Fourier trans-
+served or underserved. NTNs, as defined by the 3rd generation                form (DFT). However, several subsequent studies [9], [10],
+partnership project (3GPP), comprise networks that include                   [11], [12], [13], [14] in the NB-IoT field have not ade-
+spaceborne, [such as geostationary earth orbit (GEO), medium                 quately addressed the complexities of signal reception as a
+                                                                             superposition of multiple uplink signals traversing different
+   Received 23 January 2024; revised 17 April 2024, 11 August 2024,          fading channels, each with an individual carrier frequency
+and 23 September 2024; accepted 12 October 2024. Date of publication         offset (CFO) and ToA. This oversight results in an overly
+16 October 2024; date of current version 24 January 2025.                    simplified performance evaluation of the detection process
+
+   The author is with the Department of Communication Engineering, National
+Central University, Taoyuan 32001, Taiwan (e-mail: jiachin@ieee.org).
+
+   Digital Object Identifier 10.1109/JIOT.2024.3481064
+
+      2327-4662 c 2024 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                           See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL        3425
+
+and disregard of the intercarrier interference (ICI) effects       NTNs by exploiting change point detection with assistance
+arising from different CFOs, which inevitably increase the         from a differential structure. However, these previous stud-
+false alarm and miss probabilities. An NPRACH detection            ies [20], [21] omitted compensation for the common frequency
+technique for addressing a superimposed signal received via        shift and common propagation delay. In practice, the Doppler
+multiple uplinks with different CFOs, different timing errors      shift in NTNs is usually so large that the NPRACH is
+(TEs), and different time-varying frequency-selective fading       moved beyond the bands of the dedicated channels, while
+channels was proposed and thoroughly investigated in [15].         the propagation delay in NTNs is usually so long that the
+                                                                   NPRACH is shifted beyond the RA window. Furthermore,
+   The 3GPP aims to establish unified specifications for           Xu et al. [21] employed a differential structure after DFT
+global IoT operations with the integration of the NB-IoT into      demodulation, thereby suffering from the same issues seen
+NTNs. However, this integration imposes several challenges,        in [14] and [18]. Therefore, previous studies [20], [21] have
+particularly because the existing NB-IoT specifications were       not adequately addressed the challenges in NTNs.
+initially designed for TNs and do not account for the channel
+impairments inherently occurring in satellite communications,         In the literature, few previous works that have investigated
+such as long propagation delays, high Doppler shifts, and          NB-IoT operating in NTNs have addressed practical land
+limited power availability. Some modifications to the current      mobile-satellite (LMS) channel models to conduct convincing
+NB-IoT protocols may be necessary to adapt the NB-IoT for          simulations with reasonable channel parameters. Previous
+satellite communications. However, these changes should be         works [22], [23], [24] proposed and thoroughly investigated
+minimal to maintain backward compatibility with currently          a shadowed Rice (SR) channel model, thereby providing
+operating 5G wireless communications. One significant area         LMS channel statistics and parameters. The parameters were
+of change may be the NPRACH procedure, which is not                verified with measurement data provided by previous stud-
+equipped to handle the long propagation delays and high            ies [25], [26]. However, no computer simulator for the SR
+Doppler shifts inherently occurring in satellite-terrestrial com-  channel model has been proposed in the literature. In this
+munication channels in its current form. Recent investigations     work, the scattering component of an SR channel is developed
+into RA procedures in NTNs have focused primarily on               by employing the Jakes fading model [27], whereas the line-
+long propagation delays and high Doppler shifts. Liu and           of-sight (LOS) component is developed using the Nakagami-m
+Gokhale [16] and Kodheli et al. [17] recently investigated RA      fading simulator proposed in [28] and [29].
+procedures in NTNs. However, these studies [16], [17] focused
+solely on the problem of long differential delays, assuming           This article addresses a unified RA process for an NB-
+no ICI and disregarded residual frequency error. A study [18]      IoT protocol operating seamlessly between NTNs and TNs
+proposed an NPRACH method for NTNs, with modifications             without assistance from a global navigation satellite system
+from [14]. However, Chougrani et al. [18] disregarded the          (GNSS). The common Doppler shift resulting from satellite
+hierarchical structure of stratum clocks in the synchronization    movement must be precompensated and post-compensated
+networks [19]. Therefore, the authors proposed precompensa-        at the NPRACH receiver on the satellite. Moreover, the
+tion for Doppler shifts conducted at UE ends. This ultimately      common propagation delay resulting from the altitude of the
+results in overly high residual frequency errors because the       satellite must be pretime advanced (Pre-TA) and the RA
+clock accuracy of a UE is much lower than that of a satellite by   opportunity (RAO) postponed at the NPRACH receiver on the
+approximately a couple of decades. In addition, the estimation     satellite. Pre- and post-compensations in conjunction with pre-
+of residual frequency error used in [18] was conducted based       TA and RAO postponement can effectively reduce the residual
+on the so-called extended symbol group (SG) sums (SG-Ss)           frequency error and excess timing delay. A novel detection
+first proposed in [14]. The SG-S method in [14] and [18]           method is proposed to detect NPRACH accurately. Derivations
+suffers from severe signal-to-noise ratio (SNR) degradation        of joint maximum likelihood estimation (JMLE) recommend
+because a fractional frequency error inevitably reduces the        the MF approach. The squared magnitudes of the symbol-level
+cross-correlation. In frequency-domain (FD) interpretation, a      MF (SLMF) outputs are coherently accumulated to test for
+longer impulse response (IR) of a matched filter (MF) can          the presence of UE. The residual frequency error and excess
+reduce the noise variance at the MF output by reducing             timing delay are detected at half the subcarrier spacing and
+the passband bandwidth. Moreover, reducing the bandwidth           half the symbol period via a grid search. The remainder of
+by extending the IR of the MF beyond one symbol dura-              this article is organized as follows. The working scenarios and
+tion reduces the signal power arriving at the MF output,           problem formulation are described in Section II. The proposed
+especially when a nonnegligible fractional frequency error         technique is described in Section III. Analytical and simulation
+is present, causing the signal spectra to shift. In the time-      results are compared in Section IV. Concluding remarks are
+domain (TD) interpretation, extending the IR of the MF             provided in Section V.
+beyond one symbol duration causes the MF to accumulate
+vectors on the unit circle in linear phase increments (i.e.,        II. WORKING SCENARIOS AND PROBLEM FORMULATION
+{ej2( /N)k, k = 0, 1, 2, . . . , N, . . .}), and the magnitude of
+the cross-correlation vanishes as the length of the MF IR             This article examines working scenarios, as illustrated in
+increases. More recently, a study [20] proposed NPRACH             Fig. 1, with the parameter settings outlined in Table I, fol-
+synchronization in NTNs by exploiting Doppler prediction. In       lowing a prior study [18]. Since regenerative payloads are
+addition, Xu et al. [21] proposed an NB-IoT RA scheme for          chosen in the settings 1 and 2, payloads can function as
+                                                                   next-generation NodeBs (gNBs). More details related to the
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3426                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+                                                                 Therefore, 2 is expressed as an explicit function of 0 and
+                                                                 vice versa, i.e.,
+
+                                                                              2 = cos-1    RE  RE      cos  0     - 0
+                                                                                               + hsat
+
+                                                                              0 = tan-1    cot 2  -   RE  RE      csc  2  .          (4)
+                                                                                                          + hsat
+
+                                                                 As a result, the Doppler frequency is calculated as
+
+                                                                        fD  =  Vsat  cos(0  + 2)  =    RE   RE      fM  cos  0       (5)
+                                                                               C/fc                         + hsat
+
+                                                                 where  Vsat   =                       g  =    9.80665    m/s2,  fM  =
+                                                                                    g · (RE + hsat),
+
+                                                                 Vsat/(C/fc), C and fc represent the instantaneous tangent
+
+Fig. 1. Beam layouts studied in this article.                    velocity of the serving satellite, the gravitational acceleration,
+
+                                         TABLE I                 the maximum Doppler frequency, the speed of light and the
+                                PARAMETER SETTINGS
+                                                                 carrier frequency, respectively. The Doppler frequency and its
+                                                                 rate of change are calculated and validated through computer
+                                                                 simulations, as shown in Fig. 3.
+
+                                                                    Using (5) and iteratively applying the law of cosines
+                                                                 [32, p. 106], the maximum and minimum Doppler frequencies
+
+                                                                 within a beam spot can be calculated as listed in Table III.
+                                                                 The algebraic mean of the maximum and minimum Doppler
+                                                                 frequencies is designated as the common Doppler shift for pre-
+                                                                 and post-compensations conducted at the NPRACH receiver
+                                                                 in the gNB on the satellite.
+
+                                                                    The Doppler spread caused by the relative motion of a
+                                                                 UE with respect to its surroundings is usually considered
+
+payload configuration and beam layout aspects are provided in    negligible compared with the CFO of the local oscillator
+previous studies [2], [30], [31]. The scenarios involve math-    working in the UE; therefore, Doppler spread is seldom
+ematical formulations that relate elevation angles, Doppler      estimated (or compensated for) on downlink receptions.
+frequencies, slant ranges, and propagation delays. The profile   For example, when the UE is moving at speed VUE =
+of the LEO working scenario is illustrated in Fig. 2. The        100 km/h = 27.7778 m/s, the maximum Doppler spread is
+slant range formula, adapted from [17, eq. (13)], computes the   calculated as
+distance on the basis of the elevation angle of the UE, i.e.,
+                                                                        fd,max    =  VUE   =       105         =    10-6  · fc
+                                                                                     C/fc     1.08 × 1012 fc        10.8
+
+      D(0) = (RE + hsat)2 - RE2 cos2 0 - RE sin 0 (1)                             < 0.1 ppm of fc                                    (6)
+
+where RE = 6.371 × 106 m, hsat and 0 represent the radius        where "ppm" denotes "parts per million." The local oscillator
+of the Earth, the altitude of the serving satellite and the      at a UE unit usually has a CFO on the level of tens of ppm of
+elevation angle of the UE, respectively. Using (1), referring    the carrier frequency fc, i.e., stratum-4 clocks, regardless of the
+to the beam layout depicted in Fig. 1 and iteratively applying   frequency band where an application operates, whether NTN
+the law of cosines [32, p. 106], the maximum and minimum         or TN [19, Table 1] and [33]. In contrast, no Doppler spread
+propagation delays within a beam spot can be calculated,         occurs with NPRACH reception because almost no scattering
+as listed in Table II. The maximum excess timing delays          objects surrounding the gNB on the satellite are present. LOS
+have also been calculated and are listed in Table II. These      propagation is dominant in NPRACH reception. For the uplink
+calculations determine the common delays for pre-TA and          transmission, VUE = 100 km/h = 27.7778 m/s is much lower
+RAO postponement, both of which are conducted at the             than Vsat = g · (RE + hsat) 8268.1 m/s. In NPRACH
+NPRACH receiver in the gNB on the satellite.                     reception, the Doppler effect caused by UE movement is also
+                                                                 considered negligible compared with that caused by satellite
+   By considering Fig. 2, the following relationship can be      movement.
+obtained:
+
+      (RE + hsat) cos 2 - RE      =                 tan 0.  (2)                   III. PROPOSED RA PROCEDURE
+         (RE + hsat) sin 2
+                                                                    This section describes the proposed RA procedure, which
+Equation (2) is rewritten as                                     addresses the large Doppler shift observed in uplink and down-
+                                                                 link transmissions. Uplink and downlink transmissions are
+      cos(0  +  2)  =         RE  RE      cos 0.            (3)  subject to considerable Doppler shifts, as detailed in Table III.
+                                  + hsat                         The hierarchy of the synchronization network require that
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL            3427
+
+Fig. 2. Illustration of the LEO working scenarios.
+
+                                                           TABLE II
+                                                    PROPAGATION DELAY
+
+                                                           TABLE III
+                                                    DOPPLER FREQUENCY
+
+lower stratum-level clocks/oscillators align with the upper     frequency pre- and post-compensations along with pre-TA and
+stratum-level clocks/oscillators [19] because upper stratum-    RAO postponement, are performed at the NPRACH receiver
+level clocks/oscillators are much more accurate. The local      in the gNB on the satellite to maintain high accuracy.
+oscillator operating in the UE is the least accurate, typi-
+cally varying by approximately 10 to 20 ppm of the carrier      A. Pre- and Post-Compensations of Doppler Frequency
+frequency. The gNB on a satellite is equipped to anticipate
+the common Doppler shift and common delay for a specific           To address the large Doppler frequency, the technique
+beam spot through precalculations based on ephemeris and        studied in [18, Sec. II] follows the method published
+beam-satellite geometry. In this study, the algebraic mean of   in [2] and [34], and is briefly described as follows. The gNB
+the highest and lowest Doppler frequencies within a beam        on the satellite broadcasts the common Doppler shift to all
+spot is defined as the common Doppler shift, denoted as X;      UE units in a specific beam spot, and all UE units conduct
+rather than the Doppler frequency occurring at the center of    frequency precompensation prior to their uplink transmissions.
+the beam, as employed in previous studies [2], [18], [34]. The  This method [2], [18], [34] cannot be effective unless the
+minimal propagation delay within a beam spot is similarly       UE units have completed the sector search process with
+chosen as the common delay. The common Doppler shift            respect to any gNBs in the network. Furthermore, although a
+is employed to adjust for pre- and post-compensations of        reduction scheme for residual frequency error was proposed
+the large Doppler frequency. Moreover, the common delay is      in [18]. The frequency precompensation conducted in the
+employed to adjust for pre-TA and RAO postponement. The         UE [18] inherently involves local oscillator inaccuracy at
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3428                                                                         IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+                                      (a)                                    local oscillators with the received NPSSs in terms of timing
+
+                                        (b)                                  and frequency, with an error margin less than 1% of the
+
+Fig. 3. (a) Doppler frequency and (b) change rate of the Doppler frequency.  subcarrier spacing used in the LTE-A or NR, i.e., 15 kHz [35].
+
+the UE, resulting in a large residual frequency error that                   Since all UE units in the same spot synchronize their own
+is as high as the inaccuracy level of the local oscillator in
+the UE.                                                                      local oscillators to the received NPSSs, the UE does not need
+
+   The pre- and post-compensation technique proposed in                      to be aware that the received NPSSs is being broadcast from
+this study is depicted in Fig. 4. In Fig. 4, dp signifies
+the frequency separation between uplink transmission and                     either an evolved NodeB (eNB) in a TN or a gNB in an NTN.
+downlink transmission in the frequency-division duplex (FDD)
+scheme, and X denotes the common Doppler shift. dp is a                      Therefore, the gNB in the NTN should precompensate for its
+constant for any receiver over the entire network, and X is
+a constant for any UE device within a beam spot. The left                    transmitted signal for the common Doppler shift and common
+part of Fig. 4 illustrates the NTN scenario with two UE units,
+whereas the right part represents the TN scenario, where either              delay prior to transmission to maintain backward compatibility
+UE1 might present or solely UE2 is present. The RA process
+is initiated after the UE acquires the narrowband primary                    with the TN. Compensation tasks should never be conducted
+synchronization sequences (NPSSs), which are periodically
+broadcast by the BS once per frame, whose duration is 10 ms.                 in the UE because these tasks unavoidably involve the local
+This procedure is referred to as the sector search process [35].
+During the sector search process, UE units align their own                   oscillator. The local oscillator in the UE has the lowest accu-
+
+                                                                             racy, i.e., tens of ppm of the carrier frequency, in accordance
+
+                                                                             with [19].
+
+                                                                                The CFOs of the local oscillators for UE0 and UE1 are
+                                                                             represented as XU0 and XU1 , respectively, which are on the
+                                                                             level of 10 ppm of the carrier frequency fc = 2 GHz in
+                                                                             accordance with [33], i.e., XU0 and XU1 are on the level of
+                                                                             ±20 kHz. The local oscillator at the gNB on the satellite may
+                                                                             exhibit a slight CFO XS, which is on the level of 0.5 ppm of
+                                                                             the carrier frequency fc = 2 GHz, in accordance with [33].
+                                                                             The signal transmitted from the gNB must undergo frequency
+
+                                                                             precompensation for the common Doppler frequency X and
+                                                                             must undergo pre-TA for the common delay, i.e., Dmin(0,max).
+                                                                             The NPSSs received by UE0 and UE1 may incur frequency
+                                                                             errors XS - X + X0 and XS - X + X1, respectively, where
+                                                                             X0 and X1 are the actual Doppler shifts encountered during
+                                                                             signal propagation. Each UE unit independently estimates
+
+                                                                             timing and frequency errors and synchronizes to the NPSSs
+                                                                             with estimation errors 0 and 1. In UE0, XS - X + X0 + 0
+                                                                             is considered the downlink reference frequency; in addition,
+                                                                             in UE1, XS - X + X1 + 1 is considered the downlink
+                                                                             reference frequency, which is irrelevant to XU1 . UE0 transmits
+                                                                             its NPRACH preambles at a frequency of (XS + (X0 - X) +
+                                                                             0) + dp, for which UE0 considers the uplink reference
+                                                                             frequency. Moreover, UE1 transmits its NPRACH preambles
+                                                                             at a frequency of (XS + (X1 - X) + 1) + dp, for which
+                                                                             UE1 considers the uplink reference frequency. The NPRACH
+                                                                             preambles arrive at the NPRACH receiver in the gNB on the
+                                                                             satellite at a frequency of (XS + (X0 - X) + 0) + dp + X0 for
+                                                                             UE0 and at a frequency of (XS + (X1 - X) + 1) + dp + X1
+                                                                             for UE1.
+
+                                                                                The gNB on the satellite considers XS + dp as the
+                                                                             uplink reference frequency and post-compensates it to the
+                                                                             frequency XS + dp + X to receive the aforementioned
+                                                                             NPRACH preambles. As a result, the frequency error
+
+                                                                             incurred in the NPRACH reception for UE0 in the NTN is
+                                                                             evaluated as
+
+                                                                             XS + X0 - X + 0 + dp + X0 - XS + dp + X
+
+                                                                             = 2 X0 - X + 0.                          (7)
+
+                                                                             Similarly, the frequency error incurred in the NPRACH recep-
+                                                                             tion for UE1 is evaluated as 2(X1 - X) + 1. The frequency
+                                                                             errors incurred during NPRACH reception in the NTN have
+                                                                             been calculated and are listed in Table IV. The frequency
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL                                                    3429
+
+Fig. 4. Frequency of pre- and post-compensations.
+
+                                                                                          TABLE IV
+                                             RESIDUAL FREQUENCY ERRORS ADDRESSED BY THE PROPOSED RA TECHNIQUE
+
+errors after applying the pre- and post-compensation methods  the NPSSs. The upper part of Fig. 5 illustrates the NTN
+proposed here are much lower than those obtained via [18],    scenario with two UE units, whereas the lower part represents
+as shown in the last column of Table IV. In the right part    the TN, where either UE1 might transit in or solely UE2 is
+of Fig. 4, the frequency error occurring in the NPRACH        present.
+reception for UE2 in the TN can be obtained as 2, which
+is on the level of 0.15 kHz. A UE does not need to be            The RA process is initiated after the UE acquires the
+aware of which BS broadcasts the NPSS received by the         NPSSs. The signal transmitted from the gNB on the satellite
+UE. This finding is attributed to the backward compatibility  must undergo pre-TA for the common delay Dmin. The
+of the RA procedure operating in the NTNs with that in        NPSSs received by UE0 and UE1 may be delayed. Each
+the TNs.                                                      UE unit independently estimates timing and frequency errors
+                                                              and synchronizes them with the received NPSS. The process
+B. Pre-TA and RAO Postponement                                time is considered shorter than the subframe duration. The
+                                                              UE units transmit their NPRACH preambles at the next
+   The technique explored in [18] followed the method         subframe, which is considered as RAO by the UE units. At
+published in [2] and [34] for long propagation delays. The    the receiving queue of the gNB on the satellite, the RAO
+satellite broadcasts the common delay to all UE units inside  windows, which are represented as yellow blocks, should
+the specific beam spot, and all UE units conduct pretime      be postponed by the common delay Dmin. The NPRACHs
+advance (Pre-TA) before their uplink transmissions. This      arrive at the RAO windows that have been postponed in the
+method [2], [18], [34] cannot be effective unless the UE      gNB on the satellite. In the TN, UE2 acquires the NPSS
+units have achieved timing synchronization with respect to    broadcast from the eNB and then sends NPRACH2 in the
+any eNBs or gNBs in the network. The pre-TA and RAO           next subframe to the eNB, as illustrated in the lower part of
+postponement technique proposed in this study is depicted     Fig. 5. In terms of time, the proposed technique still maintains
+in Fig. 5. In Fig. 5, a frame spanning 10 ms consists of      backward compatibility. Notably, the pre-TA by Dmin can
+10 subframes; a subframe spanning 1 ms is presented as a      be realized as the postponement of the NPSS transmission
+block. The gray blocks represent the subframes that convey    by (10 ms - Dmin) because the NPSSs are periodically
+                                                              broadcast with a period of 10 ms, which is the frame duration.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3430                                                           IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+Fig. 5. Pre-TA and RAO postponement.
+
+Moreover, the RAO postponement should be realized as the       of samples in a SG, respectively; Ps = Es/ts represents
+postponement of the RAO by (10 ms + Dmin). Notably, for        the sample power, with Es representing the sample energy;
+a transparent payload, the propagation delay and Doppler       [u, k] denotes the subcarrier frequency used in the kth SG
+shift occurring within the feeder link between the ground      from the uth UE; and · and | · | are the floor operator
+BS and the satellite should be compensated or adjusted at      and modulo operator, respectively, i.e., x /y and |x|/y rep-
+the ground BS, because the ground BS possesses high com-       resent the integer part and remainder, respectively, of x/y.
+putational capability, real-time information on the ephemeris
+and beam-satellite geometry, and high accuracy of the local    The superimposed signal received at the BS is written as
+oscillator.
+                                                               follows:
+
+C. Derivation From the Likelihood Function                                     r [k]
+                                                                      r[k] = 
+   The discrete-time baseband equivalent signal transmitted
+from the uth UE is written as follows:                                           Ps
+
+                                                                         U-1                    2     u  (k-lu  )  +0
+                                                                                                          N
+                                                                      =       wu,ksu[k - lu]ej                         + n[k]
+
+                                                                         u=0
+
+                       2    u,           |k|/NSG -Ncp /N                 k = 0, 1, 2, . . .                                      (9)
+                       N
+      su[k] =  Ps   j           k  /NSG                   (8)
+
+                   e                                           where
+
+where k is the time index, which represents the time instant             U-1  wu,ksu[k - lu]ej  2  u  (k-lu )  +0
+kts, with ts = T/N, T, and N representing the sampling                                                 N
+period, the symbol duration, and the number of samples         r [k]  =                                                + n [k].
+
+in a symbol, respectively; Ncp and NSG represent the num-                u=0
+ber of samples in a cyclic prefix (CP) and the number                                           
+                                                               su[k] = su[k]/ Ps; n[k] = n [k]/ Ps; and wu,k, u, lu and
+
+                                                               0 represent the complex-valued channel gain, the normalized
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL                                                                                                       3431
+
+frequency error, the TE occurring with the uth uplink, and the                                             N-1   r[k] - wu,kej       2  (+      u )(k-lu )+u,0    2
+initial phase error resulting from the front-end noncoherent                               · exp-          k=0                       N                             
+downconversion process, respectively. The power normaliza-
+tion applied above, i.e., 1/ Ps, is used only for simplicity                                                                     2¯n2
+of representation. The normalized frequency error u in (9)
+is the residual frequency error normalized with respect to the                                                                                                    (11)
+subchannel bandwidth (also known as the subcarrier spacing)
+                                                                                   and
+  f = 1/T as follows:
+                                                                                        L        u  ; wu,k, u,0        = -N log 2 ¯n2
+                                        u
+                          u=             f                                                      lu
+
+where u represents the uth residual frequency error in hertz                               -     1    N-1     r[k]  -  wu,k
+(Hz). u was calculated and is listed in the third and sixth                                     2¯n2  k=0
+
+columns of Table IV, whereas u was calculated and is listed                                           · exp   j   2 ( +          u)(k - lu) + u,0                 2
+in the fourth and seventh columns of Table IV. n [k] = n (kts)                                                    N
+denotes the additive white Gaussian noise (AWGN) n (t)                                                                                                                (12)
+
+sampled at kts, whose power spectral density (PSD) is Sn(f ) =                     respectively. As a result, the JMLE of u and lu with nuisance
+N0. Here, the receive filter has a null-to-null bandwidth of 1/ts;                 parameters wu,k and u,0 is written as
+
+therefore, the sampled noise n [k] is an uncorrelated Gaussian                             ^u   = arg max L             u     ; wu,k, u,0
+sequence with a zero mean and a variance of2n2 = N0/ts.                                    ^lu
+Due to the normalization relation n[k] = (1/ Ps)n [k], n[k]                                                u ,lu       lu
+
+is an uncorrelated Gaussian sequence with a zero mean and a                             = arg max          -   1    N-1    r[k]
+variance of 2¯n2 = 2n2/Ps = (Es/N0)-1.                                                                        2¯n2  k=0
+                                                                                                   u ,lu
+   For the uth UE, the received signal in (9) is rewritten as
+                                                                                                -wu,k ej   2  (+    u )(k-lu )+u,0   2
+follows:                                                                                                   N
+
+        U-1                             j  2     u  (k-lu  ) +u                                                     N-1    r[k]e-j   2  (+      u )(k-lu )+u,0
+                                                      N                                                                              N
+r[k] = wu ,ksu [k - lu ]e                                        ,0  + n[k]             = arg max             wu,k
+
+        u =0                                                                                       u ,lu            k=0
+
+        wu,ksu[k - lu]ej          2  u  (k-lu )  +u,0                                                            N-1             2
+                                         N                                                                                       N
+    =                                                      + n[k]            (10)       = arg max wu,k                 r[k]e-j       (+     u )(k-lu )
+
+                                                                                                    u ,lu         k=0
+
+where the former term represents the preamble sent from the                                · e-j(u,0+w-c) = arg max|( u, lu)|                                     (13)
+uth UE and is the desired term, while the latter term is given                                                                       u ,lu
+as follows:
+                                                                                   where {·} denotes the operation of taking the real part of the
+
+               n[k] = [k] + n[k].                                                  argument and
+
+This expression, in turn, contains an ICI term expressed as                                               N-1                 -j2 ( +           u)(k - lu)
+                                                                                                                                                N
+                U                                      (k-lu  ) +u                      ( u, lu) = r[k] exp
+                                    j            2  u    N
+    [k] = wu ,ksu                                                                                          k=0
+                        k - lu e
+                  u =0                                               ,0            represents the cross-correlation of the received signal and a
+                  u =u
+                                                                                   replica of the transmitted signal with a frequency shift u and
+                                                                                   a TE lu; and
+
+and an AWGN term n[k] with zero mean and a variance of                                  w = tan-1             wu,k
+2¯n2. The ICI term largely arises from adjacent channels and                            c = tan-1
+does not have an analytical model. The following analysis                                                     wu,k
+
+focuses on the effects of the AWGN term.                                                                          N-1     r[k]  exp  -j2        (+  u )(k-lu )
+   When the channel gain wu,k and initial phase u,0 are                                                           k=0                                N
+
+regarded as nuisance parameters, the likelihood function and                                                      N-1     r[k]  exp  -j2        (+      u)(k-lu)
+                                                                                                                  k=0                                    N
+log-likelihood function of u and lu of the uth uplink trans-
+mission are written as follows:                                                    with {·} denoting the operations of taking the imaginary
+
+L~   u  ; wu,k, u,0                                                                part of the argument. Note that the bottom line of (13) is
+                                                                                   reached because |wu,k| and {e-j(u,0+w-c)} are irrelevant
+    lu                                                                             to the JMLE of u and lu. The JMLE of u and lu in (13)
+
+                               j  2  (+    u )(k-lu )+u,0     2                    suggests developing a bank of TD MFs (TDMFs), which can
+                                  N
+    N-1 1         r[k]-wu,k e                                                      be implemented as in [35, Fig. 3]. The TDMF outputs are
+
+= k=0 2 ¯n2 e -                      2¯n2                                          written as follows:
+
+                                                                                                                    1  N  -1                (+  ^u  )(k-^lu  )
+
+= 2 ¯n2 -N                                                                                          ^u, ^lu   =               r[k]e-j2              N             (14)
+
+                                                                                                                  N    k=0
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3432                                                                          IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+                                                                              in [18] and [21, eq. (9)] performs differential operations on any
+                                                                              two contiguous SG-Ss. Even worse, the differential operation
+                                                                              undoubtedly suffers not only from the threshold effect with
+                                                                              noise enhancement due to the noise-times-noise term in
+                                                                              the low-SNR regime but also from 3-dB SNR degradation
+                                                                              resulting from two signal-times-noise terms in the high-SNR
+                                                                              regime [38], [39].
+
+                                                                              D. NPRACH Detection
+
+                                                                                 According to (14), the JMLE should be developed via the
+                                                                              SLMF. The output of the SLMF, when applied to the qth
+                                                                              symbol of the mth SG of the lth preamble from the uth UE,
+                                                                              is written as follows:
+
+Fig. 6. Spectra of the first preamble of UE4 with a frequency error of 1.2 f                           1
+and a timing delay of T.                                                      l,m,q( u, lu) = N
+
+                                                                                          mNSG+qN+Ncp+(N-1)                         ( + ^u )(k-^lu )
+                                                                                                                                           N
+                                                                                       ·                               r[k]e-j2
+where ^u and ^lu represent estimates of u and lu, respectively.
+   By adopting the notations u = u - ^u and lu = lu -                                  k=mNSG +qN +Ncp
+
+^lu, (14) can be rewritten as follows:                                        = Cl,m,q( u, lu) + Il,m,q + nl,m,q
+                                                                                                      m = 0, 1, 2, 3; q = 0, 1, 2, 3, 4 (16)
+
+             ( u, lu) = wu,k · ( u, lu) + N                    (15)           where
+
+where        u, lu) = sin(     u)    ej        u  (N-1-lu   )                 Cl,m,q( u, lu)
+          (                                  N
+                                                                              =        wu,keju,1 ej          u  (mNSG+qN+Ncp+N-1)                ·    sin(    u)
+                                                                                                          N                                          N sin 
+                      N sin      u                                                                                                                               u
+
+                               N                                                                                                                             N
+
+and                                                                           is the desired term, conveying the cross-correlation, u,1 =
+                                                                              -2([u, m] + u)lu + u,0
+                   1  N-1            (+  ^u  )(k-^lu  )
+                   N
+             N  =          n[k]e-j2          N           .
+
+                      k=0                                                                         1    mNSG+qN+Ncp+(N-1) U-1
+                                                                                                  N
+In radar analysis, the magnitude of ( u, lu) is usually                                Il,m,q  =                                    wu ,k
+referred to as the ambiguity function [36]. The modified
+Cramér­Rao lower bounds (MCRLBs) are shown in the                                                         k=mNSG+qN+Ncp u =0
+form of [37, eq. (12)]. However, CR-like bounds are not                                                                             u =u
+further derived in this article because the theoretical bench-
+marks are not concise due to the lack of accurate ICI                                             ·ej  2     u,  k-lu   /NSG        (k-lu  )  ·  ej  2  u (k-lu )
+statistics in the literature. Hence, the performance degrada-                                          N                                             N
+tion caused by the ICI term is addressed via Monte Carlo
+simulations.                                                                                      ·e-j2      (+  ^u )(k-^lu )
+                                                                                                                   N
+   For illustration, the spectra of the first preamble of UE4
+with a frequency error of 1.2 f and a timing delay of T, are                  is the ICI term, which predominantly results from the non-
+shown in Fig. 6. The magnitude squares of the 2-D correlation                 negligible frequency error occurring in adjacent subchannels;
+functions when the normalized frequency error is 1.2 f and                    and
+the timing delay is T are shown in Fig. 7. When the length
+of the MF IR is set to N, the SLMF is developed, and                                           1  mNSG       +qN  +Ncp  +(N    -1)                          ^u )(k-^lu )
+the magnitude squares of the SLMF outputs are plotted in                                       N                                                              N
+Fig. 7(a). When the length of the MF IR is set to 5N, the SG-                 nl,m,q      =                                         n[k]e-j2            (+
+S proposed in [14, eq. (5)] and [18, eq. (5)] is developed, and
+the magnitude squares of the SG-Ss are plotted in Fig. 7(e).                                           k=mNSG +qN +Ncp
+Therefore, the magnitudes of the 2-D correlation function
+decrease as the length of the MF IR increases beyond one                      is the noise term, which is a complex-valued Gaussian random
+symbol duration. The SLMF can accommodate signals with
+fractional frequency errors in the range of ±0.5 f . In contrast,             variable (RV) with zero mean and a variance of 2 2 =
+the SG-S proposed in [14, eq. (5)] and [18, eq. (5)] can                                                                                                                      N
+accommodate signals with fractional frequency errors only in                  2¯n2/N   =  (ET /N0)-1,           with   ET      =    NEs       denoting      the
+the range of ±0.1 f . Furthermore, the technique proposed                                                                                                                 symbol
+
+                                                                              energy.
+
+                                                                              The detection process for testing whether the uth UE
+
+                                                                              sends NPRACH preambles can be converted into the
+
+                                                                              following binary hypothesis testing problem. The detec-
+
+                                                                              tion metric over L preambles can be formulated as the
+
+                                                                              accumulation of the squared magnitudes of the SLMF
+
+                                                                              outputs, i.e.,
+
+                                                                                                                               L-1
+
+                                                                                          Xu,L( u, lu) = l( u, lu)                                                        (17)
+
+                                                                                                                               l=0
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL            3433
+
+                                                             (a)
+
+                    (b)                                           (c)
+
+                    (d)                                           (e)
+
+Fig. 7. Magnitude squares of the 2-D correlation functions when the frequency error is 1.2 f , the timing delay is T, and the lengths of the MF IR are (a) N
+(i.e., SLMF), (b) 2N, (c) 3N, (d) 4N, and (e) 5N (i.e., SG-S in [18, eq. (5)]).
+
+where               34                                            Under Hypothesis 1, denoted by H1, which states that the uth
+                                                                  UE is active, Xu,L has a noncentral  2 distribution with 40L
+       l( u, lu) =           l,m,q( u, lu) 2.
+                                                                  degrees of freedom (DOFs). Thus, the conditional probability
+                    m=0 q=0
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3434                                                                           IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+density function (PDF) and conditional cumulative distribution                                     
+function (CDF) of Xu,L are given by [40, p. 46]
+                                                                                    nml =                fXu,L (x|H0 ) dx = 1 - FXu,L (Tth|H0 )
+
+                                                                                                   Tth
+
+      fXu,L (x|H1,  )                                                                          e-     Tth  20L-1   1       Tth        k
+                                                                                                      2N2                  2N2
+                                                             x                              =                                          .                (22)
+                                                              N2                                                   k!
+          1          x        10L-  1    -  x+2                                                             k=0
+         2N2         2              2       2N2
+                                        e
+      =                                          I20L-1                        Once the decision threshold Tth has been determined via
+                                                                               numerical methods, the probability of successful detection is
+                                                             x  0 (18)         written as follows:
+
+and                                                                                 ET
+                                                                                    N0
+                                               2         x                     PD               = 1 - FXu,L (Tth|H1,  )
+                                               N2       N2
+      FXu,L (x|H1,  ) = 1 - Q20L                     ,       , x  0,     (19)                                                         2ET ,        2ET
+                                                                                                , Tth                                 N0           N0
+                                                                                    = Q20L     N N               = Q20L                       Tth       . (23)
+
+respectively, where the undetermined parameter
+
+                         L-1                1                                     In a NTN, the NPRACH receiver operates on a satel-
+                                                                               lite around which almost no scattering objects are present.
+         =           20 wu,k 2              2                                  Therefore, the conventional small-scale fading channel
+                                              = 20L|wu|                        model [42] cannot be directly applied in the studied scenario.
+                                                                               In this study, the complex-valued channel gain wu is mod-
+                           l=0                                                 eled as a frequency-nonselective, slow, Rician fading channel
+                                                                               model. The LOS component conveys the residual frequency
+represents noncentrality, in which wu,k remains unchanged in L                 error; the fluctuation components result from various atmo-
+preambles; thus, wu,k is simplified as wu because the channels                 spheric phenomena, which are considered to change very
+are considered to slowly fade                                                  slowly. Note that ¯ = |wu| follows a Rician distribution with
+                                                                               the following PDF [40, p. 49]:
+      I (x)  =             k!   (x/2)+2k         1) ,    x0
+                     k=0         ( + k +
+
+is the modified Bessel function of the first kind and order 
+
+                                         tx-1 e-t dt                                        2(K    +  1)¯   e-  K+1    ¯2  +   K   P          K(K + 1)
+                                                                                                                  P           K+1                  P
+                        (x) =                                                  p(¯) =                                                 I0  2¯
+                                                                                                   P
+                                    0
+
+is the gamma function; and                                                                                                                    ¯  0      (24)
+
+      Qm(a, b) =                x   m-1e- x2+a2 /2Im-1(ax) dx                  where K represents the Rice factor, which is defined as the
+                                a
+                         x                                                     ratio of the LOS power to the scattering power, and P =
+                                                                               E{|wu|2} denotes the power gain of the channel, with E{·}
+                     b                                                         denoting the expectation operator. Therefore, the PDF of  is
+
+is the generalized Marcum Q-function [40, p. 47].                              written as follows:
+
+   Under Hypothesis 0, denoted by H0, which states that the                         p()  =     (K  +    1)  e-  1  K+1       2+KP     I0      K(K + 1)
+uth UE is not present, Xu,L has a central  2 distribution with                                                  P  20L                           5LP
+40L DOFs [40, p. 45]. The conditional PDF and conditional
+                                                                                               10LP
+CDF of Xu,L are written as follows:
+
+      fXu,L (x|H0 ) = 220L       1             x20L-1    -     x  ,  x0  (20)                                                                   0. (25)
+                                (20L)N40L                    2N2
+                                                        e
+
+and                                                                            The average detection probability and the average miss prob-
+                                                                               ability are written as follows:
+
+                               -     x  20L-1    1       x   k                           P¯ D  ET        =            PD      ET           p() d        (26)
+                                   2N2           k!     2N2                                    N0           0                 N0
+      FXu,L (x|H0 )  =  1  -  e                               , x0       (21)
+
+                                         k=0                                   and
+
+respectively. In practice, the noncentrality  in (18), resulting                                   P¯ M    ET      = 1 - P¯ D         ET                (27)
+from the channel gains cannot be obtained prior to NPRACH                                                  N0                         N0
+detection; therefore, it is regarded as a nuisance parameter
+in the NPRACH detection process. Because fXu,L (x|H1, )                        respectively.
+in (18) contains this undetermined parameter, NPRACH                              According to the derivations of the JMLE discussed in the
+preamble detection can be conducted only by applying the
+Neyman­Pearson criterion [41, pp. 132­133]. The false alarm                    previous subsections, a bank of MFs with different frequency
+probability of NPRACH preamble detection is usually required                   shifts is recommended. Based on the Nyquist sampling the-
+to be lower than the nominal false alarm probability (NFAP)                    orem [40, p. 74], the frequency-shift candidates are equally
+nml [41, pp. 132­133]. Given the NFAP provided in previous                     spaced by (1/2) f . The timing-delay candidates are equally
+studies, e.g., nml = 10-3 used in [2], [18], and [34], the                     spaced by T/2. Therefore, the JMLE is converted to a grid
+decision threshold Tth is determined by solving the following                  search procedure. If no sum of the squared magnitudes of
+equation:                                                                      the SLMF outputs exceeds the threshold Tth, an H0 case is
+                                                                               claimed. If more than 1 of the sums of the squared magnitudes
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL                                                                                       3435
+
+of the SLMF outputs exceed the threshold Tth, an H1 case
+is claimed. The frequency-shift and timing-delay candidates
+that achieve the highest sum of the squared magnitudes of the
+SLMF outputs are chosen as the joint estimates of the residual
+frequency error and excess timing delay. The estimates must
+be sent back to the corresponding UE units via RA responses
+(RARs) to adjust the local oscillators of the UE units. Notably,
+a larger beam spot results in greater residual frequency errors
+and greater residual timing delays; therefore, more MFs are
+required to accommodate all frequency-shift candidates, and a
+longer observation window is needed to account for all timing-
+delay candidates.
+
+                          IV. SIMULATIONS                         Fig.  8. Decision  thresholds  evaluated  via  iterative  search  when  nml  =  10-3
+                                                                  and   10-2.
+   The parameter settings used are briefly mentioned here [5].
+One NR physical resource block (PRB) of 180 kHz is allocated         Fig. 9(a) and (b) show the false alarm and miss probabilities
+for NB-IoT uplink transmission in the FD. The subcarrier          obtained on a frequency-nonselective, slow Rician fading
+spacing used is f = 3.75 kHz. Therefore, this 180-kHz NB-         channel with Rice factors K = 0 and K = 1 when UE3 expe-
+IoT band can accommodate 48 NB-IoT subchannels. These             riences a Rician fading channel where the LOS component
+48 NB-IoT subchannels are partitioned into 4 groups, with         conveying a residual frequency error of 7.5 kHz and an excess
+each group consisting of 12 subcarriers to accommodate up         timing delay of T are present, and UE7 experiences a Rician
+to 12 UEs. In this work, the NB-IoT uplinks occupy the            fading channel where the LOS component conveying a residual
+guard bands. Specifically, 24 subchannels are in the upper        frequency error of -3.75 kHz and an excess timing delay
+guard band, and the other 24 subchannels are in the lower         of 2T are present. The following five observations are made.
+guard band. An NPRACH preamble consists of 4 SGs in               First, as shown in Fig. 9(b), the simulation results for the miss
+the TD. Each SG consists of five symbols and 1 CP with            probability, which are averaged over the two UEs, are close to
+a length of T/4. Therefore, the symbol duration and the CP        the analytical results. Second, as shown in Fig. 9(b), the miss
+length are 266.67 and 66.67 s, respectively. One symbol           probability slightly increases because the spectral sidelobes
+duration consists of N = 512 samples. The channel gains           of the NPRACHs unavoidably leak into adjacent subchannels
+remain unchanged within one symbol duration but are updated       due to the nonnegligible fractional frequency error. Third,
+for every symbol by drawing from the Jakes fading channel         as shown in Fig. 9(a), the simulation results for false alarm
+model [27]. Demodulation based on a bank of TDMFs elim-           probability, which are averaged over all unoccupied channels,
+inates the requirement that all excess timing delays are less     exceed the NFAP of nml = 10-3, especially when detec-
+than the CP length, which is a presumption introduced by          tion is performed in the interference-dominant regime (i.e.,
+previously employed DFT-based demodulation [8], [9], [10].        ET N0  0 dB). Fourth, the false alarm probability increases
+Thus, converting DFT-based demodulation to TDMF-bank-             as the SNR (or ET /N0) increases because of the interference-
+based demodulation, as proposed in this study, solves the         dominant regime. Fifth, the false alarm probability increases
+problem of large differential delays investigated in previous     as L increases due to the interference-dominant regime. The
+studies [16], [17], [18].                                         summation (or integrate-and-dump filter) functions as an LPF
+                                                                  that rejects out-band noise. A larger L can reduce only the
+   Although (22) is an exact expression with no nonelementary     noise variance, thereby causing the ICI to become dominant
+functions, the relation between the decision threshold Tth        and thus increasing the false alarm probability.
+and the NFAP nml is implicit. In other words, Tth can-
+not be expressed as an explicit function of nml consisting           According to [24], the lowpass-equivalent complex envelope
+only of elementary functions by solving (22). Therefore, the      of the stationary narrowband SR channel model is written as
+decision threshold can be determined solely via an iterative
+search method [15]. The search range is set to extend from              wsr(t) = As(t) exp(js(t)) + zsr(t)ej0                                     (28)
+E{Xu,L|H0} = 40LN2 to E{Xu,L|H1}. The step size T is
+chosen to be 1/1024 of the standard deviation of the RV           where the former term As(t) exp(js(t)) represents the scat-
+Xu,L|H0, i.e., T = 80LN4/1024. Fig. 8 shows the decision          tering component and the latter term zsr(t)ej0 represents the
+thresholds evaluated via the iterative search method when         LOS component. As(t), s(t), and zsr(t) have a Rayleigh
+nml = 10-3 and 10-2. The following two observations are           distribution, a uniform distribution and a Nakagami-m dis-
+made. First, the thresholds increase as the number of NPRACH      tribution, respectively, and 0 denotes an unknown constant
+preambles L increases. Second, the false alarm probability is     initial phase. The in-phase and quadrature-phase parts of the
+highly sensitive to the determination of the decision threshold.  scattering component As(t) exp(js(t)) can thus be modeled as
+Even a very slight decrease in the threshold can cause the        zero-mean Gaussian processes with variance b0. The envelope
+probability of a false alarm to increase by one decade.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3436                                                               IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+                                     (a)                                              (b)
+
+Fig. 9. (a) False alarm probability and (b) miss probability obtained on a frequency-flat, slow, and Rician fading channel.
+
+                               TABLE V                             where mFn(a1, a2, . . . , am; b1, b2, . . . , bn; z) represents the
+      PARAMETERS OF THE SR FADING CHANNEL [24]                     generalized hypergeometric function [43, 9.14]. The PDF of
+                                                                    for the SR channel is, therefore, rewritten as
+
+                                                                   p() =     2b0m     m  exp - 2
+                                                                          2b0m +          20Lb0                                    40Lb0
+
+                                                                               · 1F1  m; 1;                                  2              ).  (30)
+
+                                                                                             40Lb0(2b0m +
+
+zsr(t) of the LOS component has a Nakagami-m distribution          Fig. 10 presents the characteristics of the SR channel simulator
+with a shape parameter m = (E{z2sr})2/V{zs2r} and a second
+parameter controlling spread = E{z2sr}, which is the average       used herein. Fig. 10(1.a), (2.a), (3.a), (4.a), and (5.a) present
+power of the LOS component, with V{·} denoting the variance
+of the argument. In the following simulations, the scattering      the channel amplitude gains of SR channels 1, 2, 3, 4, and 5,
+component is simulated by exploiting the Jakes fading channel
+simulator [27] as that employed in the Rician channels. The        respectively. Fig. 10(1.b), (2.b), (3.b), (4.b), and (5.b) present
+LOS component is simulated by exploiting a Nakagami-m
+fading channel simulator proposed in [28] and [29]. The sim-       histograms of the amplitude gains of SR channels 1, 2, 3, 4,
+ulator employed here differs from the SR statistical model         and 5, respectively. Additionally, p(¯) in (29) is also plotted.
+studied in [24] in two ways. The first difference is that m        The simulation results are close to the first-order statistic,
+is greater than or equal to 0.5 for the simulator, instead of      i.e., p(¯). Fig. 10(1.c), (2.c), (3.c), (4.c), and (5.c) present the
+m  0.0 used in [24]. The second difference is that the phase       PDFs of  for SR channels 1, 2, 3, 4, and 5, respectively.
+of the LOS component is developed as a random process for          Additionally, p() in (30) is also plotted. The Rician PDFs
+generality, as explored in [28] and [29], instead of an unknown    with corresponding average Rice factors K¯ /2b0 are also
+constant, as used in [24]. The parameter settings follow [24,      plotted for reference. The Gaussian PDFs with mean  and
+Table IV] and are listed in Table V. The rate of change of the     variance 2, i.e.,
+LOS component is set to 3 Hz, while the rate of change of
+the scattering component is set to 300 Hz, as stated in [24,                    1                                             -    2
+Sec. III].                                                                            exp                                      22
+                                                                   p~() =                    -                                                  (31)
+   The SR channel simulator is tested here. The PDF of the                     2 2
+amplitude gain ¯ = |wu| of the SR channel is written as
+[24, eq. (3)]                                                      where  = m1 and 2 = m2 - m21 with m1 and m2 repre-
+                                                                   senting the first moment and the second moment, respectively,
+
+                                                                   and being calculated as [24, eq. (5)]
+
+                                                                   m1 = E{} =      40Lb0      2b0m                                 m3
+                                                                                           2b0m +                                        2
+
+                                                                                   · 2F1   3 , m; 1;                         2b0m +
+                                                                                           2
+
+      p(¯) = 2b0m         m ¯ exp - ¯2                             m2 = E 2    = 40Lb0        2b0m                                 m
+                  2b0m +         b0       2b0                                              2b0m +
+                                                                                                                                      (2)
+
+                          · 1F1  m;  1;            ¯2  +  )  (29)                  · 2F1 2, m; 1; 2b0m +                                        (32)
+                                          2b0(2b0m
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL  3437
+
+     Fig. 10. Amplitude gains of the SR fading channels. (x.a) presents an envelope profile of Channel x, where x = 1, 2, . . . , 5. (x, b) presents the PDF of
+     amplitude gain in Channel x, where x = 1, 2, . . . , 5. (x, c) presents the PDFs of  in Channel x, where x = 1, 2, . . . , 5.
+
+    respectively, are also plotted for reference. Fig. 10(1.c), (2.c), the corresponding Gaussian PDFs written in (31), which
+    (3.c), (4.c), and (5.c) show that the PDFs of  written in (30), are presented by green curves. This is reasonable because
+    which are presented by red curves, approximately align with the Rice factor K grows much greater than 1, one of the
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3438                                                  IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+      (a)                                                             (b)
+
+      (c)                                                             (d)
+
+                                                 (e)
+
+Fig. 11. Miss probabilities for the SR channels employed in this article. (a) Channel 1. (b) Channel 2. (c) Channel 3. (d) Channel 4. (e) Channel 5.
+
+two dimensions becomes dominant, and the other dimension These values are greater than 1. Therefore, the SR chan-
+
+becomes negligible. The average Rice factors K¯  /2b0 nels employed here approach those solely conveying LOS
+
+are calculated and listed in the last column of Table V. components.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+LIN: UNIFIED RANDOM ACCESS PROCEDURE FOR AN NB-IoT PROTOCOL                   3439
+
+Fig. 11 presents the miss probabilities obtained using the thoroughly investigated. The common Doppler shift is used
+
+proposed NPRACH detector operating on the SR channel for pre- and post-compensations, while the common prop-
+
+simulator discussed in the preceding paragraphs, when UE3 agation delay is used for pre-TA and RAO postponement
+experiences an SR fading channel where the rate of change at the NPRACH receiver on the satellite. Pre- and post-
+
+of the LOS component is -5978.4 ± 3 Hz, the rate of change compensations, as well as pre-TA and RAO postponement,
+
+of the scattering component is -5978.4 ± 300 Hz, and the can achieve a much lower residual frequency error and lower
+
+excess timing delay is T; and UE7 experiences an SR fading residual time error. The squared magnitudes of the SLMF
+channel where the rate of change of the LOS component is outputs are coherently accumulated to improve the SINR
+
+7910.0 ± 3 Hz, the rate of change of the scattering component performance achieved via the proposed NPRACH detector.
+
+is 7910.0 ± 300 Hz, and the excess timing delay is 2T. Residual frequency error and residual time error are detected
+
+The residual frequency error of -5.9784 kHz occurring with with a resolution of a fraction of the subcarrier spacing
+
+UE3 corresponds to -1.5942 f = (-2 + 0.4058) f , in and half of the symbol duration, respectively, using the
+which the fractional frequency error is 0.4058 f . The residual grid search method. The miss probabilities, considering high
+
+frequency error of 7.9100 kHz occurring with UE7 corre- Doppler frequency, long differential delays, random initial
+sponds to 2.1093 f = (2+0.1093) f , in which the fractional phase errors, and various channel gains through which pream-
+
+frequency error is 0.1093 f . The nonnegligible fractional bles of multiple UE units propagate, are derived. Computer
+
+frequency errors studied above, i.e., 0.4058 f occurring with simulations using the practical SR channel model have con-
+
+UE3 and 0.1093 f occurring with UE7, not only result firmed that the proposed technique effectively achieves low
+in ICI, thereby increasing false alarm probability; but also residual frequency error and low miss probabilities.
+
+reduce cross-correlation, thereby increasing miss probability
+
+for the conventional techniques [16], [17], [18]. The JMLE        REFERENCES
+proposed in this article considers the residual frequency error
+
+of -5.9784 kHz occurring with UE3 as -1.5942 f =                   [1] "3rd generation partnership project; technical specification group radio
+(-1.5 - 0.0942) f , in which the fractional frequency error             access network; study on new radio (NR) to support non-terrestrial
+is -0.0942 f and detects the peak correlation at the grids              networks (NTN); (Release 15), Version 15.1.0," 3GPP, Sophia Antipolis,
+representing -1.5 f , thereby, reducing both miss and false             France, Rep. TR 38.811, Jun. 2019.
+alarm probabilities. Fig. 11 shows that the simulation results
+of the miss probabilities are close to the analysis results.       [2] "3rd generation partnership project; technical specification group radio
+Although some analysis results are not appropriately presented          access network; solutions for NR to support non-terrestrial networks
+because of underflow issues caused by calculation of the                (NTN); (Release 16), Version 16.0.0," 3GPP, Sophia Antipolis, France,
+modified Bessel function in (19) and the generalized hyper-             Rep. TR 38.821, Dec. 2019.
+geometric function in (30), the miss probabilities obtained on
+the AWGN channel are plotted in solid curves to serve as           [3] "Solutions for NR to support non-terrestrial networks (NTN)," 3GPP,
+the performance benchmarks. The miss probabilities obtained             Gothenberg, Sweden, document TSG RAN WG1 Meeting #86, 3GPP
+using the proposed NPRACH detector operating on the SR                  RP-193144, Dec. 2019.
+channels are greater than those in the AWGN channel by a
+few dB of the SNR (i.e., ET /N0). The rate of change in the        [4] "New study WID on NB-IoT/eMTC support for NTN," 3GPP,
+LOS component is much lower than the symbol rate. The                   Gothenberg, Sweden, document TSG RAN WG1 Meeting #86, 3GPP
+SR channels employed here tend toward the AWGN channel,                 RP-193235, Dec. 2019.
+because the time selectivity (i.e., variation in the TD) almost
+vanishes. No error floor is apparently present. As a result, the   [5] M. Kanj, V. Savaux, and M. L. Guen, "A tutorial on NB-IoT phys-
+miss probabilities obtained using the AWGN channel become               ical layer design," IEEE Commun. Surveys Tuts., vol. 22, no. 4,
+effective performance benchmarks.                                       pp. 2408­2446, 4th Quart., 2020.
+
+   Although the system description addressed above is derived      [6] W. S. Jeon, S. B. Seo, and D. G. Jeong, "Effective frequency hopping
+in the TDMF development, the proposed technique can also                pattern for ToA estimation in NB-IoT random access," IEEE Trans. Veh.
+be realized in the FD using DFT as the system architecture              Technol., vol. 67, no. 10, pp. 10150­10154, Oct. 2018.
+shown in [37, Fig. 1]. Although the technique proposed in
+this article achieves a low miss probability while addressing      [7] R. Harwahyu, R.-G. Cheng, C.-H. Wei, and R. F. Sari, "Optimization
+issues caused by the high Doppler shift and long timing delay,          of random access channel in NB-IoT," IEEE Internet Things J., vol. 5,
+false alarm probabilities exceeding the given NFAP due to ICI           no. 1, pp. 391­402, Feb. 2018.
+remain. The RA process discussed should be switched to the
+technique proposed in a prior study [15], which consistently       [8] X. Lin, A. Adhikary, and Y.-P. E. Wang, "Random access preamble
+performs well in a TN because it [15] effectively reduces false         design and detection for 3GPP narrowband IoT systems," IEEE Wireless
+alarm probability by sending estimates of residual frequency            Commun. Lett., vol. 5, no. 6, pp. 640­643, Dec. 2016.
+errors to the corresponding UE units via the RAR messages.
+                                                                   [9] S. Cho, H. Kim, and G. Jo, "Determination of optimum threshold values
+                           V. CONCLUSION                                for NPRACH preamble detection in NB-IoT system," in Proc. 10th Int.
+                                                                        Conf. Ubiquitous Future Netw. (ICUFN), 2018, pp. 616­618.
+   A unified RA process for an NB-IoT protocol seamlessly
+operating between NTNs and TNs has been proposed and              [10] J.-K. Hwang, C.-F. Li, and C. Ma, "Efficient detection and synchro-
+                                                                        nization of superimposed NB-IoT NPRACH preambles," IEEE Internet
+                                                                        Things J., vol. 6, no. 1, pp. 1173­1182, Feb. 2019.
+
+                                                                  [11] Q. Wu, P. Wu, W. Wen, T. Yang, and M. Xia, "An efficient NPRACH
+                                                                        receiver design for NB-IoT systems," IEEE Internet Things J., vol. 7,
+                                                                        no. 10, pp. 10418­10426, Oct. 2020.
+
+                                                                  [12] F. Aoudia, J. Hoydis, S. Cammerer, M. Van Keirsbilck, and A. Keller,
+                                                                        "Deep learning-based synchronization for uplink NB-IoT," in Proc. IEEE
+                                                                        Glob. Commun. Conf. (GLOBECOM), 2022, pp. 1478­1483.
+
+                                                                  [13] Y. R. Kumar and N. M. Balasubramanya, "Deep learning based random
+                                                                        access preamble detection for 3GPP NB-IoT systems," in Proc. IEEE
+                                                                        Wireless Commun. Netw. Conf. (WCNC), 2022, pp. 1689­1694.
+
+                                                                  [14] H. Chougrani, S. Kisseleff, and S. Chatzinotas, "Efficient preamble
+                                                                        detection and time-of-arrival estimation for single-tone frequency hop-
+                                                                        ping random access in NB-IoT," IEEE Internet Things J., vol. 8, no. 9,
+                                                                        pp. 7437­7449, May 2021.
+
+                                                                  [15] J.-C. Lin, "NB-IoT physical random access channels (NPRACHs)
+                                                                        with intercarrier interference (ICI) reduction," IEEE Internet Things J.,
+                                                                        vol. 11, no. 3, pp. 5427­5438, Feb. 2024.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+3440                                                                             IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 3, 1 FEBRUARY 2025
+
+[16] X. Liu and D. Gokhale, "GNSS-independent acquisition for NTN NB-            [35] J.-C. Lin, Y.-T. Sun, and H. V. Poor, "Initial synchronization exploiting
+      IoT," in Proc. 39th Int. Commun. Satell. Syst. Conf. (ICSSC), 2022,              inherent diversity for the LTE sector search process," IEEE Trans.
+      pp. 164­168.                                                                     Wireless Commun., vol. 15, no. 2, pp. 1114­1128, Feb. 2016.
+
+[17] O. Kodheli et al., "Random access procedure over non-terrestrial            [36] N. Levanon and E. Mozeson, Radar Signals. Hoboken, NJ, USA: Wiley,
+      networks: From theory to practice," IEEE Access, vol. 9,                         2004.
+      pp. 109130­109143, 2021.
+                                                                                 [37] J.-C. Lin, "Initial synchronization assisted by inherent diversity over
+[18] H. Chougrani, S. Kisseleff, W. A. Martins, and S. Chatzinotas, "NB-               time-varying frequency-selective fading channels," IEEE Trans. Wireless
+      IoT random access for nonterrestrial networks: Preamble detection                Commun., vol. 13, no. 5, pp. 2518­2529, May 2014.
+      and uplink synchronization," IEEE Internet Things J., vol. 9, no. 16,
+      pp. 14913­14927, Aug. 2022.                                                [38] J.-C. Lin, "Differentially coherent PN code acquisition with full-
+                                                                                       period correlation in chip-synchronous DS/SS receivers," IEEE Trans.
+[19] J.-C. Lin, "Synchronization requirements for 5G: An overview of                   Commun., vol. 50, no. 5, pp. 698­702, May 2002.
+      standards and specifications for cellular networks," IEEE Vehic. Technol.
+      Mag., vol. 13, no. 3, pp. 91­99, Sep. 2018.                                [39] J.-C. Lin, "Differentially coherent PN code acquisition based on a
+                                                                                       matched filter for chip-asynchronous DS/SS communications," IEEE
+[20] Z. Zhou, N. Accettura, R. Prévost, and P. Berthou, "Lightweight                   Trans. Veh. Technol., vol. 51, no. 6, pp. 1596­1599, Nov. 2002.
+      synchronization to NB-IoT enabled LEO satellites through Doppler
+      prediction," in Proc. 19th Int. Conf. Wireless Mobile Comput., Netw.       [40] J. G. Proakis and M. Salehi, Digital Communications, 5th ed. New York,
+      Commun. (WiMob), 2023, pp. 218­223.                                              NY, USA: McGraw-Hill, 2008.
+
+[21] Y. Xu, J. Jiang, D. He, and W. Zhang, "A NB-IoT random access scheme        [41] A. D. Whalen, Detection of Signals in Noise. Cambridge, MA, USA:
+      based on change point detection in NTNs," IEEE Open J. Commun.                   Academic, 1971.
+      Soc., vol. 4, pp. 2176­2185, 2023.
+                                                                                 [42] R. H. Clarke, "A statistical theory of mobile-radio reception," Bell Syst.
+[22] A. Abdi, W. C. Lau, M.-S. Alouini, and M. Kaveh, "A new simple model              Tech. J., vol. 47, no. 6, pp. 957­1000, Jul./Aug. 1968.
+      for land mobile satellite channels," in Proc. IEEE Int. Conf. Commun.
+      Conf. Rec. (ICC), 2001, pp. 2630­2634.                                     [43] I. S. Gradshteyn and I. M. Ryzhik, Tables of Integrals, Series and
+                                                                                       Prducts, 7th ed. Cambridge, MA, USA: Academic, 2007.
+[23] A. Abdi, W. C. Lau, M.-S. Alouini, and M. Kaveh, "On the second-order
+      statistics of a new simple model for land mobile satellite channels," in                                  Jia-Chin Lin (Senior Member, IEEE) joined the
+      Proc. IEEE 54th Veh. Technol. Conf. (VTC), 2001, pp. 301­304.                                             Microelectronics and Information Systems Research
+                                                                                                                Center, NCTU as a Research Assistant Professor.
+[24] A. Abdi, W. Lau, M.-S. Alouini, and M. Kaveh, "A new simple model for                                      In February 2001, he joined the Department of
+      land mobile satellite channels: First- and second-order statistics," IEEE                                 Electrical Engineering, National Chi Nan University,
+      Trans. Wireless Commun., vol. 2, no. 3, pp. 519­528, May 2003.                                            Puli, Taiwan, as an Assistant Professor. In
+                                                                                                                August 2004, he was promoted to serve as an
+[25] R. M. Barts and W. L. Stutzman, "Modeling and simulation of mobile                                         Associate Professor. In August 2006, he joined the
+      satellite propagation," IEEE Trans. Antennas Propag., vol. 40, no. 4,                                     Faculty with the Department of Communication
+      pp. 375­382, Apr. 1992.                                                                                   Engineering, National Central University, Taoyuan,
+                                                                                                                Taiwan, as an Associate Professor. In August 2008,
+[26] Y. Karasawa, K. Kimura, and K. Minamisono, "Analysis of availability        he was promoted to serve as a Full Professor. In January 2011, he became a
+      improvement in LMSS by means of satellite diversity based on three-        Distinguished Professor. He has also held visiting appointments with several
+      state propagation channel model," IEEE Trans. Veh. Technol., vol. 46,      universities, including the Stanford University, Stanford, CA, USA; Princeton
+      no. 11, pp. 1047­1056, Nov. 1997.                                          University, Princeton, NJ, USA; and the University of Toronto, Toronto, ON,
+                                                                                 Canada.
+[27] W. C. Jakes, Microwave Mobile Communications. New York, NY, USA:               Dr. Lin has been serving as a Technical Associate Editor for IEEE
+      Wiley, 1974.                                                               Communications Magazine from 2013. He had served as an Associate
+                                                                                 Editor for IEEE SIGNAL PROCESSING LETTERS from 2011 to 2012.
+[28] J.-C. Lin, "A simulator of spatially correlated complex-valued Nakagami     He served as a Guest Editor for IEEE JOURNAL ON SELECTED
+      fading channels," in Proc. IEEE Int. Symp. Pers., Indoor Mobile Radio      AREAS IN COMMUNICATIONS (Special Issue on Emerging Technologies
+      Commun., 2017, pp. 1­6.                                                    in Communications: Vehicular Networks and Telematics Applications.) He
+                                                                                 served as a Guest Editor for IEEE Intelligent Transportation Systems
+[29] J.-C. Lin and H. V. Poor, "A systematic approach to deriving the            Magazine and a Guest Editor for IET Intelligent Transport Systems.
+      covariance matrix of correlated Nakagami-m fading channels," IEEE          He served as the Lead Guest Editor for IEEE TRANSACTIONS ON
+      Trans. Veh. Technol., vol. 69, no. 2, pp. 1612­1625, Feb. 2020.            VEHICULAR TECHNOLOGY (Special Issue on Telematics Advances for
+                                                                                 Vehicular Communication Networks) in 2011. He is a Fellow of the IET.
+[30] A. Guidotti, A. Vanelli-Coralli, A. Mengali, and S. Cioni, "Non-
+      terrestrial networks: Link budget analysis," in Proc. IEEE Int. Conf.
+      (ICC), 2020, pp. 1­7.
+
+[31] "Beam size computation and alternative satellite specifications," 3GPP,
+      Gothenberg, Sweden, document TSG RAN WG1 Meeting #97, 3GPP
+      R1-1907481, May 2019.
+
+[32] C. A. Pickover, The Math Book: From Pythagoras to the 57th
+      Dimension, 250 Milestones in the History of Mathematics. New York,
+      NY, USA: Sterling Publ. Co., 2009.
+
+[33] "Discussion on doppler compensation, timing advance and RACH for
+      NTN," 3GPP, Gothenberg, Sweden, document TSG RAN WG1 Meeting
+      #98, 3GPP R1-1908049, Aug. 2019.
+
+[34] "3rd generation partnership project; technical specification group radio
+      access network; study on new radio (NR) to support non-terrestrial
+      networks (NTN), (Release 15), Version 0.1.0," 3GPP, Sophia Antipolis,
+      France, Rep. TR 38.811, Jun. 2017.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on September 30,2026 at 16:38:57 UTC from IEEE Xplore. Restrictions apply.
+

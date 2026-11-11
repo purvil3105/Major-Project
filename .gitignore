@@ -1,0 +1,34 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest & test caches
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Archives (don't commit large zip files to git)
+*.zip
+
+# OS & IDE temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+Project_Audit.pdf
+Literature_review.docx
+02_Methodology.docx
+03_Implementation.docx
+
+# Copyrighted paper PDFs stay local (do not publish)
+papers/*.pdf
+papers/*.xlsx

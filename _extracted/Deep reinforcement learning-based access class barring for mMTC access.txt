@@ -1,0 +1,819 @@
+                                                           Array 28 (2025) 100533
+                                             Contents lists available at ScienceDirect
+
+                                                    Array
+
+                                    journal homepage: www.elsevier.com/locate/array
+
+Deep reinforcement learning-based access class barring for mMTC access
+control in cellular networks
+
+Workineh Gebeye Abera a ,, Thomas O. Olwal b, Yihenew Wondie Marye a
+
+a School of Electrical and Computer Engineering, Addis Ababa Institute of Technology, Addis Ababa University, King George VI Street, Addis Ababa, Ethiopia
+b Department of Electrical Engineering/FSATI, Tshwane University of Technology, Pretoria 001, South Africa
+
+ARTICLE INFO                        ABSTRACT
+
+Keywords:                           Internet-of-things (IoT) is generating great income to countries' economy by interconnecting billions of Users
+Massive machine type communication  Equipment(UEs). Massive Machine Type Communication (mMTC), a use case of IoT, enables this huge number
+LTE-A                               of UEs interconnections using cellular networks (LTE-A and 5G NR). However, when sporadic large number
+5G NR                               of M2M UEs try access the eNB or gNB, which primarily supports H2H communication, there will be random
+Access control                      access channel congestion. Access Class Barring (ACB) is an access control scheme to reduce the congestion.
+Access class barring                But, the static ACB scheme does not give the best access success probability performance in such dynamic
+Deep reinforcement learning         environment. As a result, we proposed a mechanism which dynamically adjusts the barring factor parameter
+                                    of the scheme based on the arrival traffic using deep reinforcement learning to improve its access success
+                                    performance. The expermental results show that the mechanism achieves maximum access success probability
+                                    (0.9998), meeting the theoretical optimum ACB performance (  0.95). In addition, for number of M2M
+                                    UEs   30, 000, the mechanism achieves similar access success (99.98%) as a RL-based ACB scheme, but
+                                    with lower access delay and energy consumption; and under high traffic load ( > 30, 000), the mechanism
+                                    achieves better access success than the RL-based ACB scheme.
+
+1. Introduction                                                            sending an access request message called preamble through Physical
+                                                                           Random Access Channel (PRACH), a resource with specified time­
+    The emerging Internet of Things (IoT) is required to connect every-    frequency, detailed in Section 3. The preambles, signatures generated
+thing, machine-type and human-type users. Consequently, the global         by the base station, per cell are limited in number. Each UE randomly
+IoT connection is expected to reach 40 billion in 2033 [1­3], which is     picks a preamble from these preambles to signal its access request in
+anticipated to generate huge income (934 billion USD) [4]. One of the      a RACH. When large number of UEs synchronously request the base
+use cases of IoT is massive Machine Type Communication (mMTC),1            station for access over the PRACH duration, two or more UEs may
+which enables the Machine-to-Machine (M2M) interconnection. mMTC           randomly pick the same preamble, which results in preamble collision.
+is applied in asset tracking, agricultural mechanization access services,  This in turn leads to access failure. When the number of preamble
+smart metering, wastewater network monitoring, etc. [5,6]. Hence,          collisions is large and there is little or no successful access, Random
+mMTC is such highly applicable and emerging technology that draws          Access Channel (RACH) congestion has occurred. Such a problem typ-
+research attention. mMTC preferably uses cellular networks (LTE-A, 5G      ically occurs when massive number of M2M UEs tend to access the
+NR and beyond) to interconnect the M2M Users Equipment (UEs) for its       base station during power recovery, scheduled access, etc. The RACH
+ubiquitous connectivity, security, mobility and roaming support, high      congestion causes intolerable access delay, packet loss, and even service
+Signal-to-Interference plus Noise Ratio (SINR), etc. [6­9]. In addition,   unavailability.
+the deployment cost is low when we use the existing cellular network
+infrastructure [10].                                                           Therefore, RACH congestion in cellular networks supporting mMTC,
+                                                                           in addition to H2H communication, is a severe challenge that draws
+    When a User Equipment (UE) wants to transmit data to the cellular      a lot of research attention. A possible solution is to limit the number
+network, it has to request the base station (eNB or gNB)2 for access by    of access requests per RACH to the number of available preambles
+
+   Corresponding author.
+      E-mail addresses: workineh.gebeye@aait.edu.et, workineh.gebeye.abera@gmail.com (W.G. Abera), olwalto@tut.ac.za (T.O. Olwal),
+
+yihenew.wondie@aait.edu.et (Y.W. Marye).
+   1 Note that we may use the words machine-type communication and machine-to-machine communication interchangeably.
+   2 Note that base station refers to eNB or gNB).
+
+https://doi.org/10.1016/j.array.2025.100533
+Received 7 March 2025; Received in revised form 1 September 2025; Accepted 8 October 2025
+Available online 17 October 2025
+2590-0056/© 2025 The Author(s). Published by Elsevier Inc. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-
+nc-nd/4.0/).
+W.G. Abera et al.                                                                                                                                                    Array 28 (2025) 100533
+
+per RACH. One of such methods is the Access Class Barring (ACB)                used for M2M UEs (with massive and sporadic access requests) access
+scheme, introduced by 3GPP, detailed in Section 3. The scheme controls         control. Hence, a number of optimization methods have been proposed
+the RACH congestion using its two parameters namely, barring factor            to enable the basic random access procedure cope up with massive
+() and barring time (), both generated by the base station.                    access requests. One of such optimization methods which draws great
+The barring factor determines whether a UE sends an access request             research attention is the ACB scheme, which is proposed by 3GPP.
+or not and the barring time determines the time a UE has to wait               The ACB scheme deliberately delays the starting time of some of the
+before retransmitting a preamble after access failure. For optimal pair        access requests and is effective in reducing RACH congestion with
+of parameters configuration, the scheme is shown to be effective in con-       optimal access success probability () performance   0.95 for
+trolling RACH congestion with optimal access success probability ()            optimal parameter configurations [11]. However, in [11] it is shown
+of   0.95 [11]. However, the scheme does not give the best access              that the scheme does not give the best access success probability for
+success probability performance by using static pair of parameters, as         static pair of optimal parameters in a cellular network in which M2M
+shown in [12] for optimal pair of parameters ( = 0.5,  = 4 s),                 and H2H UEs coexist. A possible method is to dynamically adjust
+in dynamic cellular network where H2H and sporadic M2M UEs coexist.            the barring factor parameter based on the intensity of arriving access
+Therefore, a possible solution is to dynamically adjust the barring factor     request. Accordingly, in the past years a number of proposals which
+based on the variation in the access request traffic intensity. This can       dynamically tune the barring factor using analytical methods have
+give a barring factor value appropriate to the number of upcoming              been introduced [14­16]. However, such approaches are not suitable
+access requests, as detailed in Section 3.                                     for current and future cellular networks with large number of UEs
+                                                                               and complex data processing. The current trend is to use machine
+    Accordingly, in this paper we propose a mechanism which dy-                learning algorithms, mostly Reinforcement Learning (RL), for the same
+namically adjusts the barring factor according to the access request           purpose [17]. RL-based access control methods can easily learn from
+traffic intensity in a cellular network in which H2H and massive M2M           the environment to determine the barring factor value appropriate to
+UEs coexist. To adjust the barring factor the mechanism uses deep              the traffic intensity in the upcoming RAO.
+reinforcement learning algorithm, namely Dueling Double Deep Q-
+Learning (Dueling DDQL). We strictly used 3GPP standards in our                    Accordingly, a number of dynamic ACB schemes in the literature use
+system implementation, and hence our mechanism conforms to the                 machine learning techniques to tune the barring factor based on the
+specifications of the access procedure in cellular networks (LTE-A and         dynamic arrival traffic. The authors in [18] proposed a strategy that
+5G NR), enabling seamless integration into the networks. To be specific,       adaptively adjusts the barring factor based on the number of devices
+our dynamic access procedure is designed based on LTE-A Release 14             accessing the gNB to reduce the access delay. The number of accessing
+random access procedure specifications. The motivation behind using            devices is estimated using discrete generalized pursuit algorithm, which
+the LTE-A model arises from our ambition to use the LTE-A random               has weaker generalization ability than RL algorithms. Though the
+access resources, primarily designed for H2H random access, for both           algorithm is shown to achieve similar performance with the theoretical
+M2M and H2H access. This idea works equally well for 5G NR as LTE-A            optimal ACB scheme, the result is based on ideal scenario where only
+bands are included in Frequency Range 1 (FR1) (0.45 GHz­6 GHz) band            M2M UEs compete for RACH resources and hence could be different in
+of 5G NR and M2M communication is suitably supported in this band              the presence of H2H UEs. Similarly, in [19], a Long Short Term Memory
+but not in Frequency Range 2 (FR2) (24 GHz­52.6 GHz). As a result,             (LSTM)-based ACB scheme is used to adjust the barring factor based on
+the mechanism can be integrated into the LTE-A network as well as              the upcoming (traffic load) number of preamble transmissions, which
+5G NR network in the FR1 band. This gives additional capacity for the          is predicted using LSTM neural network by considering the number
+eNB or gNB which also uses LTE-M and NB-IoT to support the M2M                 of preamble transmissions as a time series data. The proposed scheme
+UEs random access procedure [13]. Therefore, the main contributions            achieves a high success rate without significantly increasing the access
+of the article are as follows:                                                 delay and the number of access attempts. In addition, in [20] a model-
+                                                                               based approach is used to obtain the optimal barring factor using the
+     1. To implement a dueling double deep Q-learning-based ACB                estimates of the number of access requests. To do so, the authors
+         mechanism which dynamically adjusts the barring factor in re-         first derived the analytical expression for the optimal baring factor as
+         sponse to the dynamic access request traffic intensity to improve     standardized by 3GPP. Then, the type and number of accessing devices,
+         the access success probability performance of the ACB scheme.         estimated from measurements acquired by the base station by using
+                                                                               neural networks, are plugged into the analytical expression to obtain
+     2. To evaluate the access success performance of the proposed             the optimal barring factor. The method is shown to have a performance
+         mechanism under different M2M UE traffic loads which follow           close to the theoretical optimum but does not show the effect of M2M
+         the 3GPP defined traffic model, while using real records of an        UEs on H2H UEs access, as only M2M UEs traffic is considered. The
+         operator for the H2H traffic model.                                   above methods in [18­20] adjust the barring factor based on the
+                                                                               estimate of the traffic load in the upcoming RAO and hence whether
+     3. To compare the performance of the proposed mechanism and               the adjusted barring factor is appropriate to the upcoming traffic load
+         a RL-based ACB scheme in [12] to show that our mechanism              depends on the accuracy of the traffic load estimation method. In our
+         ensures the UEs maximum access success with lower access delay        method, the barring factor is adjusted based on the reward obtained as
+         and energy consumption.                                               a result of the direct action (broadcasting a barring factor) taken by the
+                                                                               base station. In [21], a multi-rate ACB algorithm is proposed to tune the
+    The rest of the paper is organized as follows. Section 2 reviews           barring rates of different service classes using reinforcement learning
+works related to our proposal. The system background concepts, ran-            algorithm. The algorithm is implemented and evaluated following the
+dom access procedure and ACB scheme, are explained in Section 3.               3GPP extended ACB scheme specifications. The method is shown to
+Section 4 details the system model analysis and implementation of              maximize the RACH utilization but for a scenario where only M2M UEs
+the proposed mechanism. The simulation results and the associated              exist. In [12], Q-learning algorithm is used to dynamically adjust the
+discussions are included in Section 5. Finally, in Section 6 we present        barring factor in a practical scenario where M2M and H2H UEs coexist.
+our concluding remarks.                                                        The scheme is shown to have better access success probability and
+                                                                               worse access delay performances than the static optimal ACB scheme
+2. Related works                                                               ( = 0.5,  = 4 s). However, the barring factor adaptation ac-
+                                                                               curacy is limited to the Q-learning algorithm's overestimation problem
+    The (four-step) contention-based random access procedure is widely
+adopted and effective access control method for H2H UEs in LTE-A and
+5G NR networks. However, its performance degrades largely when it is
+
+                                                                            2
+W.G. Abera et al.                                                                                                                                                                                            Array 28 (2025) 100533
+
+and limited generalization ability. In addition, the performance of the                                                                  Fig. 1. Contention-based random access procedure.
+scheme beyond 30,000 M2M UEs is uncertain.
+                                                                                                                             1. Preamble Transmission (Msg1): As a first step of the random
+    In this paper, dueling double deep Q-learning algorithm is used                                                              access procedure, the UE requests the base station to get an
+to dynamically adjust the barring factor parameter according to the                                                              uplink resource, Physical Uplink Shared Channel (PUSCH), for
+changing access request traffic. Our aim is to have a better access                                                              Msg3 transmission. To make the request, the UE randomly se-
+success probability performance than the static optimal ACB scheme.                                                              lects a preamble from a set of preambles in the cell and sends it
+In addition, the mechanism is required to have better access success                                                             to the base station in the upcoming RAO. Of the 64 preambles
+probability performance than our reference work [12] under high                                                                  per cell, 54 of them are used for contention-based mode and the
+traffic load (above 30,000 M2M UEs) conditions.                                                                                  rest are used for contention-free mode. If a preamble transmitted
+                                                                                                                                 by a UE reaches the base station with sufficient power, it will be
+3. System background                                                                                                             detected by the base station, as recommended by 3GPP [28] and
+                                                                                                                                 verified in [11]. However, if the same preamble is transmitted
+    This section describes the access procedure that a UE follows to                                                             by more than one UE in the same RAO, preamble collision will
+establish connection with the cellular network (LTE-A or 5G NR). It                                                              occur and hence the base station will not detect any of the UEs
+also explains the ACB scheme.                                                                                                    preamble transmission [11]. (There is a possibility of preamble
+                                                                                                                                 detection in such a case [11], but we do not consider it in our
+3.1. Random access procedure and control                                                                                         work.) Preamble transmission failure occurs for each UE and
+                                                                                                                                 therefore each UE has try again after a backoff time.
+    When a UE wants to transmit data over the cellular network, it has
+to establish a connection with the base station. To achieve this the UE                                                      2. Random Access Response (RAR) (Msg2): In response to ac-
+sends an access request message to the base station through the carrier                                                          cess requests from the UEs, the base station down links Ran-
+of PRACH. The message is randomly selected from a pool of signatures                                                             dom Access Response (RAR) message (Msg2), through Physical
+called preambles, which are generated by the base station from Zadoff­                                                           Downlink Control Channel (PDCC), to them. The RAR message
+Chu sequence [11,22]. There are up to 64 orthogonal preambles per                                                                contains IDs of the detected preambles, unlink grants (PUSCH
+cell. Therefore, sending an access request message is the first step of                                                          resources), Backoff Indicator (BI), alignment time, etc. Each UE
+the access process called random access procedure. Users equipment                                                               receives the RAR message and extracts the information relevant
+initiate it during initial access to the cellular network, transition from                                                       to it. Thus, a UE with preamble collision will extract the BI
+idle to connected state, handover, and response to base station's paging                                                         and wait for a random time determined by the BI before trying
+message.                                                                                                                         another preamble transmission.
+
+    The PRACH is an uplink channel that is used to carry the preamble                                                        3. Connection Request (Msg3): A UE which has received an up-
+to the base station during access procedure. The PRACH is a time-                                                                link grant adjusts its uplink time based on the received align-
+frequency Resource Block (RB) which is 1 ms wide in time 6 RBs wide                                                              ment time and transmits its connection request message, Msg3,
+in frequency domain. Thus, a PRACH has a bandwidth of 6  180 kHz =                                                               through the allocated PUSCH.
+1.08 MHz [23,24]. The PRACHs occur in a regular time interval deter-
+mined by prach-ConfigIndex parameter which is broadcasted by the base
+station in a system information block. These regularly spaced PRACHs
+are specifically named as Random Access Opportunities (RAOs) [11]. A
+UE undergoing a random access procedure begins by sending its access
+request message called preamble to the base station. Preambles are a set
+of sequences generated from Zadoff­Chu sequence and there are up to
+64 orthogonal preambles per cell [11,22].
+
+    In LTE-A or 5G systems, there are two modes of random access
+procedure, contention-free and contention-based. In contention-free
+mode, preambles are assigned to a UE by the base station. Hence, simul-
+taneous transmission of the same preamble by different UEs within a
+RAO does not occur. This provides low latency service for services with
+high priority, like the cases of handover and positioning. Whereas, in
+the contention-based mode, which is used for regular communication
+services, a UE randomly selects a preamble from a set of available
+preambles through competition among other UEs. In this case, multiple
+UEs may select the same preamble in the same RAO, which may lead
+to preamble collision, resulting in access failure. However, the number
+of possible preamble collisions can be minimized through proper access
+control method. This is where the need for our proposed method comes
+from.
+
+    The contention-based random access procedure involves the ex-
+change of messages between the UE and the base station in a number
+of steps equal to the number of messages exchanged. Hence, currently
+there are two types of it, namely four-step random access procedure
+(included in 3GPP Release 13 and 14) and two-step random access
+procedure (included in 3GPP Release 16) [25­27]. For explanation
+simplicity and historical precedence, let us first discuss the four-step
+random access procedure, followed by the two-step random access
+procedure, and finally a remark on our choice among the two.
+
+    The four-step random access procedure involves the exchange of
+signaling messages between the UE and the base station in four steps
+as shown in Fig. 1 The steps are as follows:
+
+                                                                                                                          3
+W.G. Abera et al.                                                                                                            Array 28 (2025) 100533
+
+4. Contention Resolution (Msg4): For a successfully decoded                    Algorithm 1: Access Class Barring Scheme
+    Msg3, the base station responds with a contention resolution
+    message, Msg4. If a UE does not receive a contention resolution            1 repeat
+    message within the contention resolution timer [11], it declares
+    a contention resolution failure and repeats the random access              2 Set the barring factor  and barring time 
+    procedure all over again after a backoff time in the next RAO.                      broadcast by the base station in the  SIB2;
+
+                                                                               3 Generate a random number   [0, 1] with uniform
+
+                                                                                     distribution;
+
+    If the random access attempt of an UE fails, regardless of the             4     if    then
+cause (collision or contention resolution timer expiration or insufficient
+transmission power), the UE repeats the random access procedure all            5         Send a randomly selected preamble;
+over again [29]. To do this, the UE should first undergo a backoff
+procedure, where the UE waits for a random backoff time,  [ms],                6 else
+given below, before trying to transmit a new preamble in the upcoming
+RAO.                                                                           7         Generate another ;
+
+                                                                               8         Assign the barring time
+
+                                                                               9          = [0.7 + 0.6   [0, 1)]   ;
+
+                                                                               10        Wait for  ;
+
+ =  (0, ),            (1)                                                      11 until preamble is sent ;
+
+where  (.) stands for uniform distribution, BI is the backoff indicator        goes through backoff procedure and repeats the above mentioned steps
+defined by the base station, 0  BI  960 ms. As stated above, every             until it gets connected. The algorithm of the ACB scheme is given in
+UE that does not get an uplink grant (PUSCH), receives the BI in the           Algorithm 1.
+RAR message. However, the number of preamble retransmissions is
+limited to a value called preambleTransMax, which is the maximum                   The details of the random access procedure can be found in Sec-
+allowed number of preamble transmissions by a UE in a RAO and it is            tion 2 of our previous work [31]. Additional materials can also be found
+broadcasted by the base station through the System Information Block           in [11,12,14].
+Type 2 (SIB2) [23]. In [11], it is shown that   =
+10 and hence when this limit is exceeded, the network is declared              4. Deep reinforcement learning-based ACB mechanism
+unavailable by the UE and the problem is reported to the upper layer.
+                                                                                   This section first gives details of our system model and then the
+    The two-step RA procedure is included in the Release-16 of the 5G          implementation of the proposed mechanism.
+NR standard, and therefore both the four-step and two-step random
+access procedures are defined in the standard [25­27,30]. The two-step         4.1. System model
+random access procedure reduces the original two-round trip cycles to a
+single round-trip cycle exchanged between the UE and the base station              This subsection describes the analysis of the system implementa-
+with the aim of reducing access delay [25,26]. First, the UE sends MsgA,       tion. The cellular network model, the RACH parameters, and the RL
+which is a combination of Msg1 and Msg3, to the base station. The base         algorithm definition (agent, state, action, reward) are also included.
+station then responds to the UE with MsgB, which is a combination of
+Msg2 and Msg4. Msg4 may carry either success (success RAR) or failure              We followed the 3GPP Release 14 contention based random access
+(fallback RAR).                                                                procedure specifications in our mechanism implementation. We con-
+                                                                               sider a base station supporting  M2M and  H2H UEs per cell.
+    Though the two-step random access procedure minimizes the la-              This helps to show the impact of M2M UEs traffic on H2H UEs access.
+tency of the random access procedure, the four-step random access              Regarding the M2M UEs arrival traffic model, we consider extreme
+procedure uses more interactions and hence has higher reliability.             scenario where large number of UEs arrive synchronously following a
+Therefore, our proposed mechanism can exploit this feature of the four-        Beta distribution () over an activation period T, as recommended in
+step random access procedure when integrated into the 5G NR network.           3GPP TR 37.868 [28], and given by,
+In addition, the dominant use of the four-step random access procedure
+continues. Hence, the four-step random access procedure is relevant            () =  -1( - )-1      , 0     ,                        (3)
+for existing (LTE-A and 5G NR) and emerging network standards. For
+these reasons, we used the four-step random access procedure in our                   +-1( - )
+mechanism implementation. This makes our mechanism applicable in
+both LTE-A and 5G NR network-based mMTC access control.                         > 0,  > 0, (, ) is the Beta distribution function. The values of
+                                                                                = 3 and  = 4 are used as assumed in [28]. Whereas, the traffic model
+3.1.1. Access class barring scheme                                             for the H2H UEs arrival pattern is considered to be uniform over the
+    Access class barring is a method used to redistribute the access           activation period.
+
+requests of UEs in time by limiting the number of access requests                  We also take the LTE-A PRACH configuration index to be 6, i.e.,
+per RAO. This reduces the pressure on the RACH pressure. The base              prach-ConfigIndex 6 as specified in [28,29], where the subframe length
+station broadcasts a barring factor   [0, 1] and mean barring time             is 1 ms and the periodicity of the RAO is 5 ms. For prach-ConfigIndex 6,
+, [11], as part of the system information before each RAO. After               system information (including , , prach-ConfigIndex, pream-
+receiving the barring parameters, the UE generates a random number             bleTransMax, length of the RAR window  (in subframes)) is
+  [0, 1] with a uniform distribution. Then, the UE checks whether              broadcasted by the base station through SIB2 message every 2 =
+   or not. If   , then the UE randomly selects and sends                       16 RAOs (i.e., 80 ms) [23]. In addition, out of the available 64 pream-
+a preamble to the base station. Otherwise, the UE remains silent and           bles per cell,  = 54 of them are used for the contention-based random
+waits for access barring time  given by [11],                                  access procedure [11]. And the maximum allowed number of preamble
+                                                                               transmissions per RAO for a UE, preambleTransMax, is set to be 10 [11].
+ = [0.7 + 0.6  ]   ,  (2)                                                      Additional PRACH parameters for LTE-A Release 14, which are used in
+                                                                               our implementations, are listed in Table 1.
+where  =  [0, 1), a uniform distribution random number between
+0 and 1. This process is repeated until the UE generates a value                   Our problem is RACH congestion in a cellular network where there
+less than  and sends a preamble. Once the UE selects and sends                 is sporadic massive M2M UEs access request to the base station, in addi-
+a preamble, the UE goes through steps 2 to 4 of the random access              tion to the regular H2H UEs. As a result, the problem can best be solved
+procedure explained above. If there is no contention resolution, the UE        using model-free reinforcement learning algorithm, as it can learn the
+
+                                                                            4
+W.G. Abera et al.                                                                                                                Array 28 (2025) 100533
+
+         Table 1                                                                           interval, 2, as,
+         PRACH Configuration.
+                                                 Setting                                            2
+            Parameter
+                                                 15 kHz                                    [] =         ,                                           (4)
+            Subcarrier Spacing                   prach-ConfigIndex = 6
+            PRACH Configuration Index            5 ms                                             =1
+            Periodicity of RAOs                  1 ms
+            Subframe length                       = 54                                     · [] is the difference between the mean number of success-
+            Available preambles for                                                          fully received preambles per RAO in the current time-step  and
+            contention-based random access
+            Maximum number of preamble                                                       previous time-step  - 1, i.e.,
+            transmissions
+            RAR window size                      preambleTransMax = 10                     [] = [] - []-1,                                          (5)
+            Maximum number of uplink
+            grants per subframe                   = 5 subframes                            ·  is the normalized sample standard deviation of the number of
+            Maximum number of uplink              = 3                                        successfully received preambles, , over 2, one-time step,
+            grants per RAR window
+            Preamble detection probability        =  ×  = 15                                 which is given by
+            for the th preamble transmission
+            Backoff Indicator                              1  [28]                             (                      )  1
+            Re-transmission probability                    
+            for Msg3 and Msg4                       =  1-                                           2    (   -[  ])2     2
+            Maximum number of Msg3                                                                   =1
+            and Msg4 transmissions
+            Preamble processing delay             = 20 ms                                                2 -1
+            Uplink grant processing delay        0.1
+            Connection request processing delay                                             =            []                                         (6)
+            Round-Trip Time (RTT) of Msg3
+            RTT of Msg4                          5                                         When the agent takes the action  = 1,  changes to 0.05 (i.e.,
+                                                                                            = 0.05), when  = 2,  = 0.1, when  = 3,  = 0.15, . . . ,
+                                                 2 subframes                               when  = 16,  = 1, the ACB scheme will be turned off in this case.
+                                                 5 subframes                               And the rest of the state features change as per the  value, where
+                                                 4 subframes                               low values of  restrict large number of UEs from transmitting
+                                                 8 subframes                               preamble and to the contrary large values of  restrict small number
+                                                 5 subframes                               of UEs. Accordingly, changes in the remaining state features can be
+
+changes in the environment through continual interaction with the                          interpreted. As changes on  can only be received by the UEs
+environment and find an optimal policy that can control the congestion.                    through SIB2 message, which is broadcasted every 2, the action
+The optimal policy adjusts the barring factor in response to the access                    that change  and hence other state features will only be taken just
+request traffic change in such a way that the probability of preamble                      before the transmission of SIB2 message. Hence, Fig. 2 shows the state
+collision is minimized or the access success probability is maximized
+(  0.95). And we know that RL problems can be modeled as a Markov                          and time-step definitions.
+Decision Process (MDP) which has five components, namely agent,
+environment, state, action, and reward. In our case, the agent is the                          It is important to note that the maximum number of UEs that can
+base station, which interacts with the environment by taking an action
+and observing the environment's feedback in the form of reward and                         successfully access the base station within a single RAO is limited to 54,
+next state to control the barring factor. And the environment consists
+of a large number of M2M UEs, with synchronized access request, and                        corresponding to the number of preambles available at the base station
+regular H2H UEs. The state, action, and reward will be explained in the
+following paragraph. We use state­action value functions to find the                       for contention-based random access. However, in practice, the actual
+optimal policy that dynamically adjusts the barring factor according to
+access request traffic to control RACH congestion. The value function                      number of successfully decoded preambles is considerably lower due to
+can be represented by a lookup table or approximated using neural
+networks. In this article, deep neural network representation is used,                     connectivity impairments and the likelihood of multiple UEs selecting
+as detailed in Section 4.
+                                                                                           the same preamble. Our experiments show this fact and hence for any
+    In LTE-A or 5G NR, the base station does not know the number of
+UEs which are competing for resources nor their access time, which                         number of competing UEs, the probability of receiving more than 29
+is the case in several centralized access control systems. The base
+station is able to identify the number of successfully received preambles                  successfully decoded preambles per RAO is low. Hence, the possible
+ in a given RAO. Nonetheless, due to factors such as preamble
+collisions, interference, decoding errors, and other impairments,                          values of [] are taken to be between 0 and 29. To limit the number
+generally deviates from the total number of transmitted preambles,                         of states, we discretized  such that   {0, 0.2, 0.4, 0.6, 0.8}. That
+particularly under highly congested situation. For a base station which                    is, over a time-step i, if 0   < 0.2, we take  = 0; if 0.2   <
+uses the dueling double deep Q-learning based ACB mechanism as its                         0.4, we take  = 0.2, and similarly for the other intervals. In addition,
+access control method, the selection of the barring factor  will                           [] is discretized as follows: if [] > 0, then it will be taken
+be the action taken by the agent to control the RACH congestion. The                       as 1; if [] < 0, then it will be taken as 2; if [] = 0, then
+barring factor  takes one of the 16 possible values in the set                             it will be taken as 3. Finally,  is the barring factor in the current
+ {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1}.     time-step .
+Hence, we define the set of actions as  = {1, 2, 3, ... , 16}. We also
+define the state  at any time-step as  = ( , [], [],  ),                                   4.2. Dueling double deep Q-learning-based ACB mechanism
+where the remaining three of the state features are defined as follows,
+                                                                                               This subsection explains the implementation of the proposed rein-
+     · [] is the mean number of successfully received preambles                            forcement learning-based ACB mechanism. As the mechanism is based
+       per RAO and is calculated over the SIB2 message transmission                        on dueling double deep Q-learning algorithm, its explanation is in-
+                                                                                           cluded in this section. Then, the algorithm of the proposed mechanism
+                                                                                           follows.
+
+                                                                                               In standard Q-learning, the Q-value in a state  and current action
+                                                                                            is updated using the following formula [32]
+
+                                                                                           (, ) = (, ) + ( +  max (, ) - (, )),                     (7)
+                                                                                                             
+
+                                                                                           where   (0, 1] is the learning rate,   [0, 1] is a discount factor that
+                                                                                           trades-off the significance of immediate and future rewards,  is the
+                                                                                           immediate reward for taking the action in state . The action in the
+                                                                                           next state  corresponds to the maximum Q-value in the state. Such
+                                                                                           a selection of the action results in overestimation bias. To minimize
+                                                                                           the overestimation bias and other features of Q-learning, a number of
+
+                                                                                        5
+W.G. Abera et al.                                                                                            Array 28 (2025) 100533
+
+                                                           Fig. 2. State and time-step definitions.
+
+modifications have been introduced into the standard Q-learning [33­             The best way to learn the optimal parameters of the two networks
+36].                                                                             is to freeze the parameters of the target network, (, ; ,  , ),
+                                                                                 for a fixed number of iterations  while updating the online network,
+    As it is explained below, the dueling double deep Q-learning algo-
+rithm estimates the Q-value as a combination of state-value function             (, ; ,  , ), by gradient descent [35]. The gradient update is given
+(measures state importance) and advantage function (measures action              by [36]
+importance). This gives the algorithm a faster learning speed than
+Double Deep Q-Learning (DDQL) as it can learn which states matter                  (,  ,  )
+though actions may have similar Q-values. It also has the strongest
+generalization ability compared with DDQL, Deep Q-Learning (DQL),                = ,,, [( - (, ; ,  ,  ))  (, ; ,  ,  )].  (14)
+and classical RL algorithms for its separated state-value and action
+advantage. In addition, it has a reduced overestimation bias which is            Then, the target network parameters are copied from the online net-
+inherited from its base algorithm DDQL that uses two deep Q networks
+(online and target) for this purpose [36].                                       work parameters so that  = ,  =  ,  = .
+                                                                                     The Dueling DDQL algorithm has one other important component
+    Hence, for our proposed mechanism, we prefer to use the Dueling
+DDQL algorithm to dynamically adjust the barring factor parameter                called Experience Replay (ER) [35]. During learning the agent stores its
+in response to the changing UEs traffic. The Dueling DDQL algorithm
+approximates the state­action value function using Dueling Deep Q-               transition experiences  = (, , , +1) from many episodes as a data
+Network (Dueling DQN). In addition, the algorithm utilizes two Dueling           set  = {1, 2, ... , }. When the Dueling DDQN is trained, instead
+DQNs namely, online and target Dueling DQN. The online network is                of only using the current experience as prescribed by the standard Q-
+used to select the action  that gives maximum Q-value in the next
+state  and the target network is used to evaluate this action. The               learning [32,36], the network is trained by sampling mini-batches of
+implemented (online) Dueling DQN architecture is shown in Fig. 3. It
+has four inputs, one for each state feature, and sixteen outputs, one for        experiences from  uniformly at random. Accordingly, the sequence of
+each action. The network uses two streams of fully connected layers
+to estimate the Q-value [36], in contrast to Double Deep Q-Network               loss function will be [36]
+(DDQN), which utilizes a single stream of fully connected layers for
+the same purpose [34]. The upper stream outputs the value of a state             (,  ,  ) = (,,,) ()[( - (, ; ,  ,  ))2].  (15)
+ (; ,  ), a scalar which measures the importance of a state and given
+by                                                                               Experience replay increases data efficiency through re-use of experience
+                                                                                 samples in several updates. Moreover, it reduces variance because
+                                                                                 uniform sampling reduces the correlation among the samples used in
+                                                                                 the update.
+
+                                                                                     The algorithm for Dueling DDQL-Based ACB Mechanism is given
+                                                                                 in Algorithm 2. To avoid possible confusion, the online and target
+                                                                                 networks are denoted by (, ; ,  , ) and  (, ; ,  , ) re-
+                                                                                 spectively.
+
+ (; ,  ) = [(, ; ,  , )],                                               (8)
+
+and the lower stream outputs the advantage of each action in a state,            5. Results and discussions
+(, ; ; ), ||-dimensional vector given by [36],
+                                                                                     This Section presents the performance evaluation results of our im-
+(, ; ; ) = (, ; ,  , ) -  (; ,  ).                                      (9)      plemented mechanism evaluated using 3GPP's RACH Key Performance
+                                                                                 Indicators (KPIs), namely the probability of successful access (), the
+Note that  represents the parameters of the common layers, whereas               number of preamble transmissions () for the successfully connected
+                                                                                 UEs, and the access delay ().
+ and  are the parameters of the upper and lower streams, respec-
+tively. Then, the two streams are combined to give the Q-values in a                 We considered one of the cells of the base station which supports
+                                                                                 both M2M and H2H UEs with different access request intensities. To
+state , which is ||-dimensional vector [36]                                      make our evaluation more realistic, for the H2H UEs arrival distri-
+                                                                                 bution, we use the Open Dataset, which is released in Open Data in
+(,  ;  ,    ,  )   =    (;  ,    )  +  ((,  ;  ,  )  -  1   (, ; , )).  (10)     December 2014, provided by the Italian operator, Telecom Italia [37].
+                                                                                 The dataset was initially (January 2014) used in a contest (entitled
+                                                                                 ``The Telecom Italia Big Data Challenge'') for innovative application
+                                                                                 development from Big Data with the release of one the largest het-
+The action that maximizes the Q-value in the next state  is then,                erogeneous Big Data set. The data set provides information about the
+                                                                                 telecommunications activity (voice, data, SMS) over the cities of Milano
+    =  arg max     (,   ; ,      , )                                    (11)     and Trento. The dataset is the result of a computation over the Call
+                                                                                 Detail Records (CDRs) generated by the operator's cellular network
+                                                                                 over the two cities. The dataset has spatial and temporal aggregation
+                                                                                 values. The temporal values are aggregated in periods of ten minutes
+    The target network, (, ; ,  , ), has the same parameters as                  over the months of November and December 2013. Hence, the data is
+the online network, (, ; ,  , ), i.e.,  = ,  =  ,  = .                           assumed to be constant over every 10 min period. As stated in [38],
+
+    Using Eq. (11), the target equation is then given by [36]
+
+ =  + (, ; ,  , ).                                                      (12)
+
+To learn the optimal Q-values, we optimize the following sequence of
+loss function at iteration  [36]
+
+(,  ,  ) = ,,, [( - (, ; ,  ,  ))2].                                    (13)
+
+                                                                              6
+W.G. Abera et al.                                                            Array 28 (2025) 100533
+
+                   Fig. 3. Implemented Dueling Deep Q-Network architecture.
+
+the base station can support a maximum of 55 Radio Access Bearer             value of the average number of total preamble transmissions (first time
+(RAB) setups per second and hence we use this capacity as the threshold      preamble transmissions plus backlogged UEs preamble transmissions)
+capacity of the base station. Accordingly, the aggregated H2H data           per RAO, which is attained at the 1000th RAO (5 s from the start of
+traffic is normalized by this threshold value. Regarding the M2M UEs         activation of M2M UEs), is less than 20, which is in turn less than the
+arrival pattern, it follows a (3, 4) distribution over a period of  = 10     RACH capacity, (54) = 20.05 [11]. This shows that the mechanism
+seconds as stated in Section 4. Hence, in our simulations, the M2M UEs       is limiting the number of UEs requesting for network access to the
+traffic is added to the H2H traffic in every 10 min period to simulate a     RACH capacity. In Fig. 5, it can be observed that the barring factor
+massive access scenario. Note that in generating the beta-distributed        is reduced to its minimum value of around 0.27 at the 1000th RAO.
+M2M traffic, we used a unique seed for each 10 min interval. The             This indicates that the mechanism is adaptively adjusting the barring
+number of M2M UEs used in our experiments (using Dell Workstation            factor, i.e., it decreases the barring factor to its lowest value over the
+Computer (Processor: Intel(R) Xeon(R) Gold 6230 CPU @ 2.10 GHz               activation period when the number UEs requesting for access reaches its
+2.10 GHz, RAM: 32.0 GB)) are 10,000, 30,000, and 60,000. For the             peak value in the period. As a result, the mechanism is working as per
+H2H UEs traffic we used November 2 data (the highest traffic load in         the design requirement. To give another illustrative example showing
+the two month record) in training and December 1 data (the second            the mechanism's functionality as required, in Fig. 4, at the 5000th RAO,
+highest traffic load in the period) in testing the mechanism. Both data      the average number of total preamble transmissions per RAO is around
+were taken from cell 5161, one of the most occupied cells during             3, which is less than the {, ()}. And in Fig. 5, the value of
+the two months. Section 5.1 gives the results of the experiments we          the barring factor at this time (5, 000 RAO) is around 0.9, which lets
+conducted to select the learning rate and discount factor values and         large number of arriving UEs for access request. As it can be noted in
+found that  = 0.15 and  = 0.7, are good choices. As we used unique           Fig. 5, from the 6, 000 RAO on wards, the barring factor is 1, i.e., ACB
+seed for every 10 min period (of M2M UEs traffic generation), we are         is turned-off as the activation period of the M2M UEs is over; in other
+able to conduct multiple (200 and 100) different tests and hence the         words, the extreme access request scenario by the massive arrival of
+result shown for a specific parameter is the average of the parameter        the M2M UEs is limited to the activation period and once that period is
+taken from the multiple test results.                                        over, the base station serves the regular H2H UEs access requests and
+                                                                              = 1 lets the H2H UEs get access without congestion. From Fig.
+5.1. Dueling double deep Q-learning-based ACB mechanism                      4, it can also be observed that the peak value of average number of
+                                                                             first preamble transmissions per RAO is less than 10, which is less than
+    Each of the following results is an average of 200 different experi-     {, ()} as per the congestion control mechanism requirement.
+ments, each conducted over a day, for a loaded scenario containing the       In addition, the average number of successful access per RAO almost
+traffic of 30,000 M2M UEs and H2H UEs in every 10 min.                       coincides with the average number of first preamble transmissions per
+                                                                             RAO throughout the activation period indicating that almost every UE
+    It is shown in [11] that an access congestion control mechanism          is getting an uplink grant in it first preamble transmission. Moreover,
+should maintain the number of UEs arrivals per RAO, N, below the             the average number of collisions per RAO is significantly less than the
+number of uplink grants that the base station can send between two           successful access per RAO throughout the activation period which is as
+consecutive RAOs, , and the PRACH capacity, (), i.e.,                        required for a properly functioning congestion control mechanism. This
+{, ()}. For  = 54, () is found to be 20.05 [11], and                         indicates that preamble collision is considerably minimized.
+ = 15 as it is given in Table 1. Therefore,   {15, 20.05}.
+                                                                                 In Fig. 6, the peak value of the average number of successful
+    Different plots of our mechanism's performance evaluation results        preambles per RAO is around 12.5, which is less than the  = 15
+are shown below from Figs. 4 to 6. As can be seen in Fig. 4, the peak
+
+                                                                          7
+W.G. Abera et al.                                                   Array 28 (2025) 100533
+
+Fig. 4. UEs first preamble transmissions, total preamble transmissions, number of collisions, successfully decoded preambles, and successful access per RAO.
+
+Algorithm 2: Dueling Double Deep QL-Based ACB Mechanism
+
+1 Controller: Dueling Double Deep QL(, , , , , , ER,  )
+  Input: set of states , set of actions , reward function ,
+
+          discount factor , exploration probability , target
+
+          update frequency , experience replay size ER, neural
+
+            network layers 
+2 Local Variables:
+
+3 Dueling DQN (, ; ,  , ), state , action , weights ,  ,
+
+                                                                               Fig. 5. The barring factor,  , adaptation as a function of time.
+4 Dueling DQN  (, ; ,  , ), state , action , weights ,
+                                                                                     Fig. 6. Successful preambles, collided preambles per RAO.
+     , )
+5 Initialization:                                                      indicating that the mechanism minimizes preamble collisions by not
+                                                                       reaching the red cap. And the peak value of the average number of
+6 Initialize (, ; ,  , ) with random weights ,  ,                      collided preambles per RAO is around 2.49, a difference of 10.01 from
+7 Initialize  (, ; ,  , ) i.e.,  = ,  =  ,  =                          the peak value of average number of successful preambles per RAO.
+                                                                       Therefore, the mechanism very significantly reduces preamble collision.
+8 Initialize the experience reply buffer
+                                                                            Tables 2 and 3 below show the effects of the learning rate  and
+9 repeat                                                               the discount factor  on the performance of the mechanism. Table 2
+                                                                       shows KPI values for  = 0.7 and three learning rate values (from its
+10 repeat                                                              range   (0, 1]) for M2M, H2H, and all UE types. The learning rate has
+                                                                       no significant effect on the KPIs of the mechanism and hence we take
+11        if RAO() mod SIB2 == 0 then                                   = 0.15 in our simulations as it gives relatively better access success
+                                                                       probability and access delay performances. Similarly, Table 3 shows the
+12                 Observe current state ;                             KPI values for  = 0.15 and three discount factor values (from its range
+                                                                         [0, 1]). For  = 0.95, the access success probability and number of
+13                 Select action  from  using -greedy policy based     preamble transmission performances are poor. Hence, future rewards
+                                                                       negatively affect the mechanism's performance and hence reasonable
+                   on (, ; ,  , );                                     not to take large  values. The access success probability and the
+                                                                       number of preamble transmission performances are better for  = 0.7
+14                 Execute action , observe reward (, , ) & next       and used in our simulations.
+
+                   state ;                                          8
+
+15                 STORE (, , , ) in the experience replay buffer;
+
+16 until  = ER;
+17  = ;
+
+18 Randomly order the buffer;
+
+19  = 0;
+
+20 repeat
+
+21         =  + 1;
+
+22        repeat
+
+23                  = arg max (, ; ,  , );
+
+24                  =  +  (, ; ,  , );
+
+25                 STORE target Q-values in buffer;
+
+26        until  = ( + 1);
+
+27        Read the buffer for  and target ( each);
+
+28        Compute loss and gradient;
+
+29          =      1       (  -  (, ; ,     , ))2;
+                   
+                         
+
+30        Train (, ; ,  , );
+
+31         (, ; ,  , ) = (, ; ,  , );
+
+32 until  = ;
+
+33 until  = maxRAO;
+W.G. Abera et al.                                                                                                            Array 28 (2025) 100533
+
+                   Table 2
+
+                   KPIs for the Dueling DDQL Mechanism as  varies for  = 30, 000 and  = 0.7.
+
+                            Access Success Prob.                    Mean Access Delay [ms]             Mean No. Preamb. TxN
+
+                             = 0.02   = 0.15       = 0.28            = 0.02      = 0.15        = 0.28   = 0.02   = 0.15       = 0.28
+
+                   M2M      0.9999   0.9998       0.9998            7351.34     6739.83       7106.63  1.6914   1.7195       1.6978
+                   H2H      1.0000   1.0000       1.0000            3703.81     3288.72       3527.94  1.5646   1.5760       1.5691
+                   All UEs  0.9999   0.9998       0.9998            7340.43     6730.05       7096.39  1.6910   1.7191       1.6974
+
+                   Table 3
+
+                   KPIs for the Dueling DDQL Mechanism as  varies for  = 30, 000 and  = 0.15.
+
+                            Access Success Prob.                    Mean Access Delay [ms]             Mean No. Preamb. TxN
+
+                             = 0.2    = 0.7        = 0.95            = 0.2       = 0.7         = 0.95   = 0.2    = 0.7        = 0.95
+
+                   M2M      0.9999   0.9998       0.7878            6539.29     6739.83       2967.51  1.7300   1.7195       2.5444
+                   H2H      1.0000   1.0000       0.9363            3165.82     3288.72       1243.65  1.5591   1.5760       1.7212
+                   All UEs  0.9999   0.9998       0.7881            6529.40     6730.05       2962.34  1.7295   1.7191       2.5414
+
+                                                                                               Fig. 8. Mean access delay for all UEs.
+
+                   Fig. 7. Access success probability for all UEs.
+
+    We evaluated the performance of our mechanism as the num-                              Fig. 9. Mean number of preamble transmissions for all UEs.
+ber of M2M UEs increases. Accordingly, under the access control of
+the mechanism, the access success probability () of all UEs (M2M                30,000 M2M UEs in the presence of H2H UEs. Fig. 10 shows that both
++ H2H) is measured against the number of M2M UEs (for  =                        mechanisms perform almost similarly in terms of average number of
+10, 000, 30, 000, 60, 000). A plot of  vs  is shown in Fig. 7. The result       total preamble transmissions, first preamble transmissions, successful
+shows that the access success probability performance of the mecha-             access, and preamble collision per RAO. The slight difference is due
+nism meets the optimal requirement (  0.95), with a maximum of                  to the Q-Learning algorithm's overestimation problem. Fig. 11 shows
+0.9998, for up to 40,250 M2M UEs. (That is, more than 95% of the                that both control mechanisms adjust  almost similarly. Fig. 12
+UEs that requested for access will get successful access to the base            also shows that in terms of average number of successful preambles
+station.) That means, the access control performance of the mechanism           and collided preambles per RAO, both mechanisms perform almost
+is optimum for up to 40,250 M2M UEs (in the presence of the H2H                 similarly.
+UEs). The access control performance of the mechanism is still good for
+up to 60,000 M2M UEs, with   0.7874 . Furthermore, Figs. 8 and                      Fig. 13 shows the access success probability performances of the
+9 show the mean access delay and number of preamble transmission                Dueling DDQL-Based ACB Mechanism and the RL-Based ACB Scheme
+variations with the number of M2M UEs for the mechanism. Unlike                 as the number of M2M UEs varies. Each  at a key point is an average
+the mean number of preamble transmissions, the mean access delay                of 100 test results and the remaining points on a curve are obtained
+becomes asymptotic to a maximum value as the number of M2M UEs
+increases. Depending on the specific application, tolerable access delay
+and number of preamble transmission (energy consumption) can be
+selected for up to 40,250 M2M UEs.
+
+5.2. Comparison of the dueling double deep Q-learning-based ACB mecha-
+nism and RL-based ACB scheme
+
+    Results of comparative plots of our Dueling Double Deep Q-Learning-
+Based ACB Mechanism and the RL-Based ACB Scheme implemented
+in [12] are shown from Figs. 10 to 12. The simulations are done for
+
+                                                                             9
+W.G. Abera et al.                                                                                                             Array 28 (2025) 100533
+
+Fig. 10. UEs first preamble transmissions, total preamble transmissions, num-
+ber of collisions, successfully decoded preambles, and successful access per
+RAO.
+
+                                                                                            Fig. 13. Access success probability for all UE types.
+
+                                                                                   Table 4
+
+                                                                                   KPIs for the Dueling DDQL-Based ACB Mechanism and RL-Based ACB Scheme
+
+                                                                                   for  = 30, 000.
+
+                                                                                   KPI      Dueling DDQL-Based ACB Mechanism  RL-Based ACB Scheme
+
+Fig. 11. The barring factor,  , adaptation as a function of time.                           0.9998                            0.9999
+                                                                                            0.9998                            0.9999
+                                                                                            1.0000                            1.0000
+
+                                                                                   []       6698.9356                         7601.4898
+                                                                                   []       6708.5782                         7614.6221
+                                                                                   []       3273.0683                         3405.9426
+
+                                                                                    [ ]     1.7236                            1.7267
+                                                                                    [ ]     1.7239                            1.7272
+                                                                                    [ ]     1.5945                            1.5658
+
+           Fig. 12. Successful preambles, collided preambles per RAO.              Scheme. Hence, when it is required to state our results relative to the
+                                                                                   static optimal ACB, we use the results in [12].
+through interpolation. The result shows that our mechanism achieves
+optimum performance (  0.95) for up to 40,250 M2M UEs and the                          The RACH KPIs of our proposed method and the reference scheme
+performance degradation with the number of M2M UEs is much slower                  in [12] are shown in Table 4. It can be seen that, the two methods have
+than the RL-Based ACB Scheme. The RL-Based ACB Scheme performs                     similar access success probability performance. However, our mecha-
+optimally for up to 35,000 M2M UEs and performs unacceptably ( =                   nism outperforms the reference scheme in terms of mean access delay,
+0.1272) for 60,000 M2M UEs for which our mechanism still has good                  making it preferable for delay-sensitive applications. Furthermore, the
+performance ( = 0.7446).                                                           mean number of preambles transmitted by all UEs (M2M + H2H) and
+                                                                                   M2M UEs are less than that of the reference scheme, which makes
+    In summary, for  = 30,000 and  = 10,000, the Dueling Double                    our proposed solution preferable for the energy-limited M2M UEs.
+Deep Q-Learning-Based ACB Mechanism and RL-Based ACB Scheme                        Therefore, our mechanism effectively controls the RACH congestion
+have similar performance in improving the access success probability               with better overall performance than the reference scheme.
+relative to the static optimal ACB scheme, ( = 0.5,  = 4 s),
+performance. As the number of M2M UEs increases beyond 30,000, the                 6. Conclusion
+access success probability performance of the two mechanisms show
+degradation where the RL-ACB scheme degrading rapidly. Therefore,                      In this paper, we proposed a dynamic ACB mechanism which aims
+based on the results and the generalization ability of Dueling DDQL,               to improve the access success probability performance of the ACB
+we can conclude that our mechanism performs much better than the                   scheme. The mechanism is designed for a cellular network in which
+RL-ACB Scheme under a high traffic load. In [12] it is shown that                  both M2M and H2H UEs coexist. For the M2M UEs arrival traffic, we
+the RL-Based ACB Scheme reduces the number of preamble collisions                  used a model recommended by 3GPP. To make the evaluation of our
+much better than the static optimal ACB scheme. In this work, we only              mechanism more realistic, we used records of an operator for the H2H
+compare the performances of our mechanism with the RL-Based ACB                    UEs arrival traffic. As we used 3GPP standards in implementation, the
+                                                                                   mechanism conforms to the specifications of the access procedure in
+                                                                                   cellular networks (LTE-A and 5G) and therefore it can be seamlessly
+                                                                                   integrated into the networks. The simulation results show that the
+                                                                                   proposed mechanism achieves maximum access success probability
+                                                                                   (0.9998), which meets the theoretical optimum ACB performance ( 
+                                                                                   0.95). For number of M2M UEs   30, 000, our mechanism achieves
+                                                                                   similar access success probability performance (0.9998) as the refer-
+                                                                                   ence RL-based ACB scheme, but with lower access delay and smaller
+                                                                                   number of preamble transmissions (energy consumption). Hence, our
+
+                                                                               10
+W.G. Abera et al.                                                                                                                                                                   Array 28 (2025) 100533
+
+proposed method is preferable for the energy-constrained M2M UEs ac-                          [15] Tello-Oquendo Luis, Vidal José-Ramón, Pla Vicent, Guijarro Luis. Dynamic access
+cess control. It is also a suitable choice for delay sensitive applications.                          class barring parameter tuning in LTE-A networks with massive M2M traffic. In:
+In addition, under high traffic load ( > 30, 000), our mechanism                                      2018 17th annual mediterranean ad hoc networking workshop (med-hoc-net).
+achieves better access success than the reference scheme.                                             Capri, Italy: IEEE; 2018, p. 1­8.
+
+CRediT authorship contribution statement                                                      [16] Moon Jihun, Lim Yujin. Adaptive access class barring for machine-type commu-
+                                                                                                      nications in LTE-A. In: W2016 eighth international conference on ubiquitous and
+    Workineh Gebeye Abera: Writing ­ original draft, Visualization,                                   future networks. ICUFN, Vienna: IEEE; 2016, p. 398­402.
+Software, Resources, Methodology, Investigation, Formal analysis, Data
+curation, Conceptualization. Thomas O. Olwal: Writing ­ review &                              [17] Iiyambo Loini, Hancke Gerhard, Abu-Mahfouz Adnan M. A survey on NB-
+editing, Visualization, Validation, Supervision, Resources, Conceptual-                               IoT random access: Approaches for uplink radio access network congestion
+ization. Yihenew Wondie Marye: Writing ­ review & editing, Visual-                                    management. IEEE Access 2024;12:95487­506.
+ization, Validation, Supervision,.
+                                                                                              [18] Tu Yue, Xu Rongtao. DGPA-ACB: Adaptive RAN overload avoidance control for
+Declaration of competing interest                                                                     mMTC in 5G NR. In: 2020 international conference on wireless communications
+                                                                                                      and signal processing. WCSP, Nanjing, China: IEEE; 2020, p. 777­82.
+    The authors declare that they have no known competing finan-
+cial interests or personal relationships that could have appeared to                          [19] Lee Chu-Heng, Kao Shang-Juh, Chang Fu-Min. LSTM-based ACB scheme for
+influence the work reported in this paper.                                                            machine type communications in LTE-A networks. Elsevier, Comput Commun
+                                                                                                      2020;152:296­304.
+Data availability
+                                                                                              [20] Llobet Martí, Cabrera-Bean Margarita, Vidal Josep, Agustin Adrian. Optimizing
+    Data will be made available on request.                                                           access demand for mMTC traffic using neural networks. IEEE Trans Veh Technol
+                                                                                                      2023;72(12):16834­8.
+References
+                                                                                              [21] Turan Ali, Koseoglu Mehmet, Akcapinar Sezer Ebru. Reinforcement learning
+  [1] IoT Market Analysis. 2024, https://www.gsma.com/solutions-and-impact/                           based adaptive access class barring for RAN slicing. In: 2021 IEEE international
+         connectivity-for-good/mobile-for-development/wp-content/uploads/2023/04/                     conference on communications workshops (ICC workshops). Montreal, QC,
+         IoT-for-Development-Use-cases-delivering-impact.pdf.                                         Canada: IEEE; 2021, p. 1­6.
+
+  [2] Global IoT connections forecast to reach 40 billion in 2033. 2024, https://             [22] Chen Ziqi, Smith David B. Heterogeneous machine-type communications in
+         transformainsights.com/news/iot-connections-40-billion-2033.                                 cellular networks: Random access optimization by deep reinforcement learning.
+                                                                                                      In: 2018 IEEE international conference on communications. ICC, Kansas City,
+  [3] Akpakwu Godfrey Anuga, Silva Bruno J, Hancke Gerhard P, Abu-Mahfouz Ad-                         MO, USA: IEEE; 2018, p. 1­6.
+         nan M. A survey on 5G networks for the internet of things: Communication
+         technologies and challenges. IEEE Access 2017;6:3619­47.                             [23] Evolved Universal Terrestrial Radio Access (E-UTRA); Radio Resource Control
+                                                                                                      (RRC); Protocol specification. 3GPP TS 36.331, Version 18.3.1 Release 18, 2024.
+  [4] Global IoT Forecast Report, 2023­2033. 2024, https://transformainsights.com/
+         research/reports/global-iot-forecast-report-2023-2033.                               [24] Evolved Universal Terrestrial Radio Access (E-UTRA); Physical channels and
+                                                                                                      modulation. 3GPP TS 36.211, Version 18.0.1 Release 18, 2024.
+  [5] IoT for Development: use cases delivering impact. 2023, https://www.gsma.co
+         m/solutions-and-impact/connectivity-for-good/mobile-for-development/wp-conte         [25] Piao Yijun, Lee Tae-Jin. Integrated 2­4 step random access for heterogeneous
+         nt/uploads/2023/04/IoT-for-Development-Use-cases-delivering-impact.pdf.                      and massive IoT devices. IEEE Trans Green Commun Netw 2024;8(1):441­52.
+
+  [6] Mobile IoT in the 5G future: NB-IoT and LTE-M in the context of                         [26] Miuccio Luciano, Panno Daniela, Riolo Salvatore. An energy-efficient DL-aided
+         5G. 2018, https://www.gsma.com/solutions-and-impact/technologies/internet-                   massive multiple access scheme for IoT scenarios in beyond 5G networks. IEEE
+         of-things/wp-content/uploads/2018/05/GSMA-5G-Mobilea-IoT.pdf.                                Internet Things J 2023;10(9):7936­59.
+
+  [7] Qadir Qahhar Muhammad, Rashid Tarik A, Al-Salihi Nawzad K, Ismael Birzo,                [27] Liu Xue, Yang Heng, Li Shanshan, Liu Zhenyu, Lian Xiaohui. Enhanced RACH
+         Kist Alexander A, Zhang Zhongwei. Low power wide area networks: A survey                     optimization in IoT networks: A DQN approach for balancing H2H and M2M
+         of enabling technologies, applications and interoperability needs. IEEE Access               communications. Elsevier Internet Things 2024;28:101433.
+         2018;6:77454­73.
+                                                                                              [28] RAN improvements for machine-type communications. 3GPP TR 37.868, Version
+  [8] Buurman Ben, Kamruzzaman Joarder, Karmakar Gour, Islam Syed. Low-power                          11.0.0 Release 11, 2011.
+         wide-area networks: Design goals, architecture, suitability to use cases and
+         research challenges. IEEE Access 2020;8:17179­220.                                   [29] Evolved Universal Terrestrial Radio Access (E-UTRA); Medium Access Control
+                                                                                                      (MAC) protocol specification. 3GPP TS 36.321, Version 18.3.0 Release 18, 2024.
+  [9] Chilamkurthy Naga Srinivasarao, Pandey Om Jee, Ghosh Anirban, Cenkera-
+         maddi Linga Reddy, Dai Hong Ning. Low-power wide-area networks: A broad              [30] Wang Jiadai, Xing Chaochao, Liu Jiajia. Intelligent preamble allocation for
+         overview of its different aspects. IEEE Access 2022;10:17179­220.                            coexistence of mMTC/URLLC devices: A hierarchical Q-learning based approach.
+                                                                                                      China Commun 2023;20(8):44­53.
+[10] LTE-to-5G Evolution January 2024. 2024, https://gsacom.com/paper/lte-to-5G-
+         evolution-january-2024/.                                                             [31] Abera Workineh Gebeye, Olwal Thomas O, Marye Yihenew Wondie,
+                                                                                                      Abebe Abiy Tadesse. Learning based access class barring for massive machine
+[11] Tello-Oquendo Luis, Leyva-Mayorga Israel, Pla Vicent, Martinez-Bauset Jorge,                     type communication random access congestion control in LTE-A networks. In:
+         Vidal Jos'e-Ram'on, Casares-Giner Vicente, Guijarro Luis. Performance analysis               2021 international conference on electrical, computer and energy technologies.
+         and optimal access class barring parameter configuration in LTE-A networks with              ICECET, Cape Town, South Africa: IEEE; 2022, p. 1­7.
+         massive M2M traffic. IEEE Trans Veh Technol 2018;67(4):3505­20.
+                                                                                              [32] Suttun Rechard S, Barto Andrew G. Reinforcement learning: An introduction, In:
+[12] Tello-Oquendo Luis, Pacheco-Paramo Diego, Pla Vicent, Martinez-Bauset Jorge.                     Adaptive computation and machine learning, 2nd ed.. Cambridge, Massachusetts:
+         Reinforcement learning-based ACB in LTE-A networks for handling massive                      The MIT Press; 2020.
+         M2M and H2H communications. In: 2018 IEEE international conference on
+         communications. ICC, Kansas City, MO, USA: IEEE; 2018, p. 1­7.                       [33] Hasselt Hado Van. Double Q-learning. In: 24th annual conference on neural
+                                                                                                      information processing systems. Vancouver, Canada; 2010.
+[13] NR; Physical channels and modulation. 3GPP TS 38.211, Version 18.4.0 Release
+         18, 2024.                                                                            [34] van Hasselt Hado, Guez Arthur, Silver David. Deep reinforcement learning with
+                                                                                                      double Q-Learning. In: The thirtieth AAAI conference on artificial intelligence,
+[14] Duan Suyang, Shah-Mansouri Vahid, Wang Zehua, Wong Vincent. D-ACB: Adap-                         vol. 30. Phoenix, USA; 2016.
+         tive congestion control algorithm for bursty M2M traffic in LTE networks. IIEEE
+         Trans Veh Technol 2016;65(12):9847­61.                                               [35] Mnih Volodymyr, et al. Human-level control through deep reinforcement
+                                                                                                      learning. Nature 2015;518:529­33.
+
+                                                                                              [36] Wang Z, Schaul T, Hessel M, van Hasselt H, de Freitas MLanctot N. Dueling
+                                                                                                      network architectures for deep reinforcement learning. In: The 33rd international
+                                                                                                      conference on machine learning, vol. 48. New York, USA; 2016.
+
+                                                                                              [37] Telecom Italia. The Telecom Italia Big Data Challenge. 2014, https://theodi.fbk.
+                                                                                                      eu/openbigdata/#portfolioModal13.
+
+                                                                                              [38] Nokia. High capacity mobile broadband for mass events. 2016, Nokia Networks
+                                                                                                      white paper.
+
+                                                                                          11
+

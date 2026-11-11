@@ -1,0 +1,1257 @@
+12496  IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+Enhanced Early Preamble Collision Detector for LEO
+       Satellite-Based NTN IoT Random Access
+
+               Jinkyo Jeong, Associate Member, IEEE, Hyunwoo Lee , Graduate Student Member, IEEE,
+                                                  and Daesik Hong , Fellow, IEEE
+
+   Abstract--In this paper, we propose an enhanced early preamble                particular, ongoing research in release 17 and subsequent ver-
+(PA) collision detector for low earth orbit (LEO) satellite-based                sions is exploring ways to support NTN by leveraging terrestrial
+non-terrestrial network (NTN) internet-of-things (IoT) systems to                cellular techniques.
+enable PA collision detection at the first step of the random access
+procedure. The proposed detector exploits the characteristics of                    In terrestrial cellular IoT systems, each IoT node initiates
+NTN line-of-sight (LoS) channels, where the path gain of the LoS                 a contention-based random access by transmitting a randomly
+channel is much stronger than that of the non-LoS (NLoS) channel.                selected preamble (PA) on a physical random access channel
+Specifically, we adopt multiple detection thresholds to capture PA               (PRACH) before data transmission [1], [4], [5], [6]. However,
+collisions, allowing the satellite to recognize and notify the PA colli-         LEO satellite-based IoT systems differ from terrestrial cellular
+sion, thereby facilitating fast random access retrials. Also, we lever-          systems in the high mobility of the satellites and extremely
+age multiple root Zadoff-chu (ZC) sequences while suppressing                    long distance between satellites and the IoT nodes. Specifically,
+interference, so that the probability of PA collision is significantly           the extreme distance between the IoT nodes and the satellites
+reduced. Moreover, we mathematically analyze the performance of                  leads to increased round trip time (RTT) uncertainty, while the
+the proposed detector in terms of the probability of successful PA               high mobility of the satellites results in a substantial increase
+collision detection, the probability of false collision alarm, average           in the Doppler shift. In NTN release 17, Global Navigation
+random access delay, and average random access-success nodes                     Satellite System (GNSS) functionality of each IoT node is
+under typical NTN LoS channel conditions. Simulation results                     assumed for position estimation as a way of addressing these
+verify that the proposed multiple threshold-based early PA collision             challenges. Moreover, each satellite base station (SBS) period-
+detector (MT-eCD) achieves significantly improved performance                    ically broadcasts system information block 19 (SIB19), which
+over the conventional early PA collision detection schemes in                    contains assistance information for NTN access, including satel-
+terms of random access delay, number of random access-success                    lite ephemeris and common timing advance (TA). Based on
+nodes, and resource efficiency, while satisfying the random access               these items of information, each IoT node can compensate both
+requirement.                                                                     the Doppler shift and the RTT uncertainty in advance with a
+                                                                                 sufficient degree of accuracy [1], [4], [5], [6]. This makes it
+   Index Terms--NTN, random access, LEO, IoT, satellite.                         possible to reuse the current contention-based random access
+                                                                                 procedure and PRACH format for NTN IoT random access [1],
+                           I. INTRODUCTION                                       [4], [5], [6].
+
+W ITH the rapid deployment of low earth orbit (LEO)                                 Although GNSS capability and SIB19 have been introduced to
+         satellite mega constellations, satellite communication                  mitigate the large RTT uncertainty and the significant Doppler
+has emerged as a prominent area of interest [1], [2]. Among                      shift, LEO satellite-based IoT systems still face the following
+the three primary service scenarios of the fifth generation (5G)                 challenges: First, since a single satellite covers a vast area rang-
+system, the machine-type communications (MTC) scenario has                       ing from hundreds to thousands of kilometers depending on the
+gained significant attention due to a surge in demand for internet-              altitude and elevation angle of the LEO satellites [1], [4], [5], [6],
+of-things (IoT) implementation [3]. However, providing MTC                       a much greater number of nodes will be accessing the networks
+service through non-terrestrial networks (NTN) is a relatively                   than the terrestrial cellular systems, even if the node density of
+new field. The renewed interest in NTN has led to the 3rd                        the NTN IoT systems is lower than that of terrestrial cellular IoT
+generation partnership project (3 GPP) NTN project, which aims                   systems. Second, due to the extremely long distance between
+to support MTC operations through satellite [1], [4], [5], [6]. In               satellite and node, the RTT of NTN systems is substantially
+                                                                                 longer than that of the terrestrial cellular networks, increasing
+   Received 14 May 2024; revised 19 January 2025; accepted 15 March 2025.        overall communication latency. To be specific, the RTT in LEO
+Date of publication 25 March 2025; date of current version 15 August 2025. This  satellite systems is in the range of tens of ms depending on
+work was supported by the National Research Foundation of Korea (NRF) grant      the altitude of the satellite, while the RTT in terrestrial cellular
+funded by the Korea government (MSIT) under Grant 2022R1A2C3004154.              systems is less than 1 ms [7].
+The review of this article was coordinated by Dr. Haijun Zhang. (Corresponding
+author: Daesik Hong.)                                                               Hence, when active IoT nodes initiate random access in
+                                                                                 NTN systems, severe PA collision might occur due to PRACH
+   Jinkyo Jeong is with the Samsung Electronics, Suwon 16677, South Korea        congestion. Furthermore, when a PA collision occurs, the SBS
+(e-mail: jjk.jeong@samsung.com).
+
+   Hyunwoo Lee and Daesik Hong are with the Information Telecommunication
+Lab., School of Electrical and Electronic Engineering, Yonsei University, Seoul
+03722, South Korea (e-mail: gksdnrh27@yonsei.ac.kr; daesikh@yonsei.ac.kr).
+
+   Digital Object Identifier 10.1109/TVT.2025.3554531
+
+       0018-9545 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence and similar technologies.
+Personal use is permitted, but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS  12497
+
+can recognize it only after receiving message 3 (MSG3), while          (RAR). Only nodes that pass the MSG3 barring check can then
+the collided nodes become aware of the PA collision once the           transmit MSG3 to avoid potential MSG3 collision. Although
+collision resolution (CR) timer expires, which inevitably results      the MSG3 barring scheme enables early PA collision detection
+in a long random access delay and degradation of physical uplink       by load estimation, it cannot specify which nodes are collided,
+shared channel (PUSCH) resource efficiency for MSG3. Con-              resulting in false collision detection which in turn may lead to
+sequently, it is crucial to develop methods that alleviate random      unnecessary random access retrials and increased random access
+access congestion and enable early collision detection and noti-       delay.
+fication, particularly for LEO satellite-based IoT random access.
+                                                                          In [20], the binary countdown contention resolution (BCCR)
+A. Related Works                                                       scheme was proposed as a way to enable early PA collision
+                                                                       detection on the node side. To identify a PA collision, each
+   In academia, a lot of research has been made to support mas-        active node broadcasts its presence randomly before transmitting
+sive random access for IoT nodes [8], [9], [10], [11], [12], [13],     MSG3. If no other nodes using the identical PA are detected, the
+[14], [15], [16], [17]. In order to reduce PRACH congestion,           node concludes that the corresponding PA has not collided and
+various access class barring (ACB) schemes have been proposed          proceeds to transmit MSG3. However, this scheme may not be
+to regulate the number of access attempts per RACH slot [8], [9],      directly applicable to LEO satellite-based IoT random access
+[10]. However, the ACB mechanism solves RACH congestion                because the coverage area of a single satellite spans hundreds
+at the expense of an increased delay in random access.                 of kilometers, so that the broadcast signal might not reach other
+                                                                       active nodes.
+   In [11], [12], [13], power domain non-orthogonal multiple
+access (NOMA)­based random access schemes have been pro-                  In [21], the authors utilize the difference in time of arrival
+posed. Although these schemes are applicable to terrestrial            (TOA) among transmitted PAs to distinguish PA collisions and
+cellular networks, where channel gain differences are easily           resolve collisions using a NOMA scheme. After the BS identifies
+observed, they are not applicable to NTN random access. In             collided PAs using the TOA difference, it sends distinct transmit
+NTN systems, the distance between the satellite and IoT nodes          power control (TPC) command, corresponding to the TOA of
+typically results in only minor differences in received signal         each node, via RAR. In [22], the authors also exploit the TOA
+power among nodes, making it hard to exploit channel gain              difference to identify PA collisions and resolve PA collisions by
+disparities for power domain NOMA [18].                                transmitting multiple timing advance (TA) commands through
+                                                                       the RAR. In [23], a collision-aware resource access (CARA)
+   Recently, machine learning (ML)-based random access                 scheme has been proposed with early PA collision detection. By
+schemes have been proposed to support massive random ac-               exploiting the TOA difference, the BS notifies the PA collision
+cess [14], [15], [16]. In [14], the authors proposed reinforcement     via RAR. If the active nodes receive the collision notification,
+learning-based random access, where IoT nodes decide whether           they stochastically determine whether to transmit their MSG3
+to perform random access or back-off to optimize random access         to avoid MSG3 collision. When it comes to LEO satellite-
+performance. In [15], the authors proposed a federate learning-        based random access, however, the TOA difference between
+based random access congestion control, where each IoT node            nodes is no longer available at the satellite due to the modi-
+periodically reports their local learning model to the base station    fied random access procedure. In NTN random access, unlike
+(BS), and the BS determines the access control parameter using         terrestrial cellular random access where TA is performed during
+a global learning model. In [16], the authors proposed ML-based        MSG3 transmission, each active node performs TA during PA
+PA detection with a new PA structure, which aims to decrease PA        transmission to mitigate the large RTT uncertainty. Therefore,
+collision. However, these schemes not only impose an excessive         regardless of the position of the nodes within the cell, the trans-
+computational burden on the satellite [14], [15], [16], but also       mitted PAs arrive at the SBS simultaneously, rendering the TOA
+require IoT nodes to handle significant processing loads [14],         difference unusable and making early PA collision detection
+[15] and incur additional power consumption [16], making them          unfeasible.
+impractical for reduced-capability IoT nodes.
+                                                                          Several solutions have been proposed as approaches designed
+   In [17], beamforming technique has been exploited to solve          to enable early PA collision detection without exploiting TOA
+PRACH congestion, which distinguishes same PA with angle-              difference [24], [25], [26], [27], [28]. In [24], Zhang et al.
+of-arrival (AOA) difference. However, it cannot be directly            exploited the narrow PRACH guard interval to transmit the
+applicable to NTN random access, since a single LEO satellite          device identities (IDs) for collision detection. However, due to
+beam typically covers a very large footprint, it fails to distin-      the limited bandwidth of the guard interval, this method expe-
+guish PA collisions when multiple IoT nodes in the same beam           riences performance degradation in massive access scenarios.
+coverage.                                                              The authors of [25], [29] proposed a ML-based random access
+                                                                       procedure. Their approach involved a ML structure to enable
+   Another line of research involves early PA collision detec-         early PA collision detection using the power delay profile (PDP)
+tion [19], [20], [21], [22], [23], [24], [25], [26], [27], [28], [29]  of each zero-correlation zone (ZCZ). However, these methods
+to reduce random access delay. In [19], the authors introduced         place excess computational burden on the BS, since a ML-based
+the MSG3 barring scheme by estimating the number of nodes              PA collision detector would have to be applied for every ZCZ,
+attempting random access. The BS estimates the total number            something that would be hard to justify for a payload-limited
+of active nodes, including those that have collided, then sets the     satellite receiver.
+MSG3 barring value and transmits it via random access response
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12498                                                  IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+   In [26], the authors proposed a tagged PA structure to en-          Fig. 1. Random access procedure for release 17 NTN IoT systems.
+able early PA collision detection. However, due to excessive
+utilization of multiple root Zadoff-chu (ZC) sequences, it suffers        access success nodes, and computational complexity. The
+from severe interference in the case of massive access, resulting
+in degradation of PUSCH resource efficiency. To circumvent                accuracy of the analysis is validated through the simulation
+this issue, the authors in [27] proposed an efficient early PA
+collision detection scheme that involved limiting the number of        r  results.
+root ZC sequences. Nevertheless, it still suffers from interference       We provide a comprehensive simulation results to evaluate
+in the case of massive access, and cannot benefit from the
+increased number of available PAs provided by multiple root               the performance of MT-eCD. Simulation results verify
+ZC sequences, as multiple root ZC sequences are primarily
+utilized for enabling early PA collision detection. In order to
+avoid interference, the authors of [28] proposed a single root
+ZC sequence-based early PA collision detection scheme that
+utilizes the characteristics of prime numbers. Although it does
+not incur interference, it is only applicable when the RTT pre-
+compensation at the IoT node is perfect, which is not feasible in
+practice.
+
+                                                                          the superiority of MT-eCD over the conventional works
+
+B. Contributions                                                          in terms of random access delay, the number of random
+
+                                                                          access-success nodes, and PUSCH efficiency. Moreover,
+
+Most of the conventional works on enabling early PA colli-                robustness of the proposed MT-eCD is evaluated in practi-
+
+sion detection entail several challenges: a decrease in PUSCH             cal NTN LoS channel, existence of residual Doppler shift,
+
+resource efficiency for MSG3, additional computational burden             various signal-to-noise ratio (SNR) range, respectively.
+
+on IoT nodes, unnecessary random access retrials, vulnerability        The rest of this paper is organized as follows: In Section II,
+
+to massive access scenarios, and infeasibility of implementation       we describe the system model used in this paper. In Section III,
+
+in LEO satellite systems due to inherent differences between           we describe the MT-eCD mode of operation. The performance
+
+terrestrial networks and NTN IoT systems.                              of the proposed MT e-CD is mathematically analyzed under a
+
+To this end, we propose a multiple detection threshold-based           typical NTN LoS channel in Section IV. Section V describes
+
+early PA collision detector (MT-eCD) tailored for LEO satellite-       the extensive computer simulations used to validate MT-eCD.
+
+based IoT systems that avoids the aforementioned challenges.           Finally, our conclusions are drawn in Section VI.
+
+The major contributions of this paper can be summarized as
+
+follrowWse: take into account the dominant characteristics on the                      II. BACKGROUND AND SYSTEM MODEL
+
+       line of sight (LoS) of the LEO satellite systems, [6]. Mo-      A. Random Access Procedure in NTN IoT Systems
+
+       tivated by the fact that the path gain of the dominant LoS      In release 17 NTN IoT systems, it has been agreed to reuse
+
+       path is much larger than that of the non-LoS (NLoS) path,       current terrestrial cellular random access procedures with some
+
+       we adopt a multiple detection threshold to capture not only     modifications [5], which is shown in Fig. 1. It consists of the
+
+       the PA occupancy, but also to recognize PA collisions in the    follrowSitnepg  four steps:
+                                                                                       1) PA transmission:
+       first step of random access. To the best of our knowledge,                                           In  NTN  IoT  random  access,  like
+
+       this is the first approach designed to utilize LoS-dominant        terrestrial cellular IoT systems, a ZC sequence is adopted to
+
+       characteristics to capture early PA collision detection in         generate PAs defined as zr[n] = exp[-jrn(n + 1)/Nzc]
+                                                                          for 0  n  Nzc - 1, where r  {1, . . . , Nzc - 1} and
+       LEO satellite-based random access. In addition, we exploit         Nzc denote the root index and the sequence length, re-
+
+       multiple root ZC sequences to increase the number of
+
+       available PAs with advanced interference cancellation [30],        spectively. Taking advantage of the ideal auto-correlation
+
+       so that the probability of PA collision can be significantly       property of ZC sequences, the total NPA PAs that are
+
+       reduced while effectively suppressing the rise of noise.           orthogonal to each other are generated from the single ZC
+
+       Therefore, the proposed MT-eCD can support the massive             sequence by cyclically shifting the sequence by a factor
+
+       access scenario, but even if a PA collision does occur, it         of cyclic shift value, Ncs. Each IoT node then selects
+                                                                          the PA index randomly from among the NPA available
+       can be detected immediately, resulting in reduced random
+
+       access delay, increase in random access-success nodes, and         PAs. Thereafter, by exploiting GNSS capability and the
+
+       increased PUSCH resource efficiency for MSG3 than the              ephemeris of the satellite, each node performs open loop
+
+r      conventional works.                                                power control to make the received power of the PA at
+       We provide a detailed mathematical analysis of
+                                                       MT-eCD             the satellite constant, and to perform TA and Doppler shift
+
+       performance in the LoS channel, including probability of        r  pre-compensation, respectively.
+                                                                          Step 2) PA detection and RAR transmission: In NTN IoT
+       successful PA collision detection, probability of false colli-
+
+       sion alarm, average random access delay, average random            random access, unlike terrestrial cellular random access
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS  12499
+
+Fig. 2. Cases of PA detection in ZCZ.
+
+   where the ZCZ is designed to cover both the maximum                Fig. 3. Random access procedure for the proposed MT-eCD.
+   RTT and the maximum delay spread, each active IoT node
+   performs TA during the PA transmission utilizing its GNSS          PA format currently in use in terrestrial cellular random access
+   functionality and the satellite's ephemeris. Consequently,         can be reused [4].
+   the RTT uncertainty is removed, so that each ZCZ is de-
+   signed to cover only the maximum expected delay spread,                                   III. PROPOSED MT-eCD
+   max, and the maximum RTT pre-compensation error, me ax
+   as shown in Fig. 2. Thus, the length of ZCZ, denoted by               In this section, we propose the MT-eCD for NTN IoT random
+   Ncs, is designed to satisfy the following condition:               access, which enables PA collision detection at the first step of
+                                                                      the random access procedure. As shown in Fig. 3, the application
+   Ncs  (max + 2me ax).                              (1)              of our MT-eCD modifies the conventional random access proce-
+                                                                      dure. In the modified random access procedure, the SBS detects
+   The satellite performs PA detection for each ZCZ to iden-          the occurrence of a PA collision after receiving PAs and then
+                                                                      reports a PA collision by not transmitting the RAR message cor-
+   tify the transmitted PAs and sends a RAR message, which            responding to the collided PA index. Hence, the collided nodes
+                                                                      can recognize their own PA collisions if they do not receive a
+   consists of the detected PA index, a TA command, a tem-            RAR message by the time the RAR window ends. Thereafter, the
+                                                                      collided nodes reattempt the random access procedure following
+   porary cell radio network temporary identifier (TC-RNTI),          the random back-off policy, thereby reducing the random access
+                                                                      delay.
+r  and an uplink grant for MSG3.
+   Step 3) MSG3 transmission: If the active IoT node success-         A. Procedure of the MT-eCD
+
+   fully receives the RAR message before the RAR window                  When an arbitrary d-th active IoT node attempts to randomly
+                                                                      access the SBS, it first randomly selects a ZC sequence root
+   ends, it transmits the radio resource control (RRC) connec-        index from among the Nr configured root ZC sequences and then
+                                                                      chooses a PA index from among the NPA PAs The IoT node also
+   tion request message using the resources allocated by the          performs open-loop power control to keep the received signal
+                                                                      power constant on the SBS side [31]. For notational simplicity,
+r  UL grant for MSG3.                                                 we assume that target received power at the satellite is unity.
+   Step 4) Contention resolution (CR) MSG transmission: If
+                                                                         After this, it transmits the selected PA on the PRACH after
+   the SBS successfully decodes the RRC connection request            compensating both RTT uncertainty and Doppler shift based
+                                                                      on the satellite ephemeris and its own location information
+   message, it transmits the CR MSG (also called MSG4)                obtained by GNSS functionality, respectively. The Doppler shift
+                                                                      estimation error for GNSS has been reported to be less than 10
+   including the UE ID; otherwise, the satellite sends nothing        Hz [32], which is negligible compared to the subcarrier spacing
+                                                                      of the long PRACH PA format, which is equivalent to 1.25 kHz.
+   back to resolve PA collision. If the node successfully             Therefore, we assume that Doppler shift pre-compensation is
+                                                                      ideal, allowing us to omit Doppler shift terms unless otherwise
+   receives the CR MSG, it sends back a positive ACK. On              specified. The transmitted signal is then expressed as
+
+   the other hand, if the node does not receive a CR MSG                     sd [n] = Pdzrkd [(n + idNcs + ~d) mod Nzc] , (2)
+
+   before the CR timer expires, it reattempts the random
+
+   access procedure by following random back-off policy [7].
+
+As shown in Fig. 1, which depicts the NTN IoT random access
+
+procedure, the SBS identifies PA collisions and notifies them
+
+at the third and fourth steps, respectively. This leads to long
+
+random access delays and degraded PUSCH resource efficiency
+
+for MSG3, primarily because of these PA collisions.
+
+B. System Model
+
+   In this paper, we consider a SET-2 LEO satellite configuration
+as detailed in [5], in which a single LEO satellite orbits the earth
+at an altitude of 600 km, moving at a speed of 7.56 km/s. The
+satellite can provide services to IoT nodes at an elevation angle
+of 10 to 90 degrees, and the beam diameter ranges from 92 to
+780 km [5]. We assume that each IoT node is equipped with
+GNSS capability to pre-compensate for the effects of Doppler
+shift and RTT uncertainty with sufficient accuracy, which is a
+working assumption of release 17 [4]. Therefore, the PRACH
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12500                                                          IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+where Pd, rkd , id, and ~d denote the transmit power, selected
+root index, PA index, and estimated RTT of the d-th node,
+respectively.
+
+   After passing through the typical NTN LoS channel, the
+received PA signal of the active IoT nodes on the SBS side can
+be obtained as
+
+                     M Ld
+
+       y [n] =                hd,lsd [n + l + de] + w [n] ,    (3)
+
+                     d=1 l=1                                          Fig. 4. Detection thresholds of the MT-eCD for PA collision detection.
+
+where hd,l and de represent the l-th multipath channel coefficient    multiple thresholds 1, 2, and 3 to capture any PA collision at
+and the RTT pre-compensation error of the d-th node, respec-          the first step of the random access procedure as shown in Fig. 4.
+
+tively. M , Ld, and w[n] denote the total number of active IoT           The role of 1 is to identify whether the PA is occupied or
+nodes attempting random access, the total number of channel           idle, which serves the same role as the conventional PA detection
+                                                                      threshold. For each ZCZ i, i = 1, . . . , NPA, the SBS detects
+taps for the d-th node, and the additive white Gaussian noise         the correlation peaks exceeding the detection threshold 1. Let
+(AWGN) with zero mean and variance w2 , respectively.                 us denote the set of positions of detected peaks for the k-th root
+                                                                      ZC sequence exceeding p, p  {1, 2, 3}, for an arbitrary i-th
+   For each configured root index of ZC sequences, the SBS            PA as
+
+then performs interference cancellation to mitigate the effects           kp,i = {m|Ck [m]  p, m  i, i = 1, . . . , NPA} . (7)
+
+of multiple root ZC sequences as in [30]. The received signal         If k1,i is empty, the SBS determines that the i-th PA is idle
+                                                                      and does not transmit a RAR message. 1 is utilized to capture
+after PA cancellation for an arbitrary k-th root ZC sequence can      whether the corresponding PA is idle or occupied, and the SBS
+                                                                      therefore cannot identify whether a PA collision occurs at 1.
+then be obtained as                                                   When k1,i is not empty, which indicates that the i-th PA is
+                                                                      occupied, the SBS exploits 2 and 3 to determine whether the
+                                   Nr  Ld                             PA is collided. Specifically, 2 and 3 are designed to satisfy
+                                                                      3 > 2 > 1.
+yIkC [n] = y [n] -                         h~d,lsd [n + de + l], (4)
+                                                                         For the typical NTN LoS channel, due to the existence of
+                       j=1,j=k dDj l=1                                a dominant LoS path, the magnitude of the LoS component is
+                                                                      much larger than that of the NLoS components [6]. Therefore, if
+where h~d,l = hd,l + ed,l denotes the estimated channel for hd,l      more than two IoT nodes with different RTT pre-compensation
+and ed,l denotes the channel estimation error. Dj denotes the set     error select the same PA, at least two dominant correlation
+of active nodes selected j-th root index.                             peaks may exist in the ZCZ. Motivated by this, we exploit
+                                                                      2 to identify dominant LoS components of active IoT nodes
+   The SBS next calculates the correlation value between              that choose identical PAs. Let us denote pk,i = |kp,i| as the
+yIkC[n] and zrk [n], and checks each ZCZ i = {m|m                     number of correlation peaks exceeding p for the ZCZ of the
+[(i - 1)Ncs, iNcs - 1]}  {1, . . . , NPA }, which is given by         i-th PA for root index k. When k2,i > 1, the SBS determines
+                                                                      that the i-th PA is collided, since multiple LoS components are
+       Ck[m] =     1   Nzc -1                      mod  Nzc]          detected. When 2 is set too high, miss detection of correlation
+                  Nzc                                                 peaks for LoS components occurs, resulting in failed collision
+                              yIkC[n]zrk [(n + m)                     detection. Conversely, if 2 is set too low, NLoS components
+                                                                      may be erroneously identified as LoS components, leading to an
+                        n=0                                           increased probability of false collision alarms (PFCA). There-
+                                                                      fore, the selection of 2 must be based on careful consideration
+                       Ld                                             of channel characteristics.
+
+       =                   hd,l[m + de + idNcs + l]                      On the other hand, when k2,i = 1, the presence of a PA
+                                                                      collision cannot be determined by the SBS, as there is a possi-
+                  dDk l=1                                             bility that multiple active IoT nodes might experience the same
+                                                                      RTT pre-compensation error, causing the LoS components to be
+                  -Ikres[m] + w~[m] ,                          (5)    superimposed. In such cases, the SBS utilizes 3 to determine
+                                                                      whether a PA collision has occurred. Among p, p = 1, 2, 3, 3
+where Ikres[m] denotes the residual interference after PA cancel-     holds the highest value due to its ability to detect a PA collision
+lation, which is given by                                             that occurs when the magnitude of the superimposed correlation
+                                                                      peak from multiple nodes is amplified, resulting from the same
+       Ikres [m]  =   1       Nr       Ld Nzc-1
+                     Nzc  j=1,j=k dDj
+                                                  (ed,lsd [m]
+
+                                       l=1 n=0
+
+                     ×zrk [(n + m) mod Nzc] .                  (6)
+
+w~[m] = w~re[m] + jw~im[m]  CN (0, w2 /Nzc) denotes the
+AWGN after the correlation operation.
+
+   In the majority of LEO systems, a dominant LoS path between
+the IoT nodes and the SBS is typically present, facilitating reli-
+able communication [6]. Motivated by this, we take advantage
+of the characteristics of the NTN LoS channel to capture the PA
+collision at the first step of the random access procedure. Unlike
+conventional PA detectors, where only one detection threshold is
+adopted to perform PA detection, the proposed MT-eCD exploits
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS           12501
+
+Algorithm 1: Procedure of MT-eCD.                                   adopt a two-tap LoS channel model and normalize the received
+                                                                    target power at the SBS to unity. In this model, the first LoS
+1: for k = 1 : Nr do                                                path follows a Rician distribution, and the second NLoS path
+                                                                    follows a Rayleigh distribution, respectively. It is worth noting
+2: Calculate yIkC[n] in (4) and Ck[m] in (5), respectively          that this channel model is not unique to our analysis but has also
+                                                                    been generally adopted in NTN LoS channels, such as NTN
+3: for i = 1 : NPA do                                               TDL-C and NTN TDL-D, as described in TR 38.811 [6]. For
+     Identify pk,i for each p, p  {1, 2, 3} in ZCZ i                an arbitrary dj-th node, where j = 1, . . . mi, the channel model
+4:                                                                  being considered here can be obtained as follows:
+
+5:   if k1 ,i = 0 then
+
+6:   SBS determines that i-th PA is idle
+
+7:    SBS does not transmit a RAR message
+
+8:   else if 2k,i > 1 then
+
+9:   SBS determines that PA collision has occurred                  hdj ,p         Rice (L, L) if p = L,
+                                                                                   Rayleigh (N ) if p = N,
+10:   SBS does not transmit a RAR message                                                                        (8)
+
+11:  else if k2 ,i = 1 and 3k,i  1 then
+
+12:  SBS determines that PA collision has occurred                  where L2 and 2L2 denote the direct-path and scattered-path
+                                                                    power of the LoS channel, respectively. Let us define  = L2 +
+13:   SBS does not transmit a RAR message                           2L2 as the power of LoS channel component.
+
+14: else                                                               2N2 denotes the power of the NLoS channel. To normalize
+                                                                    the channel gain, the total channel power  = L2 + 2L2 + 2N2
+15:  SBS determines that i-th PA is occupied by                     is set to one. Then, the correlation value for the k-th root ZC
+
+16:  a single node                                                  sequence at the SBS in (5) can then be rewritten as follows:
+
+17:   SBS transmits a RAR message
+
+18: end if
+
+19: end for
+
+20: end for                                                                   mi
+
+                                                                    Ck [m] =       hdj,L m + idj Ncs + dej
+
+                                                                              j=1
+
+RTT pre-compensation error. The overall MT-eCD procedure                      mi
+sequence is described in Algorithm 1.
+                                                                    +              hdj,N  m + idj Ncs + dej + 1
+   As shown in Fig. 3, if the SBS detects successful PA transmis-
+sion, it transmits a RAR message which includes the PA index,                 j=1
+a TA command, and an uplink grant for transmission of MSG3.
+On the other hand, if the SBS captures the PA collision with the              + Ikres [m] + w~[m] .              (9)
+help of MT-eCD, it does not transmit a RAR message, which
+functions as a way of reporting the PA collision to the IoT nodes   Moreover, we assume that the residual interference caused by
+which transmitted that same PA. The IoT nodes whose PAs are         the multiple root sequence is negligible, i.e., Ikres[m] = 0, since
+collided wait for the RAR message during the RAR window.            the PA detector with interference cancellation can achieve per-
+After the RAR window expires the IoT nodes recognize that a         formance close to the PA detector using orthogonal PAs [30].
+PA collision has occurred and retry the random access following     Note that even under a heavy random access load, the probability
+the random back-off policy.                                         of more than two nodes choosing the same PA is very low [25].
+                                                                    Hence, we will focus on the PA collision event, specifically when
+   Unlike terrestrial cellular IoT systems, where the LoS path      two nodes choose the identical i-th PA, i.e., ni = 2.
+is often obscured due to the presence of abundant scattering,
+leading to a predominantly NLoS channel [24], [26], the LoS            1) Analysis of PSCD: Let us define  = |de1 - de2 | as the
+dominant channel in LEO satellite systems [6] enables the           absolute value of the difference in RTT estimation error between
+proposed MT-eCD to detect PA collisions in the first step of        the two nodes d1 and d2. Since there are two nodes using an
+random access.                                                      arbitrary i-th PA, two peaks can be detected at ZCZ i.
+
+                    IV. PERFORMANCE ANALYSIS                           There are three cases for PA collision detection. The first case
+                                                                    for the PA collision occurs when  = 0, which implies that
+   In this section we present the analytic model of MT-eCD to       the transmitted PAs have arrived at the SBS simultaneously.
+evaluate its performance in terms of collision detection per-       Hence, the two correlation peaks, each of which corresponds to
+formance, long-term random access delay, long-term random           a superposition of the LoS path and NLoS path, can be detected
+access-success nodes, and computational complexity in terms         at each of
+of the number of floating point operations (FLOPs).
+                                                                       m  ipeak = i ,p| = 0, 1, . . . , 2me ax, p = 1, 2 ,
+A. Detection Performance
+                                                                    where 0i,1 = {(iNcs + de1 ) mod Nzc} and i0,2 = {(iNcs
+   In this subsection, we analyze the probability of successful PA  + de1 + 1) mod Nzc}. At time instant m = 0i,1,
+collision detection (PSCD) and the PFCA for MT-eCD for an
+arbitrary i-th PA when ni IoT nodes simultaneously choose the          Ck i0,1 = |hd1,L + hd2,L + w~ i0,1 | = X12 + X22,
+i-th PA corresponding to the k-th root index. For simplicity, we
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12502                                                IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+becomes a random variable (RV) LL, where                           this overlap as follows:
+
+           Xp  N (p(), LL), p  {1, 2} ,                                            2 2
+
+           1() = L(cos d1 + cos d2 ),                              PSC =D0  =   1        Q1  LL() , 3          dd1 dd2
+                                                                               42             LL LL
+
+                                                                                   00
+
+           2() = L(sin d1 + sin d2 ),                                                                 2 2      3
+                                                                                                             LL
+           L2 L    =  L2  +   w2 ,                                          + exp  -22        1                   I0  LL() x
+                             2Nzc                                                  2N2 N                     2         LL
+                                                                                             42            LL
+
+                                                                                                     00
+
+for a given  = {dj |j = 1, 2}. dj denotes the phase of LoS                     × exp - x2 + (LL()/LL)2            dxdd1 dd2 . (14)
+path hdj,L.                                                                                            2
+
+   For a given , LL  Rice(LL(), LL) follows a Rician               The second case for PA collision detection occurs when  = 1,
+distribution whose probability density function (PDF) can be
+                                                                   which implies that the LoS path for one node is superposed on the
+obtained as
+                                                                   NLoS path of the other node. Note that it doesn't matter which
+       fLL (x; LL () , LL)
+                                                                   node the corresponding LoS and NLoS paths belong to, as we
+            x      -  x2  + LL()2       I0  xLL ()   , (10)
+       = L2 L exp          2L2 L               L2 L                are primarily concerned with the superposition of the correlation
+
+where LL() = 1()2 + 2()2. I0(·) refers to the modi-                peaks. In this case, two correlation peaks can be detected: one
+fied Bessel function of the first kind with order zero. Also, the
+cumulative distribution function (CDF) of LL for a given  can      corresponds to the LoS path of one node, while the other results
+be obtained as
+                                                                   from the superposition of the LoS path and NLoS path. At the
+       Pr (LL < x|) = 1 - Q1        LL () , x                      time instant m = 1i,1, which corresponds to the correlation
+                                      LL LL                        peak for LoS path, Ck[1i,1] = |hd1,L + w~[1i,1]| becomes a
+                                                                   RV L  Rice(L, LW ) following a Rician distribution, where
+                                                                   L2 W = L2 + w2 /2Nzc. In addition, at time instant m = i1,2,
+                                                                   which corresponds to the correlation peak for superposition of
+
+                                                                   LoS and NLoS paths,
+
+                                                  .  (11)
+
+                                                                   Ck i1,2 = hd1,N + hd2,L + w~ 1i,2 = Y12 + Y22
+
+In order to detect the PA collision, the magnitude of the super-   becomes a RV LN , where
+
+posed peak needs to exceed 3. Since d1 and d2 follow uniform                       Yp  N LpN , L2 N , p = 1, 2,
+distribution between 0 and 2, respectively, Pr(LL > 3) can
+then be obtained as
+
+                          2 2                                                      L1 N = vL cos d2 ,
+
+Pr (LL  >  3)  =    1          Q1   LL() , 3      dd1 dd2 .                        L2 N = vL sin d2 ,
+                   42                 LL LL               (12)
+
+                       00                                                                        N2      w2 .
+                                                                                                  2     2Nzc
+In addition, at time instant m = i0,2,                                             L2 N  = L2 +      +
+
+        Ck 0i,2 = |hd1,N + hd2,N + w~ 0i,2 |                       Then, LN  Rice(L, LN ) follows a Rician distribu-
+                                                                   tion whose CDF can be obtained as Pr(LN < x) = 1 -
+becomes a RV NN  Rayleigh(NN ) following a Rayleigh                Q1(L/LN , x/LN ). To successfully detect the occurrence of
+distribution, whose CDF can be given as                            a PA collision, both peaks should exceed 2. Since the channels
+                                                                   of the two nodes are uncorrelated, the probability of PA collision
+                                         -x2
+                                        2N2 N                      for the second case can then be obtained as
+
+           Pr (NN < x) = 1 - exp               ,     (13)          PSC=D1 = Pr(LN > 2, L > 2)
+
+where N2 N = 2N2 + w2 /2Nzc. The proposed MT-eCD can                           = Q1          LN , 2     Q1  L , 2       .  (15)
+detect a PA collision when the magnitudes of multiple peaks                                  LN LN          L LW
+exceed 2. Assuming that the channel gains of the LoS path
+and NLoS path are uncorrelated, the probability of detecting the   The third case for PA collision detection occurs when  > 1,
+multiple peaks can be obtained as Pr(NN > 2) Pr(LL > 2).           which implies that there is no overlap between the correlation
+                                                                   peaks of the two nodes. This results in two distinct correlation
+   Let us define events A and B as the occurrences when both       peaks, each of which becomes a RV L  Rice(L, LW ) fol-
+NN > 2 and LL > 2, and when LL > 3, respectively.                  lowing a Rician distribution. In order to successfully detect a
+Since events A and B are not mutually exclusive and can overlap,   PA collision, the magnitude of each peak should exceed 2. The
+we can determine the overall PSCD when  = 0 considering            probability of detecting a PA collision for the third case can then
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS                       12503
+
+be obtained as                                                          channel environment with variance w2 . Moreover, we assume
+                                                                        that the number of root sequence is set to one and target received
+PSC>D1 = Pr (L > 2)2 = Q1                  L , 2         2        (16)
+                                          LW LW                         power at SBS is normalized to unity. We consider a single SBS,
+                                                          .
+                                                                        where a fixed number of newly active IoT nodes attempt their
+Assuming that dep  U (-me ax, me ax), for p = 1, 2, the suc-
+cessful PA collision detection probability of MT-eCD when a PA          initial random access in each RACH slot. Each active IoT node
+                                                                        retries random access up to Nrmetaxx times. Before attempting their
+collision occurs can then be obtained as follows, using (14)­(16):      random access, each active IoT node randomly selects PA index
+
+PSCD  =              1  + 1 PSC =D0  +      4me ax  1)2  PSC =D1        among the NPA available PAs.
+                2me ax                  (2me ax +                          First, we define Su,v as the expected number of IoT nodes
+
+      +         4(me ax)2  - 2me ax     PSC >D1.                  (17)  which perform their v-th transmission of random access in the u-
+                  (2me ax  + 1)2                                        th RACH slot, where 1  v  Nrmetaxx. The expected total number
+                                                                        of IoT nodes attempting their random access in the u-th RACH
+2) Analysis of PFCA: In the proposed MT-eCD, even when                  slot, Su, is given by
+
+the arbitrary d-th node exclusively occupies the i-th PA with-                                      Nrmetaxx
+
+out any PA collision, the SBS might still erroneously deter-                             Su =                 Su,v .         (20)
+
+mine that a PA collision has occurred, leading to an increase                                       v=1
+in PFCA. At the time instant m1 = {(iNcs + de) mod Nzc},
+the correlation value for the LoS path can be obtained as               Note that Su,v will be obtained hereafter.
+                                                                           1) PA Reception and Collision Detection: After receiving the
+Ck[m1] = |hd,L + w~[m1]|. Similarly, at the time instant m2 =
+{(iNcs + de + 1) mod Nzc}, the correlation value for the NLoS           PAs from active IoT nodes, the SBS detects the received PAs
+path can be obtained as Ck[m2] = |hd,N + w~[m2]|. The mag-              and determines whether PAs are detected or collided. When the
+                                                                        active IoT nodes transmit their PA, there are four cases which
+nitude of the correlation peak for the NLoS path becomes a              happen at the SBS. The first case is when miss detection of
+                                                                        transmitted PA occurs even the PA is not collided. Then the
+RV N  Rayleigh(NW ) following a Rayleigh distribution,                  expected number of nodes whose transmitted PA is miss detected
+where N2 W = N2 + w2 /2Nzc.                                             is given by
+
+   In the proposed MT-eCD, PFCA occurs when either the                      SuM,vD = Su,v 1 - PuCOL PMAW D GN,               (21)
+
+correlation peak for the LoS path exceeds 3 and the NLoS peak           where PuCOL = 1- (1 - 1/NPA)Su-1 and PMAW D GN = 1 -
+                                                                        Q1( Nzc/w, 1 Nzc/w) denote PA collision probability in
+is below 2, or the LoS peak lies between 3 and 2 while the              the u-th RACH slot and the miss detection probability in AWGN
+                                                                        channel, respectively.
+NLoS peak exceeds 2. This can be expressed as
+                                                                           The second case occurs when a PA collision takes place and
+      PFCA = Pr (3 > L > 2, N > 2)                                      is successfully detected by the SBS. The expected number of
+                                                                        nodes whose v-th random access attempt in the u-th RACH slot
+                + Pr (L > 3, N < 2) .                             (18)  fails due to a collision that is successfully detected by the SBS
+                                                                        can be expressed as:
+The PFCA can then be obtained as follows:
+
+PFCA = Q1        L , 3               1 - 2 exp      -22
+                LW LW                               2N2 W
+
+      + Q1       L , 2               exp  -22       .             (19)
+                LW L                      2N2 W
+                                                                                         SuS,CvD = Su,vPuCOLPSACWDGN,        (22)
+When determining p, p = 1, 2, 3, it is advisable to increase 2
+to curtail PFCA, despite a potential minor decrease in success-         where PSACWDGN denotes PSCD in AWGN channel which is given
+
+ful PA collision detection. This strategy helps to mitigate the         as
+combined effect of increased PA collisions and random access
+delays. Therefore, we first set 3 to the channel magnitude of                                                          
+the LoS component corresponding to the 99.7th percentile of                                    1              2Nzc , 3 Nzc
+                                                                            PSACWDGN  =  (2me ax  + 1) Q1              
+
+the cumulative distribution function (CDF), which translates to                             2me ax                           2
+a 0.3% PFCA under identical RTT estimation errors. Once 3 is                             (2me ax +              Nzc , 2 Nzc
+determined, we then adjust 2 to ensure that the overall PFCA                          +             1) Q1                     . (23)
+remains at the 0.3% target. In addition, 1 is set to ensure a
+miss detection probability of less than 1% and a false alarm            The third case occurs when a PA collision occurs, but the SBS
+                                                                        fails to detect it. The expected number of nodes whose v-th
+probability of less than 0.1%.                                          random access attempt in the u-th RACH slot experiences a
+                                                                        collision that remains undetected by the SBS is expressed as
+
+B. Random Access Delay Analysis                                                          SuF,CvD = Su,vPuCOLPFACWDGN,        (24)
+
+   In this subsection, we present an analytical model of MT-eCD         where PFACWDGN = 1 - PSACWDGN denotes the probability of failing
+to evaluate its random access delay performance in multiple             to detect a collision, given that a PA collision has occurred.
+RACH slots. For analytic tractability, we assume the AWGN
+channel model to reflect the LoS characteristics of the NTN             occurs.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12504                                                 IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+   The fourth case occurs when the transmitted PA is not in            u-th RACH slot, Su,v, is given by
+collision, yet a false collision alarm is triggered. The expected
+number of nodes whose v-th random access attempt in the u-th                          Gmax
+RACH slot is successful, but experiences a false collision alarm,
+is given by                                                            Su,v =                 g,u  SgM,vD-1 + SgF,Cv-A1 + SgS,Cv-D1
+
+                                                                                      g=Gmin
+
+                                                                                         Jmax
+
+             SuF,CvA = Su,v(1 - PuCOL)PFACWAGN,       (25)                            +          j,uSjF,vC-A1,                       (29)
+
+where PFACWAGN denotes PFCA in AWGN channel and is obtained                              j=Jmin
+
+as follows:                                                            where 2  v  Nrmetaxx and derivation of Gmin, Gmax, g,u, Jmin,
+                                                                       Jmax, and j,u are described in Appendix A.
+                                                 -22
+                   Nzc , 3 Nzc                   2                        3) Average Random Access Delay: In the first random access
+PFACWAGN = Q1                     1 - 2 exp                            failed case, since the SBS does not transmit RAR, the IoT nodes
+                                                                       will retry random access once the RAR window, WRAR, has
+                                            -22                        expired. Unlike terrestrial cellular networks, where the RAR
+                     Nzc , 2 Nzc            2                          window starts immediately after PA transmission, IoT nodes in
+             + Q1                 exp            .    (26)             NTN first wait for the RTT after PA transmission and then initiate
+                                                                       the RAR window timer [4], [6]. Then the expected delay of first
+The total number of IoT nodes that succeed their v-th random           random access failed case, TRF-1, is given as
+access retrial in u-th RACH slot, SuR,Sv, is then given by
+
+SuR,Sv = Su,v 1 - PuCOL 1 - PMAW D GN - PFACWAGN . (27)                               TRF-1 = TMSG1 + TRavTgT + WRAR,                (30)
+
+Additionally, the total number of IoT nodes that fail their v-th       where TMSG1, TRavTgT denote MSG1 duration and average RTT,
+random access retrial in u-th RACH slot, SuR,Fv , is obtained as       respectively.
+
+                   SuR,Fv = Su,v - SuR,Sv.            (28)                In the second random access failed case, since the SBS trans-
+                                                                       mits RAR to IoT nodes whose PAs are collided, they transmit
+   2) Random Back-Off: If an IoT node fails to receive the RAR         MSG3 but cannot receive the MSG4, thus retry the random
+before the RAR window expires, it performs a random back-off           access after CR timer expires. Note that in NTN, IoT nodes
+within the back-off window WBO, then retries the random access         initiate the CR timer only after the RTT has elapsed following
+procedure up to a maximum of Nrmetaxx times. Consequently, the         the transmission of MSG3 [4], [6]. Then the expected delay of
+number of IoT nodes attempting their v-th random access in the         second random access failed case is given by
+u-th RACH slot, Su,v, is given by the total number of nodes
+that failed during their (v - 1)-th attempt and subsequently           TRF-2 = TMSG1 + TMPRSG1 + TRavTgT + TRavAgR
+reattempt in the u-th RACH slot after a random back-off. The
+IoT nodes who retry their random access have different back-off                          + TRavTgT + TR-3 + TMSG3 + WCR, (31)
+intervals according to the following two cases of random access
+failures.                                                              where TMPRSG1 and TRavAgR denote the MSG1 processing delay, and
+                                                                       the average RAR reception delay including processing delay,
+   In the first random access failed case, IoT nodes that ex-
+perience miss detection, false collision alarms, or successfully       respectively. Thus, the average RAR reception delay is given
+detected collisions all share the same back-off interval. This         as TRavAgR = 0.5WRAR + TRAR, where TRAR represents the RAR
+common interval is required because these nodes can only               duration. In addition, TR-3, TMSG3, and WCR represent the
+initiate another random access attempt after the corresponding
+RAR window has expired. Let g,u be the proportion of IoT               processing time between receiving the RAR and transmitting
+nodes that begin their v-th random access attempt in the u-th
+RACH slot, out of all IoT nodes that failed to receive the RAR         MSG3, the MSG3 processing delay, and the CR timer window,
+for the g-th RACH slot by the time its RAR window expired.
+                                                                       respectively.
+   In the second random access failed case, the SBS fails to
+detect a PA collision but still transmits RARs to nodes whose             In all random access failed cases, IoT nodes perform random
+PAs have actually collided. These nodes proceed to send MSG3;
+however, since the SBS cannot decode MSG3 from collided PAs,           back-off within back-off window, WBO. The average back-off
+it withholds MSG4. Once the CR timer expires, these IoT nodes          time, WBavOg, is given as WBavOg = 0.5WBO. In addition, the IoT
+must attempt the random access procedure again. Consequently,          nodes must wait for the next available RACH slot. To represent
+they follow a different back-off interval from that used in the first  this delay, we define Tpaevrgiod as the average waiting time until the
+case. Similarly, let g,u denote the proportion of IoT nodes that       nearest RACH slot after performing random back-off. This is
+begin their v-th random access attempt in the u-th RACH slot,          given by Tpaevrgiod = 0.5Tperiod, where Tperiod denotes the RACH
+out of all IoT nodes that failed to receive MSG4 for the g-th          period.
+RACH slot by the time its CR timer expired. Then, the total
+number of IoT nodes initiating their v-th random access in the            Based on the (30) and (31), the average delay of all the random
+                                                                       access failed cases, TRavFg can then be expressed as follows:
+
+                                                                       TRavFg = PSACWDGN + PMAW D GN + PFACWAGN TRF-1
+
+                                                                                      + PFACWDGNTRF-2 + WBavOg + Tpaevrgiod.         (32)
+
+                                                                       In the case of a successful random access attempt, the IoT node
+                                                                       completes the procedure upon receiving MSG4. Accordingly,
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS                                                 12505
+
+the average random access success delay for a given RACH                                                                        TABLE I
+slot, TRaSvg, is expressed as                                                                                 SIMULATION PARAMETERS AND VALUES
+
+    TRaSvg = TMSG1 + TMPRSG1 + TRaTvgT + TRavAgR
+
+         + TRaTvgT + TR-3 + TMSG3 + TMavSgG4,                               (33)
+
+dwehfienreedTaMasvSgGT4MavdSgeGn4o=tes0t.h5eWaCvRer+agTeMMSGS4G, 4wriethceTpMtiSoGn4dreelparye.sTenhtiisnigs
+the MSG4 duration.
+
+   Let us define the average access delay experienced by random
+access-success nodes on their v-th retry as Tv. To achieve a
+successful random access on the v-th attempt, the nodes first
+incur the delays associated with (v - 1) failed attempts, fol-
+
+lowed by one successful attempt. Hence, Tv can be expressed
+    Tv = (v - 1)TRavFg + TRavSg.
+as  The average random access
+
+                                  delay,  TRaAvg  ,  is  defined   as  the  time
+
+duration from the first PA transmission to the MSG4 reception.
+
+Note that we consider the delays of IoT nodes that failed random
+access at the Nrmetaxx-th random access retrial as the average delay
+of random access-success nodes that success random access at
+the Nrmetaxx-th random access retrial to observe the tendency more
+clearly. Then, the average random access delay, TRaAvg, is obtained
+as
+
+    NRA Nrmetaxx
+                    RS                       RF
+                   u,v v                     u,Nrmetaxx
+         v=1
+    u=1S T + S T avg                                     Nrmetaxx
+    T = RA
+         NRA Nrmetaxx                                              ,        (34)                                 The second part concerns detecting PA collisions. MT-eCD
+                                                                                                              uses both 2 and 3 to identify collisions, requiring the detection
+                                  SuR,Sv  +  S RF                                                             of correlation peaks exceeding these thresholds for each root
+                                                                                                              sequence. Each detection requires 8 Nzc FLOPs.
+         u=1      v=1                          u,Nrmetaxx
+                                                                                                                 Note that the interference-cancellation operation is only nec-
+where NRA denotes the total number of RACH slot.                                                              essary when multiple root sequences (Nr > 1) are employed.
+                                                                                                              If Nr = 1, only a single correlation operation and collision
+   In addition, the average number of random access-success                                                   detection for three thresholds are required. Hence, the total
+nodes per RACH slot, SSaUvgC, is given as                                                                     computational complexity of MT-eCD, CMT-eCD, is given by
+
+    SSaUvgC   =     1             NRA Nrmetaxx                              (35)
+                  NRA
+                                              SuR,Sv .                                                                   CIC + 16 Nr Nzc,  if Nr > 1,
+                                                                                                              CMT-eCD =  Ccor + 24 Nzc,    if Nr = 1.  (37)
+                                  u=1 v=1
+
+C. Computational Complexity                                                                                                         V. SIMULATION RESULTS
+
+   In this subsection, we analyze the computational complexity                                                   In this section, we evaluate the performance of MT-eCD. In
+of MT-eCD in terms of the number of FLOPs. We assume that                                                     order to verify the feasibility of the proposed MT-eCD in LEO
+the SBS configures Nr root sequences, each of which consists                                                  satellite-based IoT systems, we consider the practical NTN LoS
+of NPA PAs. The overall computational complexity of MT-eCD                                                    channel models, NTN TDL-C and NTN TDL-D channel models,
+can be divided into two main parts.                                                                           as specified in the 3GPP TR 38.811 [6]. Unless otherwise spec-
+                                                                                                              ified, we assume the NTN TDL-D channel. In addition, satellite
+   The first part concerns detecting PAs after applying interfer-                                             configuration SET-2 with regenerative payload is assumed. For
+ence cancellation for those exceeding 1. Its FLOPs are derived                                                comparison, we adopt two early PA collision detection schemes
+as follows [30]:                                                                                              designed for LEO satellite-based NTN IoT systems [27], [28].
+                                                                                                              To simplify the notation, we refer to the conventional early PA
+     CIC = NrCcor + 10NrNzc + 8M NpeakNzc                                                                     collision detection schemes in [28] and [27] as cyclically shifted
+                                                                                                              PAs-based early collision detection (C-eCD) and single root PA
+             + max NrCcor + 8M NpeakNzc + 12NrNzc , (36)                                                      sequence-based early collision detection (S-eCD), respectively.
+
+where Ccor = 5 Nzc log2 Nzc denotes the correlation operation,                                                   We configure 1 so that the miss detection probability stays
+which is efficiently performed using the fast Fourier transform                                               below 1% while the false alarm probability remains under 0.1%.
+(FFT) [7]. In addition, M , Npeak, and max represent the total                                                Meanwhile, 2 and 3 are set to maintain the target PFCA at
+number of active IoT nodes, average number of correlation                                                     0.3%. The values of 1, 2, and 3 in Table I are configured
+peaks exceeding the detection threshold for each PA detection                                                 based on the scenario where the number of active IoT nodes is
+zone, and the maximum number of interference-cancellation
+iterations, respectively.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12506                                                                       IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+Fig. 5. Probability of miss detection and false alarm with respect to SNR.  Fig. 9. Average number of random access-success nodes with respect to the
+                                                                            number of new active nodes for each RAO.
+
+Fig. 6. PSCD and PFCA with respect to the value of 2.                       Fig. 10. Average number of random access retrials with respect to the number
+                                                                            of newly activated IoT nodes for each RAO.
+
+Fig. 7. PA collision detection performance with respect to the number of active Fig. 11. Average random access delay with respect to the number of new active
+IoT nodes.
+                                                                            nodes for each RAO.
+
+Fig. 8. Average random access delay with respect to the number of new active Fig. 12. Average number of random access-success nodes with respect to the
+
+nodes for each RAO.                                                         number of new active nodes for each RAO.
+
+30. Unless otherwise specified, the same thresholds for MT-eCD              Fig. 13. Effect of channel model on average random access delay with respect
+are used in all simulation results.                                         to the number of newly activated IoT nodes for each RAO.
+
+   Detailed simulation parameters are provided in Table I.
+   Figs. 5 ­7, and 20 show the average performance within
+a single RACH slot, where a fixed number of IoT nodes at-
+tempt random access. On the other hand, Figs. 8 ­18 show the
+long-term average performance over a 10 seconds observation
+window (i.e., NRA = 2000). We assume that the random access
+delay of those IoT nodes that exceed the maximum number of PA
+re-transmissions is the average random access delays of random
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS  12507
+
+Fig. 14. Effect of channel model on average random access-success nodes        access-successful IoT nodes with the maximum number of PA
+with respect to the number of newly activated IoT nodes for each RAO.          transmissions.
+
+Fig. 15. Effect of residual Doppler shift on average random access delay with     Fig. 5 shows the probability of miss detection and false alarm
+respect to the number of newly activated IoT nodes for each RAO.               of the MT-eCD with respect to SNR when the number of active
+                                                                               IoT node is 30.
+Fig. 16. Effect of residual Doppler shift on average random access-success
+nodes with respect to the number of newly activated IoT nodes for each RAO.       As the SNR increases, both the probability of miss detection
+                                                                               and false alarm decreases. To be specific, when the SNR is
+Fig. 17. Effect of SNR on average random access delay with respect to the      higher than -10dB, MT-eCD satisfies the 3GPP random access
+number of newly activated IoT nodes for each RAO.                              requirements with less than 1% miss detection probability and
+                                                                               less than 0.1% false detection probability.
+Fig. 18. Effect of SNR on average random access-success nodes with respect
+to the number of newly activated IoT nodes for each RAO.                          Fig. 6 shows the effect of 2 on the performance of MT-eCD,
+                                                                               in terms of PSCD and PFCA when the number of active IoT is
+                                                                               30.
+
+                                                                                  To compare our analysis results with simulation results, we set
+                                                                               the channel model parameters as described in Table I. As shown
+                                                                               in Fig. 6, our analysis results and the simulation results are close
+                                                                               to each other, which validates the accuracy of our analysis.
+
+                                                                                  As 2 increases, PSCD decreases due to the increase in
+                                                                               miss detection probability for the LoS components of the col-
+                                                                               lided nodes. If 2 decreases, PFCA increases, since the NLoS
+                                                                               multipaths are detected as LoS components. This results in
+                                                                               unnecessary random access retrials for subsequent random ac-
+                                                                               cess opportunities (RAOs) for IoT nodes that have already
+                                                                               successfully transmitted their PAs. An increase in PFCA not
+                                                                               only increases the random access delay of the IoT nodes with
+                                                                               successful PA transmission but also increases the number of IoT
+                                                                               nodes attempting random access. As a result, the likelihood of
+                                                                               PA collisions rises, triggering PRACH congestion during future
+                                                                               RAOs. Considering this, it is advisable to increase 2 to curtail
+                                                                               PFCA, despite a potential minor decrease in PSCD. This strategy
+                                                                               helps to mitigate the combined effect of increased PA collisions
+                                                                               and random access delays.
+
+                                                                                  In addition, as the power of LoS channel, , decreases, the
+                                                                               PFCA increases because the likelihood of false collision alarm
+                                                                               for NLoS channel component might be increased.
+
+                                                                                  Fig. 7 shows the PSCD and PFCA with respect to the number
+                                                                               of active IoT nodes. To show the enhanced performance of
+                                                                               the conventional schemes, an adaptive detection threshold for
+                                                                               C-eCD and perfect RTT compensation for S-eCD are assumed,
+                                                                               respectively. On the other hand, the MT-eCD utilizes the fixed
+                                                                               detection thresholds as described in Table I and is operated under
+                                                                               the condition of RTT pre-compensation error. The proposed
+                                                                               MT-eCD achieves a lower PSCD than C-eCD while achieving
+                                                                               a substantially lower PFCA. Although C-eCD achieves higher
+                                                                               PSCD than MT-eCD, this comes at the cost of a drastic in-
+                                                                               crease in PFCA due to excessive utilization of multiple root ZC
+                                                                               sequences.
+
+                                                                                  Despite the high PSCD of C-eCD, the excessive number
+                                                                               of false collision alarms results in unnecessary random access
+                                                                               retrials, undermining its collision detection performance. Thus,
+                                                                               even though our MT-eCD may exhibit a lower PSCD than C-
+                                                                               eCD, it notably outperforms the C-eCD in reducing unnecessary
+                                                                               random access retrials, primarily owing to its significantly lower
+                                                                               PFCA. MT-eCD also achieves higher PSCD and lower PFCA
+                                                                               than S-eCD. Specifically, MT-eCD has consistent PA collision
+                                                                               detection performance regardless of the detected PA index. In
+                                                                               contrast, the PA collision detection capability of S-eCD varies
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12508  IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+depending on the detected PA index, leading to a degraded PSCD    PAs. C-eCD utilizes multiple root ZC sequences to enable early
+performance compared to MT-eCD. Moreover, while the ZCZ
+of MT-eCD covers the effects of the multipath components of       PA collision detection, so that the number of available PAs is not
+the channel, the ZCZ of S-eCD cannot cover the effects of the
+multipath components of the channel due to its unique ZCZ         increased. Moreover, due to high PFCA, C-eCD suffers from
+structure, resulting in higher PFCA than MT-eCD.
+                                                                  unnecessary random access retrials.
+   Figs. 8 and 9 show the average random access delay and
+random access-success nodes with respect to the number of         In Figs. 11 and 12, we compare our performance analy-
+active IoT nodes for each RAO, respectively. In Fig. 8, it can
+be seen that the proposed MT-eCD achieves significantly lower     saicsce(sasv-esruacgceesrsanndoodmes,acScSaeUvsgCs ,dienla(y3,5T))RaAvwgi,thinsi(m34u)laatinodn  random
+random access delay than C-eCD and S-eCD. While the average                                                                                                        results,
+random access counts of the conventional C-eCD and S-eCD
+steeply increase when the number of newly activated nodes for     with respect to the number of active IoT nodes per RAO when
+each RAO reaches 22 and 38, respectively, MT-eCD achieves
+much lower random access delay even when the number of            the number of configured root sequence is one (i.e., Nr = 1).
+nodes reaches 80. The performance gain of MT-eCD over C-eCD
+comes from the reduced PA collision probability and reduced       Each figure plots multiple curves corresponding to different
+PFCA. Specifically, C-eCD significantly increases PFCA due
+to the excessive use of multiple root sequences, leading to       values of the maximum number of random access retrials Nrmetaxx.
+severe PRACH congestion and increased random access retrials.     We assume AWGN channel with an SNR of -10dB. Detailed
+Compared to S-eCD, the performance gain of MT-eCD comes
+from the improved PSCD and reduced PFCA and PA collision          simulation parameters related random access delay are described
+probability. Moreover, S-eCD has a fatal problem in that it
+only works when the RTT pre-compensation is perfect since         in Table I. As shown Figs. 11 and 12, we can observe that
+its ZCZ does not cover RTT pre-compensation error at all,
+which is not feasible in practice. Therefore, even for small RTT  the analytical results match closely with the simulation results.
+pre-compensation error, its PFCA increases significantly.
+                                                                  In Fig. 11, as Nrmetaxx increases, the maximum random access
+   As shown in Fig. 9, the number of random access-success        delay increases, since random access failed nodes have more
+nodes for MT-eCD increases linearly until reaching 88 nodes.
+This implies that most of the nodes attempting random access      opportunities to retry their random access. In Fig. 12, when the
+succeed. However, when the number exceeds 88, the num-
+ber of random access-success nodes decreases due to severe        number of newly active nodes per RAO is small, the number of
+PRACH congestion. On the other hand, the maximum number
+of random access-success nodes for both S-eCD and C-eCD is        random access-success nodes grows as Nrmetaxx increases, thanks
+much less than that of the proposed scheme. Although both the     to the additional random access retrials. However, when the
+proposed MT-eCD and C-eCD methods exploit multiple root
+ZC sequences, their utilization differs significantly. The C-eCD  number of newly active nodes per RAO is large, this number
+method focuses on enabling early PA collision detection by
+employing multiple root ZC sequences, but it does not increase    drops sharply as Nrmetaxx increases. In that case, accumulated
+the number of available PAs. In contrast, MT-eCD not only         random access failed nodes continue attempting random access,
+leverages multiple root ZC sequences to increase the number
+of available PAs, but also enables early PA collision detection   causing severe congestion and ultimately reducing the number
+using the LoS channel characteristics of the NTN channel. This
+distinction allows MT-eCD to offer improved performance. In       of successful accesses.
+addition, since MT-eCD achieves improved PSCD over S-eCD
+and reduced PFCA over C-eCD, it can serve more IoT nodes,         To verify the robustness of the proposed MT-eCD across
+thus reducing unnecessary random access retrials and enabling
+accurate PA collision detection.                                  different channel models, Figs. 13 and 14 show its long-term
+
+   Fig. 10 shows the average number of random access trials for   random access performance in terms of average random access
+active nodes. The proposed MT-eCD achieves a smaller number
+of average random access retrials than the conventional S-eCD     delay and average number of random access success nodes in
+and C-eCD. This is because MT-eCD can increase the number
+of available PAs by exploiting multiple root ZC sequences, al-    the NTN TDL-C and NTN TDL-D channel models, respectively.
+lowing it to better handle PRACH congestion. Although C-eCD
+also exploits multiple root ZC sequences, it suffers from severe  The detection thresholds, 1, 2, and 3, are set as detailed in
+PRACH congestion. This is because C-eCD cannot leverage
+multiple root ZC sequences to increase the number of available    Table I to verify the robustness of MT-eCD. MT-eCD exhibits
+
+                                                                  stable and consistent performance across different channel mod-
+
+                                                                  els up to the point where the number of newly active nodes
+
+                                                                  reaches 85, indicating a massive access scenario. While there
+
+                                                                  is a performance gap between MT-eCD in NTN TDL-C and
+
+                                                                  NTN TDL-D due to the increased channel dispersion of NTN
+
+                                                                  TDL-D, this difference is not significant. This is because the
+
+                                                                  proposed MT-eCD exploits the dominant LoS characteristics of
+
+                                                                  NTN systems. Therefore, even with fixed detection thresholds,
+
+                                                                  our MT-eCD approach can still deliver robust performance,
+
+                                                                  underscoring the practicality of our proposal.
+
+                                                                  Figs. 15 and 16 show the long-term random access perfor-
+
+                                                                  mance in terms of random access delay and average number of
+
+                                                                  random access success nodes to verify the performance when
+
+                                                                  the residual Doppler shift after pre-compensation at the IoT
+
+                                                                  node. We assume that each received PA suffers from residual
+
+                                                                  Doppler shift uniformly distributed between 0 and 250 Hz,
+
+                                                                  although the residual Doppler shift assumed in 3GPP is less
+
+                                                                  than 10 Hz [32]. The detection thresholds, 1, 2, and 3, are
+
+                                                                  set as detailed in Table I to verify the robustness of MT-eCD.
+
+                                                                  MT-eCD shows robust performance even with residual Doppler
+
+                                                                  shift exist compared to the ideal Doppler shift compensation
+
+                                                                  case. Although slight degradation occurs due to residual Doppler
+
+                                                                  shift, the difference is not significant, which means MT-eCD has
+
+                                                                  robustness to residual Doppler shift in NTN systems.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS  12509
+
+Fig. 19. Computational complexity comparison with respect to the number of  Fig. 20. PUSCH resource efficiency with respect to the number of active IoT
+active IoT nodes in terms of the number of FLOPs.                           nodes.
+
+                                                                                                                     TABLE II
+                                                                                   PERFORMANCE COMPARISON WITH CONVENTIONAL PA COLLISION
+
+                                                                                                              DETECTION SCHEMES
+
+   Figs. 17 and 18 show the long-term random access perfor-                    Fig. 20 shows the PUSCH resource efficiency of MSG3,
+mance in terms of random access delay and average number                    which is defined as the ratio of the number of PUSCH re-
+of random access success nodes to verify the performance with               sources allocated to the successfully detected PAs to the total
+respect to the SNR. According to link budget analysis, the SNR              number of allocated PUSCH resources [26]. MT-eCD consis-
+range of NTN PRACH for LEO SET-2 configuration is -13                       tently maintains a resource efficiency above 0.92, outperform-
+dB to -3 dB. The detection thresholds, 1, 2, and 3, are                     ing both S-eCD and C-eCD. As the number of active IoT
+set as detailed in Table I to verify the robustness of MT-eCD.              nodes increases, the performance gap between MT-eCD and
+Representative simulations at -13 dB, -10 dB, -7 dB, and                    the conventional schemes becomes more pronounced. This is
+-3dB show that MT-eCD maintains consistent performance                      because MT-eCD can accommodate a larger number of PAs
+even under these varying SNR conditions. Although there is                  compared to S-eCD and C-eCD, thereby reducing PA collisions.
+slight performance degradation at -13 dB, it remains minor                  In addition, since MT-eCD achieves higher PSCD than S-eCD,
+when the number of active IoT nodes per RAO is less than 80,                fewer PUSCH resources for nodes that experience collisions
+indicating that performance of MT-eCD is robust across the SNR              are wasted. Furthermore, while MT-eCD effectively suppresses
+range relevant to NTN systems.                                              interference from multiple root ZC sequences, C-eCD is forced
+                                                                            to grapple with significant interference, leading to a higher false
+   Across Figs. 13­18, it is evident that MT-eCD achieves re-               alarm probability. Consequently, due to its reduced false alarm
+silient performance in diverse channel environments, varying                probability, MT-eCD achieves greater resource efficiency than
+SNR levels, and residual Doppler shifts, even when its detec-               C-eCD.
+tion thresholds remain fixed. This consistency emphasizes the
+practicality and robustness of the proposed MT-eCD scheme for                  To clearly show the superiority of MT-eCD, comparisons
+massive access in NTN systems.                                              of the MT-eCD with the conventional S-eCD and C-eCD are
+                                                                            summarized in Table II.
+   Fig. 19 shows the computational complexity in terms of the
+number of FLOPs with respect to the number of active IoT nodes                            VI. CONCLUSION AND FUTURE WORKS
+for a given RACH slot. Npeak = 1 and max = 1 is assumed.
+When multiple root sequences are exploited (i.e., Nr > 1), com-                In this paper, we proposed MT-eCD to reduce random access
+putational complexity of MT-eCD is much higher than S-eCD,                  delay and enhance resource utilization in NTN IoT random
+which requires a single correlation operation and PA detection              access. By leveraging the characteristics of NTN LoS channels,
+for a single threshold, since MT-eCD requires interference can-             MT-eCD uses multiple detection thresholds to detect and report
+cellation caused by multiple root sequences. When single root               PA collisions after PA reception. Additionally, multiple root
+sequence is exploited, however, its computational complexity is             sequences with interference cancellation reduce collision events,
+slightly higher than that of S-eCD. This is because, when single            thereby decreasing random access delay. Simulation results in
+root sequence is used, there is no need to perform interference             practical NTN LoS channels showed that MT-eCD significantly
+cancellation caused by multiple root sequences, thus only a                 outperformed conventional schemes in terms of random access
+single correlation operation and collision detection for three              delay, number of successfully accessed nodes, and resource
+thresholds are required. Even with multiple root sequences,                 efficiency.
+MT-eCD shows much lower computational complexity than
+that of C-eCD. This is because C-eCD adopts multiple root
+sequences same as the number of PAs to detect PA collision,
+thus NPA root sequences are exploited. Although computational
+complexity of MT-eCD is lower than C-eCD, its computational
+complexity is still higher than S-eCD. Hence, to balance support
+for a large number of IoT nodes against computational cost,
+careful selection of the number of root sequences for MT-eCD
+is required.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+12510                                                                 IEEE TRANSACTIONS ON VEHICULAR TECHNOLOGY, VOL. 74, NO. 8, AUGUST 2025
+
+   Future work may focus on optimizing the number of config-          by
+ured root sequences based on the estimated number of active
+IoT nodes in upcoming RACH slots, balancing computational                       , tg +TRF-2+WBO-tu-1                        , TRF-1 +WBO
+complexity against successful access. Moreover, beam hopping                  
+is emerging as a promising technique in satellite-based NTN                                 WBO                                 Tperiod
+systems because only a fraction of beams need to be illumi-                                    TRF-1 +WBO
+nated for active IoT nodes at a given time. Consequently, key                   if  (u - 1) -      Tperiod    <g   u-
+research directions include optimizing beam hopping patterns
+and accurately estimating the number of active nodes under                      , TPERIOD                                   TRF-2
+beam hopping conditions to further improve the random access                                                                Tperiod
+performance of NTN IoT.                                                            WBO
+                                                                                        TRF-2 +WBO
+                                                                      g,u  =    if u -      Tperiod  <g       (u  -  1)  -           ,
+
+                                                                                , tu-(tg +TRF-2)                      , TRF-2
+
+                                                                                       WBO                            Tperiod
+                                                                                               TRF-2
+                                                                                if  (u - 1) -  Tperiod  <  g    u  -
+
+                                                                                0, otherwise.
+
+                                                                                                                                        (41)
+
+                              APPENDIX A                                                               REFERENCES
+  DERIVATIONS OF Gmin, Gmax, g,u, Jmin, Jmax, AND j,u
+                                                                       [1] J. Heo, S. Sung, H. Lee, I. Hwang, and D. Hong, "MIMO satellite
+   The lower and upper bounds of g in (29), denoted by Gmin                 communication systems: A survey from the PHY layer perspective," IEEE
+and Gmax, are determined by the initial random back-off tim-                Commun. Surveys. Tuts., vol. 25, no. 3, pp. 1543­1570, thirdquarter 2023.
+ing of IoT nodes under collision detection failure and success
+conditions, respectively. Specifically, these bounds arise by          [2] R. Wang, M. A. Kishk, and M.-S. Alouini, "Ultra-dense LEO satellite-
+considering the extreme values within the back-off window                   based communication systems: A novel modeling technique," IEEE Com-
+WBO: choosing the maximum back-off value leads to Gmin,                     mun. Mag., vol. 60, no. 4, pp. 25­31, Apr. 2022.
+whereas choosing the minimum back-off value leads to Gmax.
+The resulting bounds are given by:                                     [3] Z. Dawy, W. Saad, A. Ghosh, J. G. Andrews, and E. Yaacoub, "Toward
+                                                                            massive machine type cellular communications," IEEE Wireless Commun.,
+                Gmin =       u - TRF-1 + WBO    ,                           vol. 24, no. 1, pp. 120­128, Feb. 2017.
+                                       Tperiod
+                                                                       [4] 3rd Generation Partnership Project (3GPP), "Study on narrow-band Inter-
+                Gmax =       u - TRF-1     .                   (38)         net of Things (NB-IoT)/ enhanced machine type communication (eMTC)
+                                  Tperiod                                   support for non-terrestrial networks (NTN)," 3GPP, Sophia Antipolis,
+                                                                            France, Tech. Rep. 36.763 V17.0.0, 3GPP TSG RAN WG1 Meeting #88,
+The ratio of IoT nodes that perform their v-th retrial of random            Jun. 2021.
+
+access in the u-th RACH slot among the IoT nodes that attempt          [5] 3rd Generation Partnership Project (3GPP), "Solutions for NR to support
+                                                                            non-terrestrial networks (NTN)," 3GPP, Sophia Antipolis, France, Tech.
+random access retrial after RAR window expire with their (v -               Rep. 38.821 V16.1.0, 3GPP TSG RAN WG1 Meeting #88, May 2021.
+
+1)-th retrial of random access in the g-th RACH slot, g,u, is          [6] 3rd Generation Partnership Project (3GPP), "Study on new radio (NR)
+obtained by                                                                 to support non-terrestrial networks," 3GPP, Tech. Rep. 38.811 V15.4.0,
+                                                                            3GPP TSG RAN WG1 Meeting #88, Oct. 2022.
+            tg +TRF-1+WBO-tu-1                        TRF-1 +WBO   ,
+                                                          Tperiod      [7] E. Dahlman, S. Parkvall, and J. Skold, 5G NR: The Next Generation
+                     , WBO TRF-1+WBO                                        Wireless Access Technology. Cambridge, MA, USA: Academic Press,
+            if (u - 1) - < g  u - Tperiod                                   2020.
+            TPERIOD
+g,u    =                       <g          (u - 1) -  , TRF-1          [8] M. Llobet, M. Cabrera-Bean, J. Vidal, and A. Agustin, "Optimizing access
+              , WBO TRF-1+WBO                                               demand for mMTC traffic using neural networks," IEEE Trans. Veh.
+            if u - Tperiod                            Tperiod               Technol., vol. 72, no. 12, pp. 16834­16838, Dec. 2023.
+                -(tg +TRF-1
+            tu               ),       <g  u-  , TRF-1                  [9] T. Feng, G. Nie, H. Tian, B. Zhang, and Y. Zhao, "Dynamic access control
+                    WBO                                                     for LEO satellite networks based on reinforcement learning," in Proc. 9th
+            if                TRF-1           Tperiod                       Int. Conf. Comput. Commun., 2023, pp. 344­349.
+                (u - 1) -    Tperiod
+                                                                      [10] W. Fan, P. Fan, and Y. Long, "Joint delay-energy optimization for multi-
+            0, otherwise.                                                   priority random access in machine-type communications," IEEE Trans.
+                                                                            Wireless Commun., vol. 23, no. 2, pp. 1416­1431, Feb. 2024.
+                                                               (39)
+                                                                      [11] Z. Shi and J. Liu, "Massive access in 5G and beyond ultra-dense networks:
+IoT nodes of random access failed 2 cases retry their random                An MARL-based NORA scheme," IEEE Trans. Commun., vol. 71, no. 4,
+                                                                            pp. 2170­2183, Apr. 2023.
+access after CR timer expire. In a similar manner to (38), the
+                                                                      [12] J.-B. Seo, S. De, and H. Jin, "Real-time transmission control for multi-
+lower and upper bounds of j, Jmin and Jmax, are obtained as                 channel NOMA random access systems," IEEE Internet Things J., vol. 10,
+                                                                            no. 10, pp. 8984­8995, May 2023.
+follows:
+                                                                      [13] K. M. Kim and T.-J. Lee, "Random access and uplink shared channel
+                Jmin =       u - TRF-2 + WBO    ,                           resource allocation with NOMA," IEEE Trans. Mobile Comput., vol. 23,
+                                       Tperiod                              no. 6, pp. 6896­6907, Jun. 2024.
+
+                Jmax =       u - TRF-2     .                   (40)   [14] J.-H. Lee, H. Seo, J. Park, M. Bennis, and Y.-C. Ko, "Learning emergent
+                                  Tperiod                                   random access protocol for LEO satellite networks," IEEE Trans. Wireless
+                                                                            Commun., vol. 22, no. 1, pp. 257­269, Jan. 2023.
+The ratio of IoT nodes that perform their v-th retrial of random
+access in the u-th RACH slot among the IoT nodes that attempt         [15] H. Han, J. Zhao, and X. Zhou, "A random access scheme for federated
+random access retrial after CR timer expire with their (v - 1)-th           learning over massive MIMO systems," IEEE Internet Things J., vol. 10,
+retrial of random access in the g-th RACH slot, g,u, is obtained            no. 21, pp. 19027­19042, Nov. 2023.
+
+                                                                      [16] A. E. Mostafa et al., "Aggregate preamble sequence design and detection
+                                                                            for massive IoT with deep learning," IEEE Trans. Veh. Technol., vol. 70,
+                                                                            no. 4, pp. 3800­3816, Apr. 2021.
+
+                                                                      [17] Y. He and G. Ren, "Spatial filtering based random access for machine-type
+                                                                            communications in massive MIMO cellular networks," IEEE Trans. Veh.
+                                                                            Technol., vol. 69, no. 10, pp. 11479­11490, Oct. 2020.
+
+                                                                      [18] J. Son et al., "Frequency asynchronous NOMA in LEO satellite communi-
+                                                                            cation systems," in Proc. IEEE Int. Conf. Acoust., Speech, Signal Process.
+                                                                            Workshops, 2023, pp. 1­5.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+JEONG et al.: ENHANCED EARLY PREAMBLE COLLISION DETECTOR FOR LEO SATELLITE-BASED NTN IOT RANDOM ACCESS  12511
+
+[19] R. F. Sari, R. Harwahyu, and R.-G. Cheng, "Load estimation and connec-                                     Hyunwoo Lee (Graduate Student Member, IEEE)
+      tion request barring for random access in massive C-IoT," IEEE Internet                                   received the B.S. degree in electrical and electronic
+      Things J., vol. 7, no. 7, pp. 6539­6549, Jul. 2020.                                                       engineering from Yonsei University, Seoul, South Ko-
+                                                                                                                rea, in 2021, where he is currently working towardthe
+[20] M. Vilgelm, S. R. Linares, and W. Kellerer, "Enhancing cellular M2M                                        Ph.D. degree in electrical and electronic engineering.
+      random access with binary countdown contention resolution," in Proc.                                      His research interests include MIMO systems, chan-
+      IEEE 28th Annu. Int. Symp. Pers., Indoor, Mobile Radio Commun., 2017,                                     nel estimation, and LEO SatCom systems.
+      pp. 1­6.
+                                                                                                                Daesik Hong (Fellow, IEEE) received the B.S. and
+[21] Y. Liang, X. Li, J. Zhang, and Z. Ding, "Non-orthogonal random ac-                                         M.S. degrees in electronics engineering from Yonsei
+      cess for 5G networks," IEEE Trans. Wireless Commun., vol. 16, no. 7,                                      University, Seoul, Korea, in 1983 and 1985, respec-
+      pp. 4817­4831, Jul. 2017.                                                                                 tively, and the Ph.D. degree from the School of EE,
+                                                                                                                Purdue University, West Lafayette, IN, USA, in 1990.
+[22] H. S. Jang, S. M. Kim, H.-S. Park, and D. K. Sung, "A preamble collision                                   He joined Yonsei University in 1991, where he is
+      resolution scheme via tagged preambles for cellular IoT/M2M commu-                                        currently a Professor with the School of Electrical
+      nications," IEEE Trans. Veh. Technol., vol. 67, no. 2, pp. 1825­1829,                                     and Electronic Engineering. He has been a Chair of
+      Feb. 2018.                                                                                                Samsung-Yonsei Research Center for Mobile Intelli-
+                                                                                                                gent Terminals. He is the Vice-President of Research
+[23] Z. Alavikia and A. Ghasemi, "Collision-aware resource access scheme                                        Affairs and a President of Industry-Academic Coop-
+      for LTE-Based machine-to-machine communications," IEEE Trans. Veh.         eration Foundation, Yonsei University, from 2010 to 2011. He was the Chief
+      Technol., vol. 67, no. 5, pp. 4683­4688, May 2018.                         Executive Officer (CEO) for Yonsei Technology Holding Company in 2011, and
+                                                                                 the President of the Institute of Electronics and Information Engineers (IEIE) in
+[24] N. Zhang, G. Kang, J. Wang, Y. Guo, and F. Labeau, "Resource allocation     2017. From 2016 to 2019, he was also a Dean of College of Engineering, Yonsei
+      in a new random access for M2M communications," IEEE Commun. Lett.,        University. He was appointed as the Underwood/Avison distinguished Professor
+      vol. 19, no. 5, pp. 843­846, May 2015.                                     with Yonsei University in 2009, and received the Best Teacher Award with
+                                                                                 Yonsei University in 2005, 2011, and 2012. He was the Editor of IEEE TRANSAC-
+[25] H. S. Jang, H. Lee, T. Q. S. Quek, and H. Shin, "Deep learning-based        TIONS ON WIRELESS COMMUNICATIONS and IEEE WIRELESS COMMUNICATIONS
+      cellular random access framework," IEEE Trans. Wireless Commun.,           LETTERS from 2006 to 2011 and from 2011 to 2016, respectively. His current
+      vol. 20, no. 11, pp. 7503­7518, Nov. 2021.                                 research activities are focused on future wireless communication including 5G
+                                                                                 and 6G systems, low earth orbit satellite communication systems, OFDM(A)
+[26] H. S. Jang, S. M. Kim, H.-S. Park, and D. K. Sung, "An early preamble       and multi-carrier communication, multihop and relay-based communication,
+      collision detection scheme based on tagged preambles for cellular M2M      in-band full-duplex, cognitive radio, and energy harvesting. He was also a
+      random access," IEEE Trans. Veh. Technol., vol. 66, no. 7, pp. 5974­5984,  recipient of the HaeDong Outstanding Research Awards of the Korean Institute
+      Jul. 2017.                                                                 of Communications and Information Sciences (KICS) in 2006 and the IEIE in
+                                                                                 2009.
+[27] L. Zhen, H. Kong, Y. Zhang, W. Wang, and K. Yu, "Efficient collision de-
+      tection based on Zadoff-Chu sequences for satellite-enabled M2M random
+      access," in Proc. IEEE Int. Conf. Commun., 2021, pp. 1­6.
+
+[28] L. Zhen, Y. Zhang, K. Yu, N. Kumar, A. Barnawi, and Y. Xie, "Early
+      collision detection for massive random access in satellite-based Internet
+      of Things," IEEE Trans. Veh. Technol., vol. 70, no. 5, pp. 5184­5189,
+      May 2021.
+
+[29] C. Zhang, X. Sun, W. Xia, J. Zhang, H. Zhu, and X. Wang, "Deep
+      learning based double-contention random access for massive machine-
+      type communication," IEEE Trans. Wireless Commun., vol. 22, no. 3,
+      pp. 1794­1807, Mar. 2023.
+
+[30] J. Jeong and D. Hong, "Two-stage preamble detector for LEO satellite-
+      based NTN IoT random access," IEEE Trans. Veh. Technol., vol. 72, no. 11,
+      pp. 14443­14455, Nov. 2023.
+
+[31] 3rd Generation Partnership Project (3GPP), "Evolved universal terrestrial
+      radio access (E-UTRA); physical layer procedures," 3GPP, Sophia An-
+      tipolis, France, Tech. Rep. 36.213 V12.4.0, Dec. 2014.
+
+[32] 3rd Generation Partnership Project (3GPP), "UE time and frequency
+      synchronisation for IoT NTN," 3GPP, Sophia Antipolis, France, Tech.
+      Rep. R1-2100601, TSG RAN WG1 #104e, Jan. 2021.
+
+[33] B.-H. Lee, H.-S. Lee, S. Moon, and J.-W. Lee, "Enhanced random access
+      for massive-machine-type communications," IEEE Internet Things J.,
+      vol. 8, no. 8, pp. 7046­7064, Apr. 2021.
+
+Jinkyo Jeong (Associate Member, IEEE) received
+the B.S. and Ph.D. degrees in electrical and electronic
+engineering from Yonsei University, Seoul, South
+Korea, in 2015 and 2023, respectively. Since 2023,
+he has been with Samsung Electronics, where he has
+been involved in random access procedure enhance-
+ment for the LTE/NR systems. His current research
+interests include random access for NR and NR NTN,
+and AI-enabled wireless communication.
+
+Authorized licensed use limited to: Indian Institute of Information Technology Kota. Downloaded on October 04,2026 at 11:02:27 UTC from IEEE Xplore. Restrictions apply.
+
