@@ -119,7 +119,17 @@ class RACH_MDP:
         if R_act == 0:
             return None
         self._est = None
-        return num / R_act - we * air / (R_act * self.rep_max)
+        r = num / R_act - we * air / (R_act * self.rep_max)
+        w_d = float(self.cfg.get("w_d", 0.0))
+        if w_d > 0.0:
+            # V2-1 deferral cost: expected extra wait per attempting meter caused by the chosen
+            # barring factor (geometric number of barring periods) and backoff (failed share x BI/2).
+            n_hat, c_hat, m_hat, t_hat, _ = self.estimates()
+            f_fail = min(1.0, (c_hat + m_hat + t_hat) / n_hat) if n_hat > 1e-9 else 0.0
+            p = float(rao["acb_p"])
+            d_hat = self.cfg["barring_mean_s"] * (1.0 - p) / p + f_fail * float(rao["bi_ms"]) / 2000.0
+            r -= w_d * min(d_hat / float(self.cfg["deadline_s"]), 3.0)
+        return r
 
     def estimates(self):
         """Smoothed totals over pools: attempts, colliding meters, misses, timeouts, successes."""

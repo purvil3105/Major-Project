@@ -174,3 +174,15 @@ def test_common_random_numbers_across_policies(cfg, passes):
     s1 = NPRACHSimulator(cfg, passes[0], 300, [3, 0, 1])
     s2 = NPRACHSimulator(cfg, passes[0], 300, [3, 0, 1])
     assert np.array_equal(s1.arrival, s2.arrival) and np.array_equal(s1.loss_db, s2.loss_db)
+
+
+def test_deferral_cost_penalises_heavy_barring_and_backoff(cfg, passes):
+    """V2-1: same observations, stronger barring / longer BI must lower the reward."""
+    sim = NPRACHSimulator(cfg, passes[1], 1000, [8, 0, 1])
+    for e in range(30):
+        rao = sim.step(e, 1.0, 1024, cfg["rep_profiles"][1])
+    r_open = RACH_MDP(cfg).observe(dict(rao, acb_p=1.0, bi_ms=256))
+    r_barred = RACH_MDP(cfg).observe(dict(rao, acb_p=0.1, bi_ms=16384))
+    assert r_barred < r_open
+    v1 = dict(cfg, w_d=0.0)
+    assert RACH_MDP(v1).observe(dict(rao, acb_p=0.1, bi_ms=16384)) == RACH_MDP(v1).observe(dict(rao, acb_p=1.0, bi_ms=256))

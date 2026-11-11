@@ -106,6 +106,8 @@ w_c: 1.0                                     # collision (per colliding device, 
 w_m: 0.5                                     # detection miss (estimated)
 w_t: 0.5                                     # timeout (Msg3 failure after detected preamble)
 w_e: 0.1                                     # estimated preamble airtime (energy)
+w_d: 0.5                                     # deferral cost (expected barring/backoff wait / deadline) [V2-1]
+barring_mean_s: 4.0                          # mean of (0.7+0.6U) x T_bar
 
 # --- Q-learning [design; Jiang et al. [12]] ---------------------------------
 alpha: 0.12
@@ -114,8 +116,9 @@ eps0: 1.0
 eps_min: 0.05
 eps_decay: 0.995
 eps_warm: 0.10                               # exploration while fine-tuning a warm-start table
-pretrain_passes: 30                          # warm-start training budget (passes of other satellites)
-pretrain_eps_decay: 0.9999                   # slower decay across the 30 training passes
+pretrain_passes: 120                         # warm-start budget: 40 training passes cycled 3x [V2-2]
+pretrain_eps_decay: 0.9999                   # used only by the v1 per-update schedule
+pretrain_eps_schedule: "per_pass"             # eps 1.0 -> 0.05 geometrically by 80 % of passes [V2-2]
 pretrain_seed: 42
 
 # --- Experiment --------------------------------------------------------------

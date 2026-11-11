@@ -151,7 +151,14 @@ def pretrain(cfg, variant, out_path):
                                   cfg["eps0"], cfg["eps_min"], cfg["pretrain_eps_decay"], rng)
     train = _passes(cfg, "train")
     hist = []
-    for i in range(int(cfg["pretrain_passes"])):
+    n_pass = int(cfg["pretrain_passes"])
+    per_pass = cfg.get("pretrain_eps_schedule", "per_update") == "per_pass"
+    if per_pass:
+        agent.eps_decay = 1.0
+    for i in range(n_pass):
+        if per_pass:   # V2-2: geometric 1.0 -> eps_min at 80 % of the passes, then held
+            frac = min(1.0, i / max(1.0, 0.8 * (n_pass - 1)))
+            agent.eps = max(cfg["eps_min"], cfg["eps0"] * (cfg["eps_min"] / cfg["eps0"]) ** frac)
         traj = train[i % len(train)]
         n = int(rng.choice(cfg["device_sweep"]))
         ov = {"coupling_loss_mean_db": float(rng.choice(cfg["coupling_loss_sweep_db"])),
